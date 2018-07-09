@@ -198,6 +198,14 @@ void crLockMutex(CRmutex *mutex)
 #endif
 }
 
+GLboolean crTryLockMutex(CRmutex *mutex)
+{
+#ifdef WINDOWS
+	return TryEnterCriticalSection(mutex);
+#else
+    return false;
+#endif
+}
 
 void crUnlockMutex(CRmutex *mutex)
 {

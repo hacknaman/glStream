@@ -95,6 +95,7 @@ renderspuFindVisual(const char *displayName, GLbitfield visAttribs)
 #if defined(WINDOWS) || defined(DARWIN)
 	for (i = 0; i < render_spu.numVisuals; i++) {
 		if (visAttribs == render_spu.visuals[i].visAttribs) {
+            crDebug("found the visual attributes");
 			return &(render_spu.visuals[i]);
 		}
 	}
@@ -118,6 +119,7 @@ renderspuFindVisual(const char *displayName, GLbitfield visAttribs)
 	render_spu.visuals[i].displayName = crStrdup(displayName);
 	render_spu.visuals[i].visAttribs = visAttribs;
 	if (renderspu_SystemInitVisual(&(render_spu.visuals[i]))) {
+        crDebug("new Visual is not created");
 		render_spu.numVisuals++;
 		return &(render_spu.visuals[i]);
 	}
@@ -146,12 +148,18 @@ renderspuCreateContext(const char *dpyName, GLint visBits, GLint shareCtx)
 		dpyName = render_spu.display_string;
 
 	visual = renderspuFindVisual(dpyName, visBits);
-	if (!visual)
-		return -1;
-
+    if (!visual){
+        crDebug("Visual is not valid");
+        return -1;
+    }
 	context = (ContextInfo *) crCalloc(sizeof(ContextInfo));
-	if (!context)
-		return -1;
+    if (!context){
+        crDebug("Context is not valid");
+        return -1;
+    }
+    else{
+        crDebug("Context is valid");
+    }
 	context->id = render_spu.context_id;
 	context->shared = sharedContext;
 	if (!renderspu_SystemCreateContext(visual, context, sharedContext))
@@ -361,6 +369,8 @@ renderspuWindowSize( GLint win, GLint w, GLint h )
 	CRASSERT(win >= 0);
 	CRASSERT(w > 0);
 	CRASSERT(h > 0);
+    //w = 262;
+    //h = 285;
 	window = (WindowInfo *) crHashtableSearch(render_spu.windowTable, win);
 	if (window) {
 		renderspu_SystemWindowSize( window, w, h );

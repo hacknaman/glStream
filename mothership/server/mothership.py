@@ -43,7 +43,7 @@ DefaultMothershipPort = 10000
 
 # This controls whether info/debug messages are printed
 # (0=none, 1=info, 2=info+debug)
-DebugLevel = 1
+DebugLevel = 2
 
 # It seems these aren't defined in all versions of Python
 True = 1
@@ -861,7 +861,8 @@ class CR:
 				"high_node" : "iamvis20",
 				"comm_key": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 				"autostart_branches": 0,
-				"autostart_max_nodes_per_thread": 1}
+				"autostart_max_nodes_per_thread": 1,
+				"spu_dir":"E:/CHROMIUM/bin"}
 		# This is set only on daughterships; "grandmotherships" don't
 		# have mothers, and never have pending resolutions.
 		self.mother = None

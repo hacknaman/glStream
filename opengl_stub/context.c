@@ -310,6 +310,7 @@ InstantiateNativeContext( WindowInfo *window, ContextInfo *context )
 {
 #ifdef WINDOWS
 	context->hglrc = stub.wsInterface.wglCreateContext( window->drawable );
+    crDebug("hglrc si intantiated");
 	return context->hglrc ? GL_TRUE : GL_FALSE;
 #elif defined(Darwin)
 	CGLContextObj shareCtx = NULL;

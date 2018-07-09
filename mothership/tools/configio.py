@@ -266,6 +266,7 @@ def CRNetworkNode(host="localhost"):
 	return n
 
 def SPU(name):
+	print "this is SPU function in ConfigIO"
 	s = crutils.NewSPU(name)
 	return s
 

@@ -600,7 +600,10 @@ crTCPIPAlloc( CRConnection *conn )
 	CRTCPIPBuffer *buf;
 
 #ifdef CHROMIUM_THREADSAFE
-	crLockMutex(&cr_tcpip.mutex);
+	//crLockMutex(&cr_tcpip.mutex);
+    crInitMutex(&cr_tcpip.mutex);
+    crLockMutex(&cr_tcpip.mutex);
+    
 #endif
 
 	buf = (CRTCPIPBuffer *) crBufferPoolPop( cr_tcpip.bufpool, conn->buffer_size );

@@ -103,6 +103,7 @@ crMemZero
 crInitMutex
 crFreeMutex
 crLockMutex
+crTryLockMutex
 crUnlockMutex
 crInitCondition
 crFreeCondition

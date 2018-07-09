@@ -9,7 +9,6 @@
  *
  * \section AppFakerIntroduction Introduction
  *
- * Chromium consists of all the top-level files in the cr
  * directory.  The app_faker module ...
  *
  * \section AboutDoxygen About Doxygen

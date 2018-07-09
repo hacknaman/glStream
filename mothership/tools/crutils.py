@@ -143,6 +143,7 @@ def SPUIsTerminal(spuName):
 		return 0
 
 def NewSPU(spuName):
+	print "This is new Spu function"
 	"""Return a new instance of the named SPU.  this function creates an
 	SPU object and then attaches the list of SPU parameters and options."""
 	spu = crtypes.SpuObject(spuName, SPUIsTerminal(spuName),

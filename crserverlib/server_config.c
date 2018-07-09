@@ -136,6 +136,9 @@ crServerGatherConfiguration(char *mothership)
 	{
 		spu_dir = crStrdup(response);
 	}
+    else{
+        spu_dir = "E:\\CHROMIUM\\bin";
+    }
 
 	/* Quadrics networking stuff */
 	if (crMothershipGetRank(conn, response))

@@ -560,6 +560,7 @@ crEnqueueMessage(CRMessageList *list, CRMessage *msg, unsigned int len,
 	CRMessageListNode *node;
 
 #ifdef CHROMIUM_THREADSAFE
+    crInitMessageList(list);
 	crLockMutex(&list->lock);
 #endif
 

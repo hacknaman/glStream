@@ -501,9 +501,11 @@ GLboolean renderspu_SystemCreateContext( VisualInfo *visual, ContextInfo *contex
 {
 	(void) sharedContext;
 	context->visual = visual;
-
+    crDebug("IN renderspu_SystemCreateContext");
 	/* Found a visual, so we're o.k. to create the context now */
-	if (visual->device_context) {
+    if (visual->device_context) { 
+        crDebug("got the device content");
+        //DebugBreak();
 
 		crDebug( "Render SPU: Using the DC: 0x%x", visual->device_context );
 
