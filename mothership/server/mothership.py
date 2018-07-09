@@ -32,7 +32,7 @@ Other internal functions/classes:
 """
 
 import sys, string, types, traceback, re, threading, os, socket, select, signal, pickle, copy, time
-
+sys.path.append( '../../' )
 from crconfig import arch, crdir, crbindir, crlibdir
 
 # Version string
@@ -862,7 +862,7 @@ class CR:
 				"comm_key": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 				"autostart_branches": 0,
 				"autostart_max_nodes_per_thread": 1,
-				"spu_dir":"E:/CHROMIUM/bin"}
+				"spu_dir":"C:/Project/TransVizExe/bin"}
 		# This is set only on daughterships; "grandmotherships" don't
 		# have mothers, and never have pending resolutions.
 		self.mother = None
