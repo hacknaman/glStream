@@ -32,7 +32,6 @@ Other internal functions/classes:
 """
 
 import sys, string, types, traceback, re, threading, os, socket, select, signal, pickle, copy, time
-sys.path.append( '../../' )
 from crconfig import arch, crdir, crbindir, crlibdir
 
 # Version string
