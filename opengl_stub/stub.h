@@ -200,7 +200,7 @@ extern void stubUseXFont( Display *dpy, Font font, int first, int count, int lis
 #endif
 
 
-extern ContextInfo *stubNewContext( const char *dpyName, GLint visBits, ContextType type, unsigned long shareCtx );
+extern ContextInfo *stubNewContext( const char *dpyName, GLint visBits, ContextType type, unsigned long shareCtx, int rc );
 extern void stubDestroyContext( unsigned long contextId );
 extern GLboolean stubMakeCurrent( WindowInfo *window, ContextInfo *context );
 extern GLint stubNewWindow( const char *dpyName, GLint visBits );

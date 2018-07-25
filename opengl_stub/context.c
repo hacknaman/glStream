@@ -209,7 +209,7 @@ stubGetWindowInfo( Display *dpy, GLXDrawable drawable )
  */
     ContextInfo *
 stubNewContext( const char *dpyName, GLint visBits, ContextType type,
-	unsigned long shareCtx )
+	unsigned long shareCtx, int rc )
 {
     GLint spuContext = -1, spuShareCtx = 0;
     ContextInfo *context;
@@ -238,7 +238,7 @@ stubNewContext( const char *dpyName, GLint visBits, ContextType type,
 	if (!dpyName)
 		dpyName = "";
 
-	context->id = stub.freeContextNumber++;
+	context->id = rc ? rc : stub.freeContextNumber++;
 	context->type = type;
 	context->spuContext = spuContext;
 	context->visBits = visBits;

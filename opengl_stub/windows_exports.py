@@ -16,9 +16,7 @@ def GenerateEntrypoints():
 
 	print '#include "chromium.h"'
 	print '#include "stub.h"'
-	print ''
-	print '#define NAKED __declspec(naked)'
-	print '#define UNUSED(x) ((void)(x))'
+
 	print ''
 
 
@@ -35,12 +33,13 @@ def GenerateEntrypoints():
 		return_type = apiutil.ReturnType(func_name)
 		params = apiutil.Parameters(func_name)
 
-		print "NAKED %s cr_gl%s( %s )" % (return_type, func_name,
+		print "extern %s APIENTRY cr_gl%s( %s )" % (return_type, func_name,
 									  apiutil.MakeDeclarationString( params ))
 		print "{"
-		print "\t__asm jmp [glim.%s]" % func_name
-		for (name, type, vecSize) in params:
-			print "\tUNUSED( %s );" % name
+		if return_type == "void":
+			print "\tglim.%s(%s);" % (func_name,apiutil.MakeCallString(params))
+		else:
+			print "\t return glim.%s(%s);" % (func_name,apiutil.MakeCallString(params))
 		print "}"
 		print ""
 
@@ -63,12 +62,13 @@ def GenerateEntrypoints():
 		if alias:
 			return_type = apiutil.ReturnType(func_name)
 			params = apiutil.Parameters(func_name)
-			print "NAKED %s cr_gl%s( %s )" % (return_type, func_name,
+			print "extern %s APIENTRY cr_gl%s( %s )" % (return_type, func_name,
 								apiutil.MakeDeclarationString( params ))
 			print "{"
-			print "\t__asm jmp [glim.%s]" % alias
-			for (name, type, vecSize) in params:
-				print "\tUNUSED( %s );" % name
+			if return_type == "void":
+				print "\t glim.%s(%s);" % (alias,apiutil.MakeCallString(params))
+			else:
+				print "\t return glim.%s(%s);" % (alias,apiutil.MakeCallString(params))
 			print "}"
 			print ""
 
@@ -82,7 +82,7 @@ def GenerateEntrypoints():
 		if "stub" in apiutil.ChromiumProps(func_name):
 			return_type = apiutil.ReturnType(func_name)
 			params = apiutil.Parameters(func_name)
-			print "NAKED %s cr_gl%s( %s )" % (return_type, func_name, apiutil.MakeDeclarationString(params))
+			print "extern %s APIENTRY cr_gl%s( %s )" % (return_type, func_name, apiutil.MakeDeclarationString(params))
 			print "{"
 			if return_type != "void":
 				print "return (%s) 0" % return_type

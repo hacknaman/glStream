@@ -699,6 +699,7 @@ stubInit(void)
 	static int stub_initialized = 0;
 	if (stub_initialized)
 		return;
+	stubInitNativeDispatch();
 	stub_initialized = 1;
 	
 	stubInitVars();
@@ -787,7 +788,7 @@ stubInit(void)
 	glim.GetChromiumParametervCR = stub_GetChromiumParametervCR;
 
 	/* Load pointers to native OpenGL functions into stub.nativeDispatch */
-	stubInitNativeDispatch();
+	//stubInitNativeDispatch();
 }
 
 
