@@ -98,7 +98,7 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUOptionsPtr *options, int *flags )
 {
 	*name = "readback";
-	*super = "render";
+	*super = "clientrender";
 	*init = readbackSPUInit;
 	*self = readbackSPUSelfDispatch;
 	*cleanup = readbackSPUCleanup;

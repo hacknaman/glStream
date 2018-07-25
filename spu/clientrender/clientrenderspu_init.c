@@ -66,6 +66,7 @@ static SPUFunctions *
 renderSPUInit( int id, SPU *child, SPU *self,
                unsigned int context_id, unsigned int num_contexts )
 {
+
 	int numFuncs, numSpecial;
 	GLint defaultWin, defaultCtx;
 	WindowInfo *windowInfo;
@@ -90,16 +91,16 @@ renderSPUInit( int id, SPU *child, SPU *self,
 
 
 	/* Get our special functions. */
-	//numSpecial = renderspuCreateFunctions( _cr_render_table );
+	numSpecial = renderspuCreateFunctions( _cr_render_table );
 
 	/* Get the OpenGL functions. */
-	numFuncs = crLoadOpenGL( &render_spu.ws, _cr_render_table  );
+	numFuncs = crLoadOpenGL( &render_spu.ws, _cr_render_table + numSpecial );
 	if (numFuncs == 0) {
 		crError("The render SPU was unable to load the native OpenGL library");
 		return NULL;
 	}
 
-	//numFuncs += numSpecial;
+	numFuncs += numSpecial;
 
 #ifdef GLX
 	if (!render_spu.use_glxchoosevisual) {
@@ -166,7 +167,7 @@ renderSPUInit( int id, SPU *child, SPU *self,
 	 * Grrr, NVIDIA driver uses EXT for GetExtensionsStringEXT,
 	 * but ARB for others. Need furthur testing here....
 	 */
-	/*render_spu.ws.wglGetExtensionsStringEXT = 
+	render_spu.ws.wglGetExtensionsStringEXT = 
 		(wglGetExtensionsStringEXTFunc_t) 
 		render_spu.ws.wglGetProcAddress( "wglGetExtensionsStringEXT" );
 	render_spu.ws.wglChoosePixelFormatEXT = 
@@ -183,7 +184,7 @@ renderSPUInit( int id, SPU *child, SPU *self,
 	}
 	if (render_spu.ws.wglChoosePixelFormatEXT) {
 		crDebug("WGL - found wglChoosePixelFormatEXT\n");
-	}*/
+	}
 #endif
 
 	render_spu.barrierHash = crAllocHashtable();

@@ -12,7 +12,7 @@ Open cmd in your Project directory write the following command
 ```
 mkdir x86
 cd x86
-cmake -G "Visual Studio 9 2008" -DCMAKE_INSTALL_PREFIX=(current_directory_paths) ..
+cmake -G "Visual Studio 9 2008" -DCMAKE_INSTALL_PREFIX=(project_directory_paths) ..
 cr.sln
 ```
 
