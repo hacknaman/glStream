@@ -57,6 +57,8 @@ int WINAPI wglChoosePixelFormat_prox( HDC hdc, CONST PIXELFORMATDESCRIPTOR *pfd 
 
 	stubInit();
 
+	return stub.wsInterface.wglChoosePixelFormat( hdc, pfd );
+
 	/* 
 	 * NOTE!!!
 	 * Here we're telling the renderspu not to use the GDI
@@ -145,6 +147,8 @@ int WINAPI wglChoosePixelFormat_prox( HDC hdc, CONST PIXELFORMATDESCRIPTOR *pfd 
 BOOL WINAPI wglSetPixelFormat_prox( HDC hdc, int pixelFormat, 
 		CONST PIXELFORMATDESCRIPTOR *pdf )
 {
+	return stub.wsInterface.wglSetPixelFormat( hdc, pixelFormat, pdf  );
+
 	if ( pixelFormat != 1 ) {
 		crError( "wglSetPixelFormat: pixelFormat=%d?\n", pixelFormat );
 	}
@@ -166,7 +170,8 @@ BOOL WINAPI wglMakeCurrent_prox( HDC hdc, HGLRC hglrc )
 	context = (ContextInfo *) crHashtableSearch(stub.contextTable, (unsigned long) hglrc);
 	window = stubGetWindowInfo(hdc);
 
-	return stubMakeCurrent( window, context );
+	stubMakeCurrent( window, context );
+	return stub.wsInterface.wglMakeCurrent( hdc, hglrc);
 }
 
 HGLRC WINAPI wglGetCurrentContext_prox( void )
@@ -185,12 +190,15 @@ HDC WINAPI wglGetCurrentDC_prox( void )
 int WINAPI wglGetPixelFormat_prox( HDC hdc )
 {
 	/* this is what we call our generic pixelformat, regardless of the HDC */
-	return 1;
+	//return stub.wsInterface.wglGetPixelFormatAttribivEXT( hdc);
+	return 7;
 }
 
 int WINAPI wglDescribePixelFormat_prox( HDC hdc, int pixelFormat, UINT nBytes,
 		LPPIXELFORMATDESCRIPTOR pfd )
 {
+	return stub.wsInterface.wglDescribePixelFormat( hdc, pixelFormat, nBytes, pfd  );
+
 /*	if ( pixelFormat != 1 ) { 
  *		crError( "wglDescribePixelFormat: pixelFormat=%d?\n", pixelFormat ); 
  *		return 0; 
@@ -240,6 +248,7 @@ int WINAPI wglDescribePixelFormat_prox( HDC hdc, int pixelFormat, UINT nBytes,
 	return 1;
 }
 
+
 BOOL WINAPI wglShareLists_prox( HGLRC hglrc1, HGLRC hglrc2 )
 {
 	crWarning( "wglShareLists: unsupported" );
@@ -251,6 +260,7 @@ HGLRC WINAPI wglCreateContext_prox( HDC hdc )
 {
 	char dpyName[MAX_DPY_NAME];
 	ContextInfo *context;
+	int RC ;
 
 	stubInit();
 
@@ -260,7 +270,9 @@ HGLRC WINAPI wglCreateContext_prox( HDC hdc )
 	if (stub.haveNativeOpenGL)
 		desiredVisual |= ComputeVisBits( hdc );
 
-	context = stubNewContext(dpyName, desiredVisual, UNDECIDED, 0);
+	RC = (int)stub.wsInterface.wglCreateContext( hdc );
+
+	context = stubNewContext(dpyName, desiredVisual, UNDECIDED, 0, RC);
 	if (!context)
 		return 0;
 
@@ -272,7 +284,8 @@ wglSwapBuffers_prox( HDC hdc )
 {
 	const WindowInfo *window = stubGetWindowInfo(hdc);
 	stubSwapBuffers( window, 0 );
-	return 1;
+	//return 1;
+	return stub.wsInterface.wglSwapBuffers( hdc );
 }
 
 BOOL WINAPI wglCopyContext_prox( HGLRC src, HGLRC dst, UINT mask )
