@@ -117,7 +117,6 @@ void		KeyboardFunc(unsigned char key, int x, int y)
 
 int	main(int argc, char **argv)
 {
-  system("pause");
   /* Creation of the window */
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
