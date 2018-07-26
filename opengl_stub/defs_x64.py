@@ -402,8 +402,10 @@ keys = apiutil.GetDispatchedFunctions("../glapi_parser/APIspec.txt")
 for func_name in keys:
 	if func_name in noexport_special:
 		continue
+	if apiutil.Category(func_name) == "Chromium":
+			continue
 	try:
-		print "gl%s@%d = cr_gl%s" % (func_name,stack_sizes[func_name],func_name)
+		print "gl%s = cr_gl%s" % (func_name,func_name)
 	except KeyError:
 		pass
 
@@ -435,7 +437,7 @@ for func_name in ( "wglChoosePixelFormat",
   		   "wglGetPixelFormatAttribivEXT",
   		   "wglGetPixelFormatAttribfvEXT",
   		   "wglGetExtensionsStringEXT" ):
-    print "%s@%d = %s_prox" % (func_name,stack_sizes[func_name],func_name)
+    print "%s = %s_prox" % (func_name,func_name)
 
 print """crCreateContext
 crMakeCurrent

@@ -27,12 +27,24 @@ elseif(APPLE)
 endif()
 find_package(OpenGL REQUIRED)
 
-generate_with_python(${EXPORTS}.py ${EXPORTS}.c ${APIFILES} entrypoints.py)
+if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+	generate_with_python(${EXPORTS}_x64.py ${EXPORTS}.c ${APIFILES} entrypoints.py)
+else()
+	generate_with_python(${EXPORTS}.py ${EXPORTS}.c ${APIFILES} entrypoints.py)
+endif()
+
+
 list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${EXPORTS}.c)
 
 generate_with_python(tsfuncs.py tsfuncs.c ${APIFILES})
 generate_with_python(NULLfuncs.py NULLfuncs.c ${APIFILES})
-generate_with_python(defs.py opengl.def ${APIFILES})
+
+if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+	generate_with_python(defs_x64.py opengl.def ${APIFILES})
+else()
+	generate_with_python(defs.py opengl.def ${APIFILES})
+endif()
+
 
 if(WIN32)
 	generate_with_python(windows_getprocaddress.py getprocaddress.c ${APIFILES})
