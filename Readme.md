@@ -5,21 +5,20 @@ and the original project can be found here [Sourceforge](http://chromium.sourcef
 
 ## Getting Started
 
-The project only support x86 arch.
-Install freeGLUT and libJPEG-turbo and add them to your system path
-Open cmd in your Project directory write the following command
+The project supports Windows x64 and x86 architecture.
+Install Cmake, [freeGLUT](https://www.transmissionzero.co.uk/files/software/development/GLUT/freeglut-MSVC.zip) and [libJPEG-turbo](https://excellmedia.dl.sourceforge.net/project/libjpeg-turbo/1.3.1/libjpeg-turbo-1.3.1-vc64.exe) and add them to your system path.
+Open cmd in your Project directory write the following command to generate solution
 
 ```
-mkdir x86
-cd x86
-cmake -G "Visual Studio 9 2008" -DCMAKE_INSTALL_PREFIX=.. ..
+mkdir x64
+cd x64
+cmake -G "Visual Studio 9 2008 Win64" -DCMAKE_INSTALL_PREFIX=.. ..
 cr.sln
 ```
 
-Then Build the entire soluion
+Then Build the soluion
 
-
-### Prerequisites
+### Prerequisites [TODO]
 
 What things you need to install the software and how to install them
 
