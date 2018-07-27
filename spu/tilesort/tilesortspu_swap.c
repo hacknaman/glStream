@@ -52,6 +52,12 @@ void TILESORTSPU_APIENTRY tilesortspu_SwapBuffers( GLint window, GLint flags )
 			 */
 #ifdef WINDOWS
 			/** XXX \todo is there a Window equivalent here??? */
+			RECT rect = { 0, 0, winInfo->lastWidth, winInfo->lastHeight };
+			InvalidateRect( winInfo->client_hwnd, &rect, 1 );
+			UpdateWindow(winInfo->client_hwnd);
+
+			// Need to check if this works
+			//RedrawWindow(winInfo->client_hwn, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW);
 #elif defined(Darwin)
 			/** XXX \todo is there a Darwin equivalent here??? */
 #else
