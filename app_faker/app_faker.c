@@ -80,6 +80,8 @@ static void appExit(void);
 #define DEFAULT_TMP_DIR "C:\\"
 #define OPENGL_CLIENT_LIB "crfaker.dll"
 
+char applicationPath[100000];
+
 static const char *libgl_names[] = {
 	"opengl32.dll"
 };
@@ -299,7 +301,7 @@ static void copy_file( const char *dst_filename, const char *src_filename )
 {
 	debug( "copying \"%s\" -> \"%s\"\n", src_filename, dst_filename );
 
-	if ( !CopyFile( src_filename, dst_filename, 1 /* fail if exists */ ) )
+	if ( !CopyFile( src_filename, dst_filename, 0 /* fail if exists */ ) )
 		crError( "copy \"%s\" -> \"%s\"", src_filename, dst_filename );
 }
 
@@ -309,67 +311,113 @@ static void do_it( char *argv[] )
 	char response[8096];
 	int i, status;
 
-	if ( cr_lib == NULL ) {
-		debug( "searching for client library \"%s\" on PATH\n",
-				OPENGL_CLIENT_LIB );
-		cr_lib = find_file_on_path( OPENGL_CLIENT_LIB );
-	}
+	if (crMothershipGetFakerParam(mothership_conn, applicationPath, "applicationPath")){
+		crDebug(applicationPath);
+		char appToExecuteWithFullPath[100000];
 
-	if ( cr_lib == NULL ) {
-		if (crMothershipGetFakerParam( mothership_conn, response, "client_dll" ) )
-		{
-			cr_lib = crStrdup( response );
+		crStrcpy(appToExecuteWithFullPath, applicationPath);
+		crStrcat(appToExecuteWithFullPath, "\\");
+		crStrcat(appToExecuteWithFullPath, argv[0]);
+		crStrcat(appToExecuteWithFullPath, ".exe");
+		// copy opengl to that path and start the application
+		if (cr_lib == NULL) {
+			debug("searching for client library \"%s\" on PATH\n",
+				OPENGL_CLIENT_LIB);
+			cr_lib = find_file_on_path(OPENGL_CLIENT_LIB);
 		}
-	}
 
-	if ( cr_lib == NULL ) {
-		crError( "I don't know where to find the client library.  You could "
+		if (cr_lib == NULL) {
+			if (crMothershipGetFakerParam(mothership_conn, response, "client_dll"))
+			{
+				cr_lib = crStrdup(response);
+			}
+		}
+
+		char appWithExe[1024];
+		crStrcpy(appWithExe, argv[0]);
+		crStrcat(appWithExe, ".exe");
+		// copy cr_lib to applicationPath\\opengl32.dll
+
+		crStrcat(applicationPath, "\\opengl32.dll");
+		copy_file(applicationPath, cr_lib);
+
+		status = spawnv(_P_WAIT, appWithExe, argv);
+
+		if (status == -1)
+			crError("Couldn't spawn \"%s\".", appToExecuteWithFullPath);
+		else if (status > 0)
+			crWarning("\"%s\": exited with status=%d\n", appToExecuteWithFullPath, status);
+
+		/*delete_temp_files();
+		delete_temp_dirs();
+*/
+		exit(status ? 1 : 0);
+	}
+	else{
+		if (cr_lib == NULL) {
+			debug("searching for client library \"%s\" on PATH\n",
+				OPENGL_CLIENT_LIB);
+			cr_lib = find_file_on_path(OPENGL_CLIENT_LIB);
+		}
+
+		if (cr_lib == NULL) {
+			if (crMothershipGetFakerParam(mothership_conn, response, "client_dll"))
+			{
+				cr_lib = crStrdup(response);
+			}
+		}
+
+		if (cr_lib == NULL) {
+			crError("I don't know where to find the client library.  You could "
 				"have set CR_FAKER_LIB, but didn't.  You could have used -lib "
 				"on the command line, but didn't.  I searched the PATH for "
 				"\"%s\", but couldn't find it.  I even asked the configuration "
-				"manager!\n", OPENGL_CLIENT_LIB );
-	}
+				"manager!\n", OPENGL_CLIENT_LIB);
+		}
 
-	debug( "cr_lib=\"%s\"\n", cr_lib );
+		debug("cr_lib=\"%s\"\n", cr_lib);
 
-	make_tmpdir( tmpdir );
-	add_dir_to_temp_list( tmpdir );
+		make_tmpdir(tmpdir);
+		add_dir_to_temp_list(tmpdir);
 
-	argv[0] = find_executable_on_path( argv[0], &tail );
-	crStrcpy( argv0, tmpdir );
+		argv[0] = find_executable_on_path(argv[0], &tail);
+		crStrcpy(argv0, tmpdir);
 #ifdef WINDOWS
-	crStrcat( argv0, "\\" );
+		crStrcat(argv0, "\\");
 #else
-	crStrcat( argv0, "/" );
+		crStrcat(argv0, "/");
 #endif
-	crStrcat( argv0, tail );
+		crStrcat(argv0, tail);
 
-	copy_file( argv0, argv[0] );
+		copy_file(argv0, argv[0]);
 
-	argv[0] = argv0;
+		argv[0] = argv0;
 
-	add_file_to_temp_list( argv0 );
+		add_file_to_temp_list(argv0);
 
-	for ( i = 0; i < sizeof(libgl_names)/sizeof(libgl_names[0]); i++ ) {
-		char name[1024];
-		crStrcpy( name, tmpdir );
-		crStrcat( name, "\\" );
-		crStrcat( name, libgl_names[i] );
-		copy_file( name, cr_lib );
-		add_file_to_temp_list( name );
+		for (i = 0; i < sizeof(libgl_names) / sizeof(libgl_names[0]); i++) {
+			char name[1024];
+			crStrcpy(name, tmpdir);
+			crStrcat(name, "\\");
+			crStrcat(name, libgl_names[i]);
+			copy_file(name, cr_lib);
+			add_file_to_temp_list(name);
+		}
+
+		status = spawnv(_P_WAIT, argv[0], argv);
+
+		if (status == -1)
+			crError("Couldn't spawn \"%s\".", argv[0]);
+		else if (status > 0)
+			crWarning("\"%s\": exited with status=%d\n", argv[0], status);
+
+		delete_temp_files();
+		delete_temp_dirs();
+
+		exit(status ? 1 : 0);
 	}
 
-	status = spawnv( _P_WAIT, argv[0], argv );
-
-	if ( status == -1 )
-		crError( "Couldn't spawn \"%s\".", argv[0] );
-	else if ( status > 0 )
-		crWarning( "\"%s\": exited with status=%d\n", argv[0], status );
-
-	delete_temp_files( );
-	delete_temp_dirs( );
-
-	exit( status ? 1 : 0 );
+	
 }
 
 #else /* _WIN32 */
