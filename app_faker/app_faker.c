@@ -341,7 +341,7 @@ static void do_it( char *argv[] )
 		crStrcat(applicationPath, "\\opengl32.dll");
 		copy_file(applicationPath, cr_lib);
 
-		status = spawnv(_P_WAIT, appWithExe, argv);
+		status = spawnv(_P_WAIT, appToExecuteWithFullPath, argv);
 
 		if (status == -1)
 			crError("Couldn't spawn \"%s\".", appToExecuteWithFullPath);
