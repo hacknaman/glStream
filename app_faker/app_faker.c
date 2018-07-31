@@ -333,9 +333,6 @@ static void do_it( char *argv[] )
 			}
 		}
 
-		char appWithExe[1024];
-		crStrcpy(appWithExe, argv[0]);
-		crStrcat(appWithExe, ".exe");
 		// copy cr_lib to applicationPath\\opengl32.dll
 
 		crStrcat(applicationPath, "\\opengl32.dll");
@@ -348,9 +345,9 @@ static void do_it( char *argv[] )
 		else if (status > 0)
 			crWarning("\"%s\": exited with status=%d\n", appToExecuteWithFullPath, status);
 
-		/*delete_temp_files();
-		delete_temp_dirs();
-*/
+        if (!DeleteFile(applicationPath)){
+            printf("file not deleted");
+        }
 		exit(status ? 1 : 0);
 	}
 	else{
