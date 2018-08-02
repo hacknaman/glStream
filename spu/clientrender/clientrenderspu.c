@@ -568,7 +568,7 @@ void RENDER_APIENTRY renderspuSwapBuffers( GLint window, GLint flags )
 	if (render_spu.swap_master_url)
 		DoSync();
 
-	renderspu_SystemSwapBuffers( w, flags );
+	render_spu.ws.wglSwapBuffers(w->nativeWindow);
 }
 
 
@@ -851,7 +851,8 @@ renderspuGetChromiumParametervCR(GLenum target, GLuint index, GLenum type,
 			CRASSERT(type == GL_INT);
 			CRASSERT(count == 2);
 			CRASSERT(values);
-			size[0] = size[1] = 0;  /* default */
+			// Since read back SPU expect a non zero window size
+			size[0] = size[1] = 500;  /* default */
 			window = (WindowInfo *) crHashtableSearch(render_spu.windowTable, index);
 			if (window)
 			{
@@ -960,29 +961,7 @@ renderspuGetString(GLenum pname)
 
 	if (pname == GL_EXTENSIONS)
 	{
-		const char *nativeExt;
-		char *crExt, *s1, *s2;
-
-		if (!render_spu.ws.glGetString)
-			return NULL;
-
-		nativeExt = (const char *) render_spu.ws.glGetString(GL_EXTENSIONS);
-		if (!nativeExt) {
-			/* maybe called w/out current context. */
-			return NULL;
-		}
-
-		crExt = crStrjoin3(crExtensions, " ", crAppOnlyExtensions);
-		s1 = crStrIntersect(nativeExt, crExt);
-		remove_trailing_space(s1);
-		s2 = crStrjoin3(s1, " ", crChromiumExtensions);
-		remove_trailing_space(s2);
-		crFree(crExt);
-		crFree(s1);
-		if (context->extensionString)
-			crFree(context->extensionString);
-		context->extensionString = s2;
-		return (const GLubyte *) s2;
+		return render_spu.ws.glGetString(GL_EXTENSIONS);
 	}
 	else if (pname == GL_VENDOR)
 		return (const GLubyte *) CR_VENDOR;
@@ -1009,15 +988,6 @@ int
 renderspuCreateFunctions(SPUNamedFunctionTable table[])
 {
 	int i = 0;
-	FILLIN( "SwapBuffers", renderspuSwapBuffers );
-	FILLIN( "CreateContext", renderspuCreateContext );
-	FILLIN( "DestroyContext", renderspuDestroyContext );
-	FILLIN( "MakeCurrent", renderspuMakeCurrent );
-	FILLIN( "WindowCreate", renderspuWindowCreate );
-	FILLIN( "WindowDestroy", renderspuWindowDestroy );
-	FILLIN( "WindowSize", renderspuWindowSize );
-	FILLIN( "WindowPosition", renderspuWindowPosition );
-	FILLIN( "WindowShow", renderspuWindowShow );
 	FILLIN( "BarrierCreateCR", renderspuBarrierCreateCR );
 	FILLIN( "BarrierDestroyCR", renderspuBarrierDestroyCR );
 	FILLIN( "BarrierExecCR", renderspuBarrierExecCR );
