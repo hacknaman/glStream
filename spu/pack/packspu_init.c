@@ -54,6 +54,9 @@ packSPUInit( int id, SPU *child, SPU *self,
 	packspuCreateFunctions();
 	crStateInit();
 
+	crSPUInitDispatchTable(&(pack_spu.super));
+	crSPUCopyDispatchTable(&(pack_spu.super), &(self->superSPU->dispatch_table));
+
 	return &pack_functions;
 }
 
@@ -76,12 +79,12 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUOptionsPtr *options, int *flags )
 {
 	*name = "pack";
-	*super = NULL;
+	*super = "passthrough";
 	*init = packSPUInit;
 	*self = packSPUSelfDispatch;
 	*cleanup = packSPUCleanup;
 	*options = packSPUOptions;
-	*flags = (SPU_HAS_PACKER|SPU_IS_TERMINAL|SPU_MAX_SERVERS_ONE);
+	*flags = (SPU_HAS_PACKER | SPU_NOT_TERMINAL | SPU_MAX_SERVERS_ONE);
 
 	return 1;
 }
