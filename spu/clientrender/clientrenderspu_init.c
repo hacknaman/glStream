@@ -109,8 +109,8 @@ renderSPUInit( int id, SPU *child, SPU *self,
 	}
 #endif
 
-	render_spu.window_id = 0;
-	render_spu.context_id = 0;
+	render_spu.window_id = 1; // server's render window is 1
+	render_spu.context_id = 3000; // because of the magic offset in packspu_context.c
 	render_spu.contextTable = crAllocHashtable();
 	render_spu.windowTable = crAllocHashtable();
 
@@ -241,7 +241,7 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUSelfDispatchFuncPtr *self, SPUCleanupFuncPtr *cleanup,
 	     SPUOptionsPtr *options, int *flags )
 {
-	*name = "render";
+	*name = "clientrender";
 	*super = NULL;
 	*init = renderSPUInit;
 	*self = renderSPUSelfDispatch;

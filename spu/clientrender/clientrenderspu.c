@@ -129,148 +129,8 @@ renderspuFindVisual(const char *displayName, GLbitfield visAttribs)
 	}
 }
 
-/*
- * Context functions
- */
-
 GLint RENDER_APIENTRY
-renderspuCreateContext(const char *dpyName, GLint visBits, GLint shareCtx)
-{
-	ContextInfo *context, *sharedContext = NULL;
-	VisualInfo *visual;
-
-	if (shareCtx > 0) {
-		sharedContext
-			= (ContextInfo *) crHashtableSearch(render_spu.contextTable, shareCtx);
-	}
-
-	if (!dpyName || crStrlen(render_spu.display_string)>0)
-		dpyName = render_spu.display_string;
-
-	visual = renderspuFindVisual(dpyName, visBits);
-    if (!visual){
-        crDebug("Visual is not valid");
-        return -1;
-    }
-	context = (ContextInfo *) crCalloc(sizeof(ContextInfo));
-    if (!context){
-        crDebug("Context is not valid");
-        return -1;
-    }
-    else{
-        crDebug("Context is valid");
-    }
-	context->id = render_spu.context_id;
-	context->shared = sharedContext;
-	if (!renderspu_SystemCreateContext(visual, context, sharedContext))
-		return -1;
-
-	crHashtableAdd(render_spu.contextTable, render_spu.context_id, context);
-	render_spu.context_id++;
-
-	/*
-	crDebug("Render SPU: CreateContext(%s, 0x%x) returning %d",
-					dpyName, visBits, context->id);
-	*/
-
-	return context->id;
-}
-
-
-static void RENDER_APIENTRY
-renderspuDestroyContext( GLint ctx )
-{
-	ContextInfo *context;
-
-	CRASSERT(ctx);
-
-	context = (ContextInfo *) crHashtableSearch(render_spu.contextTable, ctx);
-	CRASSERT(context);
-	renderspu_SystemDestroyContext( context );
-	if (context->extensionString) {
-		crFree(context->extensionString);
-		context->extensionString = NULL;
-	}
-	crHashtableDelete(render_spu.contextTable, ctx, crFree);
-}
-
-
-void RENDER_APIENTRY
-renderspuMakeCurrent(GLint crWindow, GLint nativeWindow, GLint ctx)
-{
-	WindowInfo *window;
-	ContextInfo *context;
-
-	/*
-	crDebug("%s win=%d native=0x%x ctx=%d", __FUNCTION__, crWindow, (int) nativeWindow, ctx);
-	*/
-
-	window = (WindowInfo *) crHashtableSearch(render_spu.windowTable, crWindow);
-	context = (ContextInfo *) crHashtableSearch(render_spu.contextTable, ctx);
-
-	if (window && context)
-	{
-#ifdef CHROMIUM_THREADSAFE
-		crSetTSD(&_RenderTSD, context);
-#else
-		render_spu.currentContext = context;
-#endif
-		context->currentWindow = window;
-		if (!window)
-		{
-			crDebug("Render SPU: MakeCurrent invalid window id: %d", crWindow);
-			return;
-		}
-		if (!context)
-		{
-			crDebug("Render SPU: MakeCurrent invalid context id: %d", ctx);
-			return;
-		}
-
-		renderspu_SystemMakeCurrent( window, nativeWindow, context );
-		if (!context->everCurrent) {
-			/* print OpenGL info */
-			const char *extString = (const char *) render_spu.ws.glGetString( GL_EXTENSIONS );
-			/*
-			crDebug( "Render SPU: GL_EXTENSIONS:   %s", render_spu.ws.glGetString( GL_EXTENSIONS ) );
-			*/
-			crDebug( "Render SPU: GL_VENDOR:   %s", render_spu.ws.glGetString( GL_VENDOR ) );
-			crDebug( "Render SPU: GL_RENDERER: %s", render_spu.ws.glGetString( GL_RENDERER ) );
-			crDebug( "Render SPU: GL_VERSION:  %s", render_spu.ws.glGetString( GL_VERSION ) );
-			if (crStrstr(extString, "GL_ARB_window_pos"))
-				context->haveWindowPosARB = GL_TRUE;
-			else
-				context->haveWindowPosARB = GL_FALSE;
-			context->everCurrent = GL_TRUE;
-		}
-		if (crWindow == 0 && window->mapPending &&
-				!render_spu.render_to_app_window && !render_spu.render_to_crut_window) {
-			/* Window[0] is special, it's the default window and normally hidden.
-			 * If the mapPending flag is set, then we should now make the window
-			 * visible.
-			 */
-			renderspu_SystemShowWindow( window, GL_TRUE );
-			window->mapPending = GL_FALSE;
-		}
-		window->everCurrent = GL_TRUE;
-	}
-	else
-	{
-#ifdef CHROMIUM_THREADSAFE
-		crSetTSD(&_RenderTSD, NULL);
-#else
-		render_spu.currentContext = NULL;
-#endif
-	}
-}
-
-
-/*
- * Window functions
- */
-
-GLint RENDER_APIENTRY
-renderspuWindowCreate( const char *dpyName, GLint visBits )
+renderspuWindowCreate(const char *dpyName, GLint visBits)
 {
 	WindowInfo *window;
 	VisualInfo *visual;
@@ -279,18 +139,18 @@ renderspuWindowCreate( const char *dpyName, GLint visBits )
 	if (!dpyName || crStrlen(render_spu.display_string) > 0)
 		dpyName = render_spu.display_string;
 
-	visual = renderspuFindVisual( dpyName, visBits );
+	visual = renderspuFindVisual(dpyName, visBits);
 	if (!visual)
 	{
-		crWarning( "Render SPU: Couldn't create a window, renderspuFindVisual returned NULL" );
+		crWarning("Render SPU: Couldn't create a window, renderspuFindVisual returned NULL");
 		return -1;
 	}
 
 	/* Allocate WindowInfo */
-	window = (WindowInfo *) crCalloc(sizeof(WindowInfo));
+	window = (WindowInfo *)crCalloc(sizeof(WindowInfo));
 	if (!window)
 	{
-		crWarning( "Render SPU: Couldn't create a window" );
+		crWarning("Render SPU: Couldn't create a window");
 		return -1;
 	}
 
@@ -300,7 +160,7 @@ renderspuWindowCreate( const char *dpyName, GLint visBits )
 
 	window->x = render_spu.defaultX;
 	window->y = render_spu.defaultY;
-	window->width  = render_spu.defaultWidth;
+	window->width = render_spu.defaultWidth;
 	window->height = render_spu.defaultHeight;
 
 	if ((render_spu.render_to_app_window || render_spu.render_to_crut_window) && !crGetenv("CRNEWSERVER"))
@@ -326,249 +186,50 @@ renderspuWindowCreate( const char *dpyName, GLint visBits )
 		else {
 			window->title = crStrdup(render_spu.window_title);
 		}
-	}
-
-	/*
-	crDebug("Render SPU: Creating window (visBits=0x%x, id=%d)", visBits, window->id);
-	*/
-	/* Have GLX/WGL/AGL create the window */
-	if (!renderspu_SystemCreateWindow( visual, showIt, window ))
-	{
-		crFree(window);
-		crWarning( "Render SPU: Couldn't create a window, renderspu_SystemCreateWindow failed" );
-		return -1;
-	}
-
-	CRASSERT(window->visual == visual);
+	}	
 
 	return window->id;
 }
 
-
-static void
-RENDER_APIENTRY renderspuWindowDestroy( GLint win )
+GLint RENDER_APIENTRY
+renderspuCreateContext(const char *dpyName, GLint visBits, GLint shareCtx)
 {
-	WindowInfo *window;
-	CRASSERT(win >= 0);
-	window = (WindowInfo *) crHashtableSearch(render_spu.windowTable, win);
-	if (window) {
-		renderspu_SystemDestroyWindow( window );
-		/* remove window info from hash table, and free it */
-		crHashtableDelete(render_spu.windowTable, win, crFree);
-	}
-	else {
-		crDebug("Render SPU: Attempt to destroy invalid window (%d)", win);
-	}
-}
+	ContextInfo *context, *sharedContext = NULL;
+	VisualInfo *visual;
 
-
-static void RENDER_APIENTRY
-renderspuWindowSize( GLint win, GLint w, GLint h )
-{
-	WindowInfo *window;
-	CRASSERT(win >= 0);
-	CRASSERT(w > 0);
-	CRASSERT(h > 0);
-    //w = 262;
-    //h = 285;
-	window = (WindowInfo *) crHashtableSearch(render_spu.windowTable, win);
-	if (window) {
-		renderspu_SystemWindowSize( window, w, h );
-	}
-	else {
-		crDebug("Render SPU: Attempt to resize invalid window (%d)", win);
-	}
-}
-
-
-static void RENDER_APIENTRY
-renderspuWindowPosition( GLint win, GLint x, GLint y )
-{
-	if (!render_spu.ignore_window_moves) {
-		WindowInfo *window;
-		CRASSERT(win >= 0);
-		window = (WindowInfo *) crHashtableSearch(render_spu.windowTable, win);
-		if (window) {
-			renderspu_SystemWindowPosition( window, x, y );
-			window->x = x;
-			window->y = y;
-		}
-		else {
-			crDebug("Render SPU: Attempt to move invalid window (%d)", win);
-		}
-	}
-}
-
-
-static void RENDER_APIENTRY
-renderspuWindowShow( GLint win, GLint flag )
-{
-	WindowInfo *window;
-	CRASSERT(win >= 0);
-	window = (WindowInfo *) crHashtableSearch(render_spu.windowTable, win);
-	if (window) {
-		if (window->nativeWindow) {
-			/* We're rendering back to the native app window instead of the
-			 * new window which we (the Render SPU) created earlier.
-			 * So, we never want to show the Render SPU's window.
-			 */
-			flag = 0;
-		}
-		renderspu_SystemShowWindow( window, (GLboolean) flag );
-	}
-	else {
-		crDebug("Render SPU: Attempt to hide/show invalid window (%d)", win);
-	}
-}
-
-
-/*
- * Set the current raster position to the given window coordinate.
- */
-static void
-SetRasterPos( GLint winX, GLint winY )
-{
-	GLfloat fx, fy;
-
-	/* Push current matrix mode and viewport attributes */
-	render_spu.self.PushAttrib( GL_TRANSFORM_BIT | GL_VIEWPORT_BIT );
-
-	/* Setup projection parameters */
-	render_spu.self.MatrixMode( GL_PROJECTION );
-	render_spu.self.PushMatrix();
-	render_spu.self.LoadIdentity();
-	render_spu.self.MatrixMode( GL_MODELVIEW );
-	render_spu.self.PushMatrix();
-	render_spu.self.LoadIdentity();
-
-	render_spu.self.Viewport( winX - 1, winY - 1, 2, 2 );
-
-	/* set the raster (window) position */
-	/* huh ? */
-	fx = (GLfloat) (winX - (int) winX);
-	fy = (GLfloat) (winY - (int) winY);
-	render_spu.self.RasterPos4f( fx, fy, 0.0, 1.0 );
-
-	/* restore matrices, viewport and matrix mode */
-	render_spu.self.PopMatrix();
-	render_spu.self.MatrixMode( GL_PROJECTION );
-	render_spu.self.PopMatrix();
-
-	render_spu.self.PopAttrib();
-}
-
-
-/*
- * Draw the mouse pointer bitmap at (x,y) in window coords.
- */
-static void DrawCursor( GLint x, GLint y )
-{
-#define POINTER_WIDTH   32
-#define POINTER_HEIGHT  32
-	/* Somebody artistic could probably do better here */
-	static const char *pointerImage[POINTER_HEIGHT] =
-	{
-		"XX..............................",
-		"XXXX............................",
-		".XXXXX..........................",
-		".XXXXXXX........................",
-		"..XXXXXXXX......................",
-		"..XXXXXXXXXX....................",
-		"...XXXXXXXXXXX..................",
-		"...XXXXXXXXXXXXX................",
-		"....XXXXXXXXXXXXXX..............",
-		"....XXXXXXXXXXXXXXXX............",
-		".....XXXXXXXXXXXXXXXXX..........",
-		".....XXXXXXXXXXXXXXXXXXX........",
-		"......XXXXXXXXXXXXXXXXXXXX......",
-		"......XXXXXXXXXXXXXXXXXXXXXX....",
-		".......XXXXXXXXXXXXXXXXXXXXXXX..",
-		".......XXXXXXXXXXXXXXXXXXXXXXXX.",
-		"........XXXXXXXXXXXXX...........",
-		"........XXXXXXXX.XXXXX..........",
-		".........XXXXXX...XXXXX.........",
-		".........XXXXX.....XXXXX........",
-		"..........XXX.......XXXXX.......",
-		"..........XX.........XXXXX......",
-		"......................XXXXX.....",
-		".......................XXXXX....",
-		"........................XXX.....",
-		".........................X......",
-		"................................",
-		"................................",
-		"................................",
-		"................................",
-		"................................",
-		"................................"
-
-	};
-	static GLubyte pointerBitmap[POINTER_HEIGHT][POINTER_WIDTH / 8];
-	static GLboolean firstCall = GL_TRUE;
-	GLboolean lighting, depthTest, scissorTest;
-
-	if (firstCall) {
-		/* Convert pointerImage into pointerBitmap */
-		GLint i, j;
-		for (i = 0; i < POINTER_HEIGHT; i++) {
-			for (j = 0; j < POINTER_WIDTH; j++) {
-				if (pointerImage[POINTER_HEIGHT - i - 1][j] == 'X') {
-					GLubyte bit = 128 >> (j & 0x7);
-					pointerBitmap[i][j / 8] |= bit;
-				}
-			}
-		}
-		firstCall = GL_FALSE;
+	if (shareCtx > 0) {
+		sharedContext
+			= (ContextInfo *)crHashtableSearch(render_spu.contextTable, shareCtx);
 	}
 
-	render_spu.self.GetBooleanv(GL_LIGHTING, &lighting);
-	render_spu.self.GetBooleanv(GL_DEPTH_TEST, &depthTest);
-	render_spu.self.GetBooleanv(GL_SCISSOR_TEST, &scissorTest);
-	render_spu.self.Disable(GL_LIGHTING);
-	render_spu.self.Disable(GL_DEPTH_TEST);
-	render_spu.self.Disable(GL_SCISSOR_TEST);
-	render_spu.self.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	if (!dpyName || crStrlen(render_spu.display_string)>0)
+		dpyName = render_spu.display_string;
 
-	render_spu.self.Color3f(1, 1, 1);
-
-	/* save current raster pos */
-	render_spu.self.PushAttrib(GL_CURRENT_BIT);
-	SetRasterPos(x, y);
-	render_spu.self.Bitmap(POINTER_WIDTH, POINTER_HEIGHT, 1.0, 31.0, 0, 0,
-								(const GLubyte *) pointerBitmap);
-	/* restore current raster pos */
-	render_spu.self.PopAttrib();
-
-	if (lighting)
-	   render_spu.self.Enable(GL_LIGHTING);
-	if (depthTest)
-	   render_spu.self.Enable(GL_DEPTH_TEST);
-	if (scissorTest)
-		render_spu.self.Enable(GL_SCISSOR_TEST);
-}
-
-void RENDER_APIENTRY renderspuSwapBuffers( GLint window, GLint flags )
-{
-	WindowInfo *w = (WindowInfo *) crHashtableSearch(render_spu.windowTable, window);
-
-	if (!w)
-	{
-		crDebug("Render SPU: SwapBuffers invalid window id: %d", window);
-		return;
+	visual = renderspuFindVisual(dpyName, visBits);
+	if (!visual){
+		crDebug("Visual is not valid");
+		return -1;
 	}
-
-	if (flags & CR_SUPPRESS_SWAP_BIT)
-	{
-		render_spu.self.Finish();
-		return;
+	context = (ContextInfo *)crCalloc(sizeof(ContextInfo));
+	if (!context){
+		crDebug("Context is not valid");
+		return -1;
 	}
+	else{
+		crDebug("Context is valid");
+	}
+	context->id = render_spu.context_id;
+	context->shared = sharedContext;
 
-	if (render_spu.drawCursor)
-		DrawCursor( render_spu.cursorX, render_spu.cursorY );
+	crHashtableAdd(render_spu.contextTable, render_spu.context_id, context);
+	render_spu.context_id++;
 
-	if (render_spu.swap_master_url)
-		DoSync();
+	/*
+	crDebug("Render SPU: CreateContext(%s, 0x%x) returning %d",
+	dpyName, visBits, context->id);
+	*/
 
-	render_spu.ws.wglSwapBuffers(w->nativeWindow);
+	return context->id;
 }
 
 
@@ -988,6 +649,8 @@ int
 renderspuCreateFunctions(SPUNamedFunctionTable table[])
 {
 	int i = 0;
+	FILLIN( "WindowCreate", renderspuWindowCreate);
+	FILLIN( "CreateContext", renderspuCreateContext);
 	FILLIN( "BarrierCreateCR", renderspuBarrierCreateCR );
 	FILLIN( "BarrierDestroyCR", renderspuBarrierDestroyCR );
 	FILLIN( "BarrierExecCR", renderspuBarrierExecCR );
