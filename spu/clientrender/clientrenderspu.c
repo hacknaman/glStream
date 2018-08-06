@@ -129,6 +129,109 @@ renderspuFindVisual(const char *displayName, GLbitfield visAttribs)
 	}
 }
 
+GLint RENDER_APIENTRY
+renderspuWindowCreate(const char *dpyName, GLint visBits)
+{
+	WindowInfo *window;
+	VisualInfo *visual;
+	GLboolean showIt;
+
+	if (!dpyName || crStrlen(render_spu.display_string) > 0)
+		dpyName = render_spu.display_string;
+
+	visual = renderspuFindVisual(dpyName, visBits);
+	if (!visual)
+	{
+		crWarning("Render SPU: Couldn't create a window, renderspuFindVisual returned NULL");
+		return -1;
+	}
+
+	/* Allocate WindowInfo */
+	window = (WindowInfo *)crCalloc(sizeof(WindowInfo));
+	if (!window)
+	{
+		crWarning("Render SPU: Couldn't create a window");
+		return -1;
+	}
+
+	crHashtableAdd(render_spu.windowTable, render_spu.window_id, window);
+	window->id = render_spu.window_id;
+	render_spu.window_id++;
+
+	window->x = render_spu.defaultX;
+	window->y = render_spu.defaultY;
+	window->width = render_spu.defaultWidth;
+	window->height = render_spu.defaultHeight;
+
+	if ((render_spu.render_to_app_window || render_spu.render_to_crut_window) && !crGetenv("CRNEWSERVER"))
+		showIt = 0;
+	else
+		showIt = window->id > 0;
+
+	/* Set window->title, replacing %i with the window ID number */
+	{
+		const char *s = crStrstr(render_spu.window_title, "%i");
+		if (s) {
+			int i, j, k;
+			window->title = crAlloc(crStrlen(render_spu.window_title) + 10);
+			for (i = 0; render_spu.window_title[i] != '%'; i++)
+				window->title[i] = render_spu.window_title[i];
+			k = sprintf(window->title + i, "%d", window->id);
+			CRASSERT(k < 10);
+			j = i + k;
+			i = 2; /* skip the %i in s */
+			for (; (window->title[j] = s[i]) != 0; i++, j++)
+				;
+		}
+		else {
+			window->title = crStrdup(render_spu.window_title);
+		}
+	}	
+
+	return window->id;
+}
+
+GLint RENDER_APIENTRY
+renderspuCreateContext(const char *dpyName, GLint visBits, GLint shareCtx)
+{
+	ContextInfo *context, *sharedContext = NULL;
+	VisualInfo *visual;
+
+	if (shareCtx > 0) {
+		sharedContext
+			= (ContextInfo *)crHashtableSearch(render_spu.contextTable, shareCtx);
+	}
+
+	if (!dpyName || crStrlen(render_spu.display_string)>0)
+		dpyName = render_spu.display_string;
+
+	visual = renderspuFindVisual(dpyName, visBits);
+	if (!visual){
+		crDebug("Visual is not valid");
+		return -1;
+	}
+	context = (ContextInfo *)crCalloc(sizeof(ContextInfo));
+	if (!context){
+		crDebug("Context is not valid");
+		return -1;
+	}
+	else{
+		crDebug("Context is valid");
+	}
+	context->id = render_spu.context_id;
+	context->shared = sharedContext;
+
+	crHashtableAdd(render_spu.contextTable, render_spu.context_id, context);
+	render_spu.context_id++;
+
+	/*
+	crDebug("Render SPU: CreateContext(%s, 0x%x) returning %d",
+	dpyName, visBits, context->id);
+	*/
+
+	return context->id;
+}
+
 
 /*
  * Barrier functions
@@ -546,6 +649,8 @@ int
 renderspuCreateFunctions(SPUNamedFunctionTable table[])
 {
 	int i = 0;
+	FILLIN( "WindowCreate", renderspuWindowCreate);
+	FILLIN( "CreateContext", renderspuCreateContext);
 	FILLIN( "BarrierCreateCR", renderspuBarrierCreateCR );
 	FILLIN( "BarrierDestroyCR", renderspuBarrierDestroyCR );
 	FILLIN( "BarrierExecCR", renderspuBarrierExecCR );
