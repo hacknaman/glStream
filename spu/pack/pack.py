@@ -43,34 +43,6 @@ for func_name in keys:
 		apiutil.FindSpecial( "packspu_vertex", func_name )):
 	  pack_specials.append( func_name )
 
-print ''	  
-for index in range(len(keys)):
-	func_name = keys[index]
-	params = apiutil.Parameters(func_name)
-	if apiutil.FindSpecial( "packspu_unimplemented", func_name ):
-		continue
-	if func_name in pack_specials:
-		print 'void PACKSPU_APIENTRY crPassPack%s( %s )' % ( func_name, apiutil.MakeDeclarationString(params) )
-		print '{'
-		print '\tpackspu_%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
-		print '\tpack_spu.super.%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
-		print '}'
-		print ''
-	else:
-		print 'void PACKSPU_APIENTRY crPassPack%s( %s )' % ( func_name, apiutil.MakeDeclarationString(params) )
-		print '{'
-		print '\tif (pack_spu.swap)'
-		print '\t{'
-		print '\t\tcrPack%sSWAP( %s );' % ( func_name, apiutil.MakeCallString( params ) )
-		print '\t}'
-		print '\telse'
-		print '\t{'
-		print '\t\tcrPack%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
-		print '\t}'
-		print '\tpack_spu.super.%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
-		print '}'
-		print ''
-	
 print '\nvoid packspuCreateFunctions( void )'
 print '{'
 for index in range(len(keys)):
@@ -78,8 +50,8 @@ for index in range(len(keys)):
 	if apiutil.FindSpecial( "packspu_unimplemented", func_name ):
 		continue
 	if func_name in pack_specials:
-		print '\t__fillin( %3d, "%s", (SPUGenericFunction) crPassPack%s );' % (index, func_name, func_name )
+		print '\t__fillin( %3d, "%s", (SPUGenericFunction) packspu_%s );' % (index, func_name, func_name )
 	else:
-		print '\t__fillin( %3d, "%s", (SPUGenericFunction) (crPassPack%s) );' % (index, func_name, func_name )
+		print '\t__fillin( %3d, "%s", (SPUGenericFunction) (pack_spu.swap ? crPack%sSWAP : crPack%s) );' % (index, func_name, func_name, func_name )
 print '\t__fillin( %3d, NULL, NULL );' % num_funcs
 print '}'

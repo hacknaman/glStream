@@ -54,9 +54,6 @@ packSPUInit( int id, SPU *child, SPU *self,
 	packspuCreateFunctions();
 	crStateInit();
 
-	crSPUInitDispatchTable(&(pack_spu.super));
-	crSPUCopyDispatchTable(&(pack_spu.super), &(self->superSPU->dispatch_table));
-
 	return &pack_functions;
 }
 
