@@ -28,7 +28,7 @@ const char *printspuListToStr(GLsizei n, GLenum type, const GLvoid *list)
 	    if (buf != NULL) {
 		crFree(buf);
 	    }
-	    buf = crAlloc(bufSize);
+	    buf = (char*)crAlloc(bufSize);
 	    if (buf == NULL) {
 		bufSize = 0;
 		return "[buffer allocation error]";

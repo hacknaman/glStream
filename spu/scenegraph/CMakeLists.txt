@@ -1,16 +1,16 @@
 include_directories(.)
 
 set(SOURCES
-	scenegraphspu_config.c
-	scenegraphspu_enums.c
-	scenegraphspu_get.c
-	scenegraphspu_init.c
-	scenegraphspu_lighting.c
-	scenegraphspu_lists.c
-	scenegraphspu_matrices.c
-	scenegraphspu_misc.c
-	scenegraphspu_tex.c
-	scenegraphspu.c
+	scenegraphspu_config.cpp
+	scenegraphspu_enums.cpp
+	scenegraphspu_get.cpp
+	scenegraphspu_init.cpp
+	scenegraphspu_lighting.cpp
+	scenegraphspu_lists.cpp
+	scenegraphspu_matrices.cpp
+	scenegraphspu_misc.cpp
+	scenegraphspu_tex.cpp
+	scenegraphspu.cpp
 	scenegraph.def
 )
 #generate_with_python(print.py printspu.c printspu_unimplemented_special printspu_special ${APIFILES})

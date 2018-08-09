@@ -9,8 +9,15 @@
 #include "cr_error.h"
 #include "cr_spu.h"
 #include "scenegraphspu.h"
+#include <osg/Node>
+#include <osg/Group>
 
 #define PRINT_UNUSED(x) ((void)x)
+
+
+static void PRINT_APIENTRY appUpdate(osg::Group* group ){
+    printf("Update from app");
+}
 
 static void PRINT_APIENTRY printAccum( GLenum op, GLfloat value )
 {

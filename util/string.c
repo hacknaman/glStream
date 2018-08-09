@@ -145,7 +145,7 @@ void crStrcat( char *dest, const char *src )
 char *crStrjoin( const char *str1, const char *str2 )
 {
 	const int len1 = crStrlen(str1), len2 = crStrlen(str2);
-	char *s = crAlloc(len1 + len2 + 1);
+	char *s = (char*)crAlloc(len1 + len2 + 1);
 	if (s)
 	{
 		crMemcpy( s, str1, len1 );
