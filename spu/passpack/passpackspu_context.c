@@ -182,8 +182,10 @@ void PACKSPU_APIENTRY packspu_DestroyContext( GLint ctx )
 
 	crStateDestroyContext( context->clientState );
 
-	context->clientState = NULL;
-	context->serverCtx = 0;
+	// This is needed if application creates a context and then deletes it
+	// this state is sent to the client while creation but not cleaned when deleted
+	//context->clientState = NULL;
+	//context->serverCtx = 0;
 
 	if (thread->currentContext == context) {
 		thread->currentContext = NULL;
