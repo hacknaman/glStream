@@ -14,7 +14,6 @@
 #include <osg/Node>
 #include <osg/Geometry>
 #include <osg/PositionAttitudeTransform>
-#include <osgViewer/Viewer>
 
 #define PRINT_UNUSED(x) ((void)x)
 
@@ -27,17 +26,18 @@ osg::PositionAttitudeTransform* listPat;
 
 osg::Group* group = new osg::Group;
 
-osgViewer::Viewer* viewer;
 int normalBindMode = -1;
 
 int materialBindMode = -1;
 
 int geometryMode = -1;
 
-extern void appUpdate(osg::Group* group){
-    if (group){
-        printf("Update from app\n");
-        printf("group is Valid, we can work here\n");
+extern void appUpdate(osg::Group* group1){
+    if (group1){
+        if (group && group->getNumChildren() >0){
+            group1->removeChildren(0, group1->getNumChildren()-1);
+            group1->addChild(group);
+        }
     }
 }
 
@@ -3201,12 +3201,12 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     fflush(print_spu.fp);
     print_spu.passthrough.SwapBuffers(window, flags);
     // call frame on Viewer
-    if (group){
+    /*if (group){
         viewer->setSceneData(group);
     }
     if (viewer){
         viewer->frame();
-    }
+    }*/
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
@@ -4174,9 +4174,6 @@ static void PRINT_APIENTRY printViewport(GLint x, GLint y, GLsizei width, GLsize
     print_spu.passthrough.Viewport(x, y, width, height);
 
     // create a osg::Viewer here and set the window size
-
-    viewer = new osgViewer::Viewer();
-    viewer->setUpViewInWindow((int)x, (int)y, (unsigned)width, (unsigned)height);
 }
 
 static GLint PRINT_APIENTRY printWindowCreate(const char * dpyName, GLint visBits)

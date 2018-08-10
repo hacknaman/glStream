@@ -6,6 +6,8 @@
 #include <osg/Geometry>
 #include <osg/Geode>
 #include <osgViewer/Viewer>
+#include <OpenThreads/Thread>
+#include <cr_server.h>
 
 osg::Group* rootGroup;
 osg::Geode* patGroup;
@@ -17,6 +19,44 @@ public:
         // update the group node
         appUpdate(node->asGroup());
     }
+};
+
+class CRServerThread : public OpenThreads::Thread
+{
+public:
+    CRServerThread(osgViewer::Viewer& viewer, double timeToRun, int argc, char** argv)
+        : _viewer(viewer)
+        , _timeToRun(timeToRun)
+        , _done(false)
+        , _argc(argc)
+        , _argv(argv)
+    {
+    }
+
+    void run()
+    {
+        //system("E:\\CHROMIUM64\\bin64\\bin\\crserver.exe");
+        CRServerMain(_argc, _argv);
+    }
+
+    int cancel()
+    {
+        _done = true;
+        return OpenThreads::Thread::cancel();
+    }
+
+    void process()
+    {
+        _process = true;
+    }
+
+protected:
+    osgViewer::Viewer& _viewer;
+    double _timeToRun;
+    bool _done;
+    bool _process;
+    int _argc;
+    char** _argv;
 };
 
 void createGeode(){
@@ -132,7 +172,7 @@ osg::Geode* createPolygon(){
 int main(int argc, char* argv[]){
 
     // start crserver 
-    //CRServerMain( argc, argv );
+    //
     rootGroup = new osg::Group();
     rootGroup->addChild(createPolygon());
     rootGroup->addUpdateCallback(new SceneCallback());
@@ -140,6 +180,9 @@ int main(int argc, char* argv[]){
     viewer->setUpViewInWindow(100, 100, 400, 400);
 
     viewer->setSceneData(rootGroup);
+
+    CRServerThread thread(*viewer, 6.0, argc, argv);
+    thread.start();
     // node PAT
     // update callback  
 
