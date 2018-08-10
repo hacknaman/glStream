@@ -1,6 +1,7 @@
 include_directories(.)
 
 set(SOURCES
+    scenegraphspu.h
 	scenegraphspu_config.cpp
 	scenegraphspu_enums.cpp
 	scenegraphspu_get.cpp

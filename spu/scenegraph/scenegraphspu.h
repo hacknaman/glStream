@@ -12,11 +12,13 @@
 
 #if defined(WINDOWS)
 #define PRINT_APIENTRY __stdcall
+#define OSGEXPORT __declspec(dllexport)
 #else
 #define PRINT_APIENTRY
 #endif
 
 #include <stdio.h>
+#include <osg/Group>
 
 typedef struct {
 	int id;
@@ -34,6 +36,8 @@ extern PrintSpu print_spu;
 extern void printspuGatherConfiguration( const SPU *child_spu );
 extern const char *printspuEnumToStr( GLenum e );
 extern const char *printspuListToStr(GLsizei n, GLenum type, const GLvoid *list);
+
+extern void OSGEXPORT appUpdate(osg::Group* group);
 
 extern void PRINT_APIENTRY printGetIntegerv( GLenum pname, GLint *params );
 extern void PRINT_APIENTRY printGetFloatv( GLenum pname, GLfloat *params );

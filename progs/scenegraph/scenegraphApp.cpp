@@ -1,19 +1,11 @@
+#pragma once
+
 #include <iostream>
-#include <osgViewer/Viewer>
-#include <osg/Group>
-#include "../spu/scenegraph/scenegraphspu.h"
-#include "../spu/scenegraph/scenegraphspu.cpp"
-#include "../spu/scenegraph/scenegraphspu_get.cpp"
-#include "../spu/scenegraph/scenegraphspu_matrices.cpp"
-#include "../spu/scenegraph/scenegraphspu_lighting.cpp"
-#include "../spu/scenegraph/scenegraphspu_tex.cpp"
-#include "../spu/scenegraph/scenegraphspu_lists.cpp"
-#include "../spu/scenegraph/scenegraphspu_misc.cpp"
-#include "../spu/scenegraph/scenegraphspu_enums.cpp"
-#include "../util/mem.c"
-#include "../util/error.c"
-#include "../util/string.c"
+#include "scenegraphspu.h"
 #include <osg/PolygonStipple>
+#include <osg/Geometry>
+#include <osg/Geode>
+#include <osgViewer/Viewer>
 
 osg::Group* rootGroup;
 osg::Geode* patGroup;
@@ -22,6 +14,7 @@ class SceneCallback :public osg::NodeCallback{
 
 public:
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv){
+        // update the group node
         appUpdate(node->asGroup());
     }
 };
@@ -136,16 +129,17 @@ osg::Geode* createPolygon(){
     return geode;
 }
 
-int main(){
+int main(int argc, char* argv[]){
 
     // start crserver 
+    //CRServerMain( argc, argv );
     rootGroup = new osg::Group();
     rootGroup->addChild(createPolygon());
     rootGroup->addUpdateCallback(new SceneCallback());
     osgViewer::Viewer* viewer = new osgViewer::Viewer();
     viewer->setUpViewInWindow(100, 100, 400, 400);
 
-
+    viewer->setSceneData(rootGroup);
     // node PAT
     // update callback  
 

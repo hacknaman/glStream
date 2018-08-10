@@ -6,6 +6,7 @@
 
 #ifdef WINDOWS
 #define WIN32_LEAN_AND_MEAN
+#pragma once
 #pragma warning( push, 3 )
 #include <winsock2.h>
 #pragma warning( pop )
