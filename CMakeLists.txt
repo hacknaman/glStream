@@ -1,6 +1,19 @@
 cmake_minimum_required(VERSION 2.8)
 project(cr)
 
+message (STATUS "HELLO")
+message (STATUS ${CMAKE_CURRENT_SOURCE_DIR})
+
+SET(EXTERNAL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary")
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary;${CMAKE_MODULE_PATH}")
+
+# include external library
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary/osg-3.4/include)
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary/osg-3.4/lib/x64)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary/glut/include)
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary/glut/lib/x64)
+# include external library END
+
 find_package(PythonInterp REQUIRED)
 find_package(Threads)
 find_package(OpenGL REQUIRED)

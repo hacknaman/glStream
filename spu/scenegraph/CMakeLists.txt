@@ -21,7 +21,7 @@ set(SOURCES
 #	python enums.py /usr/include/GL/gl.h ../../include/GL/glext.h ../../include/chromium.h > printspu_enums.c
 
 add_library(scenegraphspu SHARED ${SOURCES})
-target_link_libraries(scenegraphspu crutil crmothership spuload)
+target_link_libraries(scenegraphspu crutil crmothership spuload osgd osgviewerd osgGAd)
 target_link_libraries(scenegraphspu ${EXTRA_LIBS})
 install(TARGETS scenegraphspu
 	LIBRARY DESTINATION lib COMPONENT runtime

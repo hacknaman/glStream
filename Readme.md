@@ -12,7 +12,7 @@ Open cmd in your Project directory write the following command to generate solut
 ```
 mkdir x64
 cd x64
-cmake -G "Visual Studio 9 2008 Win64" -DCMAKE_INSTALL_PREFIX=.. ..
+cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_INSTALL_PREFIX=.. ..
 cr.sln
 ```
 

@@ -1,0 +1,29 @@
+# This module defines
+# OSG_FOUND, if false, do not try to link to gdal
+# OSG_INCLUDE_DIR , where to find the headers
+#
+# Created by Naman
+
+MESSAGE(${EXTERNAL_LIBRARY_PATH}/osg-3.4/include)
+MESSAGE(${EXTERNAL_LIBRARY_PATH}/osg-3.4/lib/x64)
+
+FIND_PATH(OSG_INCLUDE_DIR  osg/Node  
+		${EXTERNAL_LIBRARY_PATH}/osg-3.4/include
+		NO_DEFAULT_PATH    
+	)	
+	
+find_library(OSG_LIBRARY 
+			NAMES osg
+			${EXTERNAL_LIBRARY_PATH}/glut/lib/x64
+			NO_DEFAULT_PATH    
+    )
+	
+MESSAGE(${OSG_LIBRARY})
+MESSAGE(${OSG_INCLUDE_DIR})
+
+SET(GLUT_FOUND "NO")
+IF(OSG_LIBRARY AND OSG_INCLUDE_DIR )
+    SET(GLUT_FOUND "YES")
+ELSE(OSG_LIBRARY AND OSG_INCLUDE_DIR)
+     MESSAGE("GLUT Not Found")
+ENDIF(OSG_LIBRARY AND OSG_INCLUDE_DIR)
