@@ -29,3 +29,6 @@ if (GLUT_FOUND)
   )
 
 endif()
+
+install(FILES ${EXTERNAL_LIBRARY_PATH}/glut/bin/x64/freeglut.dll
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
