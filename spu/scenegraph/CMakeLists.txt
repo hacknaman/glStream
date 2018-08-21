@@ -1,7 +1,6 @@
 include_directories(.)
 
 set(SOURCES
-    scenegraphspu.h
 	scenegraphspu_config.cpp
 	scenegraphspu_enums.cpp
 	scenegraphspu_get.cpp
@@ -14,6 +13,7 @@ set(SOURCES
 	scenegraphspu.cpp
 	scenegraph.def
 )
+
 #generate_with_python(print.py printspu.c printspu_unimplemented_special printspu_special ${APIFILES})
 
 #TODO
