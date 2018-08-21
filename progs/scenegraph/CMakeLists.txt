@@ -1,11 +1,14 @@
 include_directories(.)
+
 set(SOURCES
 	scenegraphApp.cpp
 )
+
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
+include_directories(${OSG_INCLUDE_DIR})
 add_executable(scenegraphApp  ${SOURCES})
-target_link_libraries(scenegraphApp ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+target_link_libraries(scenegraphApp ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${OSG_LIBRARY} ${OSG_VIEWER_LIBRARY} ${OPENTHREADS_LIBRARY})
 target_link_libraries(scenegraphApp ${EXTRA_LIBS})
 target_link_libraries(scenegraphApp scenegraphspu crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)
 if(X11_PLATFORM)
