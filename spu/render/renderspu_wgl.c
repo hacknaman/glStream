@@ -442,12 +442,14 @@ GLboolean renderspu_SystemCreateWindow( VisualInfo *visual, GLboolean showIt, Wi
 	}
 
 	crDebug( "Render SPU: Creating the window: (%d,%d), (%d,%d)", render_spu.defaultX, render_spu.defaultY, window_plus_caption_width, window_plus_caption_height );
-	visual->hWnd = CreateWindow( WINDOW_NAME, WINDOW_NAME,
+	if (!visual->hWnd){
+		visual->hWnd = CreateWindow(WINDOW_NAME, WINDOW_NAME,
 			window_style,
 			window->x, window->y,
 			window_plus_caption_width,
 			window_plus_caption_height,
-			NULL, NULL, hinstance, &render_spu );
+			NULL, NULL, hinstance, &render_spu);
+	}
 
 	if ( !visual->hWnd )
 	{
