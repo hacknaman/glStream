@@ -742,7 +742,7 @@ stubInit(void)
 			/* Can't connect to mothership and can't start it */
 			const char *defaultSPU = crGetenv("CR_DEFAULT_SPU");
 			if (!defaultSPU)
-				defaultSPU = "render";
+				defaultSPU = "clientrender";
 			crWarning( "Couldn't connect to the mothership -- I have no idea what to do!(1)" ); 
 			crWarning( "For the purposes of this demonstration, I'm loading the %s SPU!", defaultSPU );
 			sprintf( response, "1 0 %s", defaultSPU );
