@@ -327,6 +327,7 @@ useful_wgl_functions = [
 	"wglChoosePixelFormat",
 	"wglDescribePixelFormat",
 	"wglSetPixelFormat",
+	"wglGetPixelFormat",
 	"wglChoosePixelFormatEXT",
 	"wglGetPixelFormatAttribivEXT",
 	"wglGetPixelFormatAttribfvEXT",

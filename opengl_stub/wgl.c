@@ -191,7 +191,7 @@ int WINAPI wglGetPixelFormat_prox( HDC hdc )
 {
 	/* this is what we call our generic pixelformat, regardless of the HDC */
 	//return stub.wsInterface.wglGetPixelFormatAttribivEXT( hdc);
-	return 7;
+	return stub.wsInterface.wglGetPixelFormat(hdc);
 }
 
 int WINAPI wglDescribePixelFormat_prox( HDC hdc, int pixelFormat, UINT nBytes,

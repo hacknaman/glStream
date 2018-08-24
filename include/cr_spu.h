@@ -136,6 +136,7 @@ typedef BOOL (WGL_APIENTRY *wglSwapBuffersFunc_t)(HDC);
 typedef int (WGL_APIENTRY *wglChoosePixelFormatFunc_t)(HDC, CONST PIXELFORMATDESCRIPTOR *);
 typedef int (WGL_APIENTRY *wglDescribePixelFormatFunc_t)(HDC, int, UINT, CONST PIXELFORMATDESCRIPTOR *);
 typedef int (WGL_APIENTRY *wglSetPixelFormatFunc_t)(HDC, int, CONST PIXELFORMATDESCRIPTOR *);
+typedef int (WGL_APIENTRY *wglGetPixelFormatFunc_t)(HDC);
 typedef HGLRC (WGL_APIENTRY *wglGetCurrentContextFunc_t)();
 typedef PROC (WGL_APIENTRY *wglGetProcAddressFunc_t)();
 typedef BOOL (WGL_APIENTRY *wglChoosePixelFormatEXTFunc_t)(HDC, const int *, const FLOAT *, UINT, int *, UINT *);
@@ -311,6 +312,7 @@ typedef struct {
 	wglChoosePixelFormatFunc_t wglChoosePixelFormat;
 	wglDescribePixelFormatFunc_t wglDescribePixelFormat;
 	wglSetPixelFormatFunc_t wglSetPixelFormat;
+	wglGetPixelFormatFunc_t wglGetPixelFormat;
 	wglChoosePixelFormatEXTFunc_t wglChoosePixelFormatEXT;
 	wglGetPixelFormatAttribivEXTFunc_t wglGetPixelFormatAttribivEXT;
 	wglGetPixelFormatAttribfvEXTFunc_t wglGetPixelFormatAttribfvEXT;
