@@ -56,12 +56,13 @@ void PACKSPU_APIENTRY packspu_Finish( void )
 		if (writeback)
 			crPackWriteback( &writeback );
 	}
-	packspuFlush( (void *) thread );
-
  /// commented out the code below to avoid
  /// deadlock condition while running aveva
-	/*while (writeback)
-		crNetRecv();*/
+     /*
+       packspuFlush( (void *) thread );
+	   while (writeback)
+	   crNetRecv();
+	  */
 }
 
 
