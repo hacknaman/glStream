@@ -1151,7 +1151,9 @@ void crNetReadline( CRConnection *conn, void *buf )
 	char *temp, c;
 
 	if (!conn || conn->type == CR_NO_CONNECTION)
+	{
 		return;
+	}
 
 	if (conn->type != CR_TCPIP)
 	{
@@ -1161,11 +1163,19 @@ void crNetReadline( CRConnection *conn, void *buf )
 	for (;;)
 	{
 		conn->Recv( conn, &c, 1 );
+        // Return after recieving no connection
+		if (conn->type == CR_NO_CONNECTION)
+		{
+			*(temp++) = c;
+			return;
+		}
+
 		if (c == '\n')
 		{
 			*temp = '\0';
 			return;
 		}
+		
 		*(temp++) = c;
 	}
 }

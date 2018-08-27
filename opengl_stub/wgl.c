@@ -379,6 +379,9 @@ BOOL WINAPI wglUseFontOutlinesW_prox( HDC hdc, DWORD first, DWORD count, DWORD l
 
 BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
 {
+	// force wglswapbuffer since swaplayerbuffer isn't implemented
+	const WindowInfo *window = stubGetWindowInfo(hdc);
+	stubSwapBuffers(window, 0);
 	return stub.wsInterface.wglSwapLayerBuffers(hdc, planes);
 	crWarning( "wglSwapLayerBuffers: unsupported" );
 	return 0;
