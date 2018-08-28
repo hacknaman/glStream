@@ -31,6 +31,9 @@ set(SOURCES
 )
 generate_with_python(debug_opcodes.py debug_opcodes.c ${APIFILES})
 
+set(CMAKE_C_FLAGS_RELEASE "-Od")
+set(CMAKE_CXX_FLAGS_RELEASE "-Od")
+
 add_library(crutil SHARED ${SOURCES})
 target_link_libraries(crutil ${EXTRA_LIBS})
 install(TARGETS crutil
