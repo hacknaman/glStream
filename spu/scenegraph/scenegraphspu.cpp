@@ -65,7 +65,6 @@ extern osg::Group* appUpdate(){
     }
 
     if (patIndexToChange != -1){
-        printf("Call List on this Pat : %d", patIndexToChange);
         
         if (dirtyTranslation){
             osg::PositionAttitudeTransform* pat = dynamic_cast<osg::PositionAttitudeTransform*>(group->getChild(patIndexToChange-1));
