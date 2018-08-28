@@ -32,12 +32,13 @@ typedef struct {
 } PrintSpu;
 
 extern PrintSpu print_spu;
+extern osg::Group* group;
 
 extern void printspuGatherConfiguration( const SPU *child_spu );
 extern const char *printspuEnumToStr( GLenum e );
 extern const char *printspuListToStr(GLsizei n, GLenum type, const GLvoid *list);
 
-extern void OSGEXPORT appUpdate(osg::Group* group);
+extern OSGEXPORT osg::Group* appUpdate();
 
 extern void PRINT_APIENTRY printGetIntegerv( GLenum pname, GLint *params );
 extern void PRINT_APIENTRY printGetFloatv( GLenum pname, GLfloat *params );

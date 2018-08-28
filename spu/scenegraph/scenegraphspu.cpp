@@ -14,6 +14,8 @@
 #include <osg/Node>
 #include <osg/Geometry>
 #include <osg/PositionAttitudeTransform>
+#include <OpenThreads/Mutex>
+//#include <osgViewer/Viewer>
 
 #define PRINT_UNUSED(x) ((void)x)
 
@@ -22,9 +24,27 @@ osg::Vec3Array* normalArray;
 osg::Vec4Array* colorArray;
 osg::Geometry* geom;
 osg::Geode* geode;
+
 osg::PositionAttitudeTransform* listPat;
+bool groupAdded = false;
+//osgViewer::Viewer* viewer;
 
 osg::Group* group = new osg::Group;
+
+// update translation Values
+osg::Vec3f translateData;
+
+// updated Rotation Values
+osg::Quat rotateData;
+
+// update the Pat at the index
+int patIndexToChange = -1;
+
+// flag to check if the translation is to be done or not
+bool dirtyTranslation = false;
+
+// flag to check if the translation is to be done or not
+bool dirtyRotation = false;
 
 int normalBindMode = -1;
 
@@ -32,13 +52,54 @@ int materialBindMode = -1;
 
 int geometryMode = -1;
 
-extern void appUpdate(osg::Group* group1){
-    if (group1){
-        if (group && group->getNumChildren() >0){
-            group1->removeChildren(0, group1->getNumChildren()-1);
-            group1->addChild(group);
-        }
+OpenThreads::Mutex _mutex;
+
+OpenThreads::Block transformationLock;
+
+// flag to check if the transformation is being read
+bool startReading = false;
+
+extern osg::Group* appUpdate(){
+    if (startReading){
+        transformationLock.block();
     }
+
+    if (patIndexToChange != -1){
+        printf("Call List on this Pat : %d", patIndexToChange);
+        
+        if (dirtyTranslation){
+            osg::PositionAttitudeTransform* pat = dynamic_cast<osg::PositionAttitudeTransform*>(group->getChild(patIndexToChange-1));
+            if (pat){
+                pat->setPosition(osg::Vec3(translateData[0], translateData[2], translateData[1]));
+            }
+        }
+        if (dirtyRotation){
+            osg::PositionAttitudeTransform* pat = dynamic_cast<osg::PositionAttitudeTransform*>(group->getChild(patIndexToChange-1));
+
+            if (pat){
+                double angle = osg::DegreesToRadians(rotateData[0]);
+                pat->setAttitude(osg::Quat(angle, rotateData[1], -rotateData[3], rotateData[2]));
+            }
+        }
+
+        transformationLock.release();
+    }
+    if (dirtyTranslation && patIndexToChange ==-1){
+        transformationLock.release();
+        dirtyTranslation = false;
+    }
+
+    if (dirtyRotation && patIndexToChange == -1){
+        transformationLock.release();
+        dirtyRotation= false;
+    }
+
+    if (group != NULL && group->getNumChildren() > 2 && !groupAdded){
+        groupAdded = true;
+
+        return group;
+    }
+    return NULL;
 }
 
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
@@ -122,20 +183,26 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 
     geometryMode = mode;
 
-    if (normalArray->size() > 0){
+    /*if (normalArray->size() > 0){
         normalBindMode = osg::Array::BIND_OVERALL;
-    }
-    else{
+        }
+        else{
         normalArray = new osg::Vec3Array();
-    }
+        }
+        if (colorArray->size() > 0){
+        materialBindMode = osg::Array::BIND_OVERALL;
+        }
+        else{
+        colorArray = new osg::Vec4Array();
+        }*/
     if (colorArray->size() > 0){
         materialBindMode = osg::Array::BIND_OVERALL;
-    }
-    else{
+        }
+        else{
         colorArray = new osg::Vec4Array();
-    }
-
+        }
     vertexArray = new osg::Vec3Array();
+    groupAdded = false;
 }
 
 static void PRINT_APIENTRY printBeginQueryARB(GLenum target, GLuint id)
@@ -234,6 +301,9 @@ static void PRINT_APIENTRY printCallList(GLuint list)
     fprintf(print_spu.fp, "CallList( %u )\n", (unsigned)list);
     fflush(print_spu.fp);
     print_spu.passthrough.CallList(list);
+    // store the pat number to be updated
+
+    patIndexToChange = list;
 }
 
 static void PRINT_APIENTRY printChromiumParameterfCR(GLenum target, GLfloat value)
@@ -876,40 +946,47 @@ static void PRINT_APIENTRY printEnd(void)
     if (vertexArray->size() > 0){
         geom->setVertexArray(vertexArray);
 
-        // set normal Array if valid
-        if (normalArray->size() > 0){
-            if (normalBindMode != -1){
-                geom->setNormalArray(normalArray, osg::Array::BIND_OVERALL);
-            }
-            else{
-                geom->setNormalArray(normalArray, osg::Array::BIND_PER_VERTEX);
-            }
-        }
+        //// set normal Array if valid
+        //if (normalArray->size() > 0){
+        //    if (normalBindMode != -1){
+        //        geom->setNormalArray(normalArray, osg::Array::BIND_OVERALL);
+        //    }
+        //    else{
+        //        geom->setNormalArray(normalArray, osg::Array::BIND_PER_VERTEX);
+        //    }
+        //}
+        //// set color array if valid
+        //if (colorArray->size() > 0){
+        //    if (materialBindMode != -1){
+        //        geom->setColorArray(colorArray, osg::Array::BIND_OVERALL);
+        //    }
+        //    else{
+        //        geom->setColorArray(colorArray, osg::Array::BIND_PER_VERTEX);
+        //    }
+        //}
         // set color array if valid
         if (colorArray->size() > 0){
-            if (materialBindMode != -1){
-                geom->setColorArray(colorArray, osg::Array::BIND_OVERALL);
-            }
-            else{
-                geom->setColorArray(colorArray, osg::Array::BIND_PER_VERTEX);
-            }
-        }
+            geom->setColorArray(colorArray, osg::Array::BIND_OVERALL);
 
-        geom->addPrimitiveSet(new osg::DrawArrays(geometryMode,0,vertexArray->size()));
+        }
+        geom->addPrimitiveSet(new osg::DrawArrays(geometryMode, 0, vertexArray->size()));
 
         geode->addDrawable(geom);
     }
-    normalArray->clear();
+    /*normalArray->clear();
     vertexArray->clear();
-    colorArray->clear();
+    colorArray->clear();*/
 }
 
 static void PRINT_APIENTRY printEndList(void)
 {
+
+
     fprintf(print_spu.fp, "EndList(  )\n");
     fflush(print_spu.fp);
     print_spu.passthrough.EndList();
     // create Pat and add geode to the pat.
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
     listPat = new osg::PositionAttitudeTransform();
 
     // add geode to pat if valid
@@ -919,6 +996,7 @@ static void PRINT_APIENTRY printEndList(void)
         }
     }
     if (listPat){
+        //_groupLock.block();
         group->addChild(listPat);
     }
 }
@@ -2264,14 +2342,14 @@ static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
     fflush(print_spu.fp);
     print_spu.passthrough.NewList(list, mode);
 
-    // initialize vertex array;
-    vertexArray = new osg::Vec3Array();
+    //// initialize vertex array;
+    //vertexArray = new osg::Vec3Array();
 
-    // initialize normal array;
-    normalArray = new osg::Vec3Array();
+    //// initialize normal array;
+    //normalArray = new osg::Vec3Array();
 
-    // initialize material array
-    colorArray = new osg::Vec4Array();
+    //// initialize material array
+    //colorArray = new osg::Vec4Array();
 
     geode = new osg::Geode();
 }
@@ -2530,6 +2608,8 @@ static void PRINT_APIENTRY printPopMatrix(void)
     fprintf(print_spu.fp, "PopMatrix(  )\n");
     fflush(print_spu.fp);
     print_spu.passthrough.PopMatrix();
+    startReading = false;
+    transformationLock.release();
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -2698,6 +2778,7 @@ static void PRINT_APIENTRY printPushMatrix(void)
     fprintf(print_spu.fp, "PushMatrix(  )\n");
     fflush(print_spu.fp);
     print_spu.passthrough.PushMatrix();
+    startReading = true;
 }
 
 static void PRINT_APIENTRY printPushName(GLuint name)
@@ -2976,6 +3057,12 @@ static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLf
     fprintf(print_spu.fp, "Rotatef( %f, %f, %f, %f )\n", (float)angle, (float)x, (float)y, (float)z);
     fflush(print_spu.fp);
     print_spu.passthrough.Rotatef(angle, x, y, z);
+
+    // store the value for the rotation
+    rotateData.set(angle, x, y, z);
+
+    dirtyRotation = true;
+    //transformationLock.block();
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -3203,10 +3290,10 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     // call frame on Viewer
     /*if (group){
         viewer->setSceneData(group);
-    }
-    if (viewer){
+        }
+        if (viewer){
         viewer->frame();
-    }*/
+        }*/
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
@@ -3590,6 +3677,13 @@ static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
     fprintf(print_spu.fp, "Translatef( %f, %f, %f )\n", (float)x, (float)y, (float)z);
     fflush(print_spu.fp);
     print_spu.passthrough.Translatef(x, y, z);
+
+    // store the translation for the pat
+
+    translateData.set(x, y, z);
+    dirtyTranslation = true;
+
+    //transformationLock.block();
 }
 
 static GLboolean PRINT_APIENTRY printUnmapBufferARB(GLenum target)
@@ -3666,7 +3760,7 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3d(x, y, z);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(x, y, z));
+        vertexArray->push_back(osg::Vec3(x, z, y));
     }
 }
 
@@ -3676,7 +3770,7 @@ static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3dv(v);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+        vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
     }
 }
 
@@ -3686,7 +3780,7 @@ static void PRINT_APIENTRY printVertex3f(GLfloat x, GLfloat y, GLfloat z)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3f(x, y, z);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(x, y, z));
+        vertexArray->push_back(osg::Vec3(x, z, y));
     }
 }
 
@@ -3696,7 +3790,7 @@ static void PRINT_APIENTRY printVertex3fv(const GLfloat * v)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3fv(v);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+        vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
     }
 }
 
@@ -3706,7 +3800,7 @@ static void PRINT_APIENTRY printVertex3i(GLint x, GLint y, GLint z)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3i(x, y, z);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(x, y, z));
+        vertexArray->push_back(osg::Vec3(x, z, y));
     }
 }
 
@@ -3716,7 +3810,7 @@ static void PRINT_APIENTRY printVertex3iv(const GLint * v)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3iv(v);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+        vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
     }
 }
 
@@ -3726,7 +3820,7 @@ static void PRINT_APIENTRY printVertex3s(GLshort x, GLshort y, GLshort z)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3s(x, y, z);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(x, y, z));
+        vertexArray->push_back(osg::Vec3(x, z, y));
     }
 }
 
@@ -3736,7 +3830,7 @@ static void PRINT_APIENTRY printVertex3sv(const GLshort * v)
     fflush(print_spu.fp);
     print_spu.passthrough.Vertex3sv(v);
     if (vertexArray){
-        vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+        vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
     }
 }
 
@@ -4174,6 +4268,8 @@ static void PRINT_APIENTRY printViewport(GLint x, GLint y, GLsizei width, GLsize
     print_spu.passthrough.Viewport(x, y, width, height);
 
     // create a osg::Viewer here and set the window size
+    /*viewer = new osgViewer::Viewer();
+    viewer->setUpViewInWindow(x, y, width, height);*/
 }
 
 static GLint PRINT_APIENTRY printWindowCreate(const char * dpyName, GLint visBits)
@@ -4341,6 +4437,35 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
     fflush(print_spu.fp);
     print_spu.passthrough.ZPixCR(width, height, format, type, ztype, zparm, length, pixels);
 }
+
+// material function copied here for color
+void PRINT_APIENTRY printMaterialfv( GLenum face, GLenum mode, const GLfloat *params )
+{
+	int i;
+	int num_params = 4;
+	fprintf( print_spu.fp, "Materialfv( %s, %s, [ ", printspuEnumToStr( face ), printspuEnumToStr( mode ) );
+
+	if (mode == GL_SHININESS)
+	{
+		num_params = 1;
+	}
+
+	for (i = 0 ; i < num_params ; i++)
+	{
+		fprintf( print_spu.fp, "%f", params[i] );
+		if (i != num_params -1)
+		{
+			fprintf( print_spu.fp, ", " );
+		}
+	}
+	fprintf( print_spu.fp, " ] )\n" );
+	fflush( print_spu.fp );
+	print_spu.passthrough.Materialfv( face, mode, params );
+
+    colorArray = new osg::Vec4Array();
+    colorArray->push_back(osg::Vec4f(params[0], params[1], params[2], params[3]));
+}
+
 SPUNamedFunctionTable _cr_print_table[] = {
     { "Accum", (SPUGenericFunction)printAccum },
     { "ActiveTextureARB", (SPUGenericFunction)printActiveTextureARB },

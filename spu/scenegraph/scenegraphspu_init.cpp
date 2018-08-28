@@ -150,7 +150,7 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUSelfDispatchFuncPtr *self, SPUCleanupFuncPtr *cleanup,
 	     SPUOptionsPtr *options, int *flags )
 {
-	*name = "print";
+	*name = "scenegraph";
 	*super = "passthrough";
 	*init = printSPUInit;
 	*self = printSPUSelfDispatch;

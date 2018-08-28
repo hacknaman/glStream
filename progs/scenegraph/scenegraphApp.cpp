@@ -17,18 +17,24 @@ class SceneCallback :public osg::NodeCallback{
 public:
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv){
         // update the group node
-        appUpdate(node->asGroup());
+        // we can get thread in which crserver is running
+        // then we can ask for scenegraphspu
+        if (rootGroup != NULL){
+            osg::Group* newGroup = appUpdate();
+            if (newGroup != NULL){
+                //rootGroup->removeChildren(0, rootGroup->getNumChildren());
+                rootGroup->addChild(newGroup);
+            }
+        }
+        traverse(node, nv);
     }
 };
 
 class CRServerThread : public OpenThreads::Thread
 {
 public:
-    CRServerThread(osgViewer::Viewer& viewer, double timeToRun, int argc, char** argv)
-        : _viewer(viewer)
-        , _timeToRun(timeToRun)
-        , _done(false)
-        , _argc(argc)
+    CRServerThread(int argc, char** argv)
+        : _argc(argc)
         , _argv(argv)
     {
     }
@@ -41,20 +47,10 @@ public:
 
     int cancel()
     {
-        _done = true;
         return OpenThreads::Thread::cancel();
     }
 
-    void process()
-    {
-        _process = true;
-    }
-
 protected:
-    osgViewer::Viewer& _viewer;
-    double _timeToRun;
-    bool _done;
-    bool _process;
     int _argc;
     char** _argv;
 };
@@ -173,15 +169,16 @@ int main(int argc, char* argv[]){
 
     // start crserver 
     //
+    system("pause");
     rootGroup = new osg::Group();
-    rootGroup->addChild(createPolygon());
+    //rootGroup->addChild(createPolygon());
     rootGroup->addUpdateCallback(new SceneCallback());
     osgViewer::Viewer* viewer = new osgViewer::Viewer();
     viewer->setUpViewInWindow(100, 100, 400, 400);
 
     viewer->setSceneData(rootGroup);
 
-    CRServerThread thread(*viewer, 6.0, argc, argv);
+    CRServerThread thread(argc, argv);
     thread.start();
     // node PAT
     // update callback  
