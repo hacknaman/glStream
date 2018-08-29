@@ -38,6 +38,9 @@ void PACKSPU_APIENTRY packspu_DrawPixels( GLsizei width, GLsizei height, GLenum 
 
 void PACKSPU_APIENTRY packspu_ReadPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels )
 {
+	// read pixel isn't required since don't want to read back pixels from the client window
+	// this is not only a performance improvement but will also help in figthing race condition
+	return;
 	GET_THREAD(thread);
 	ContextInfo *ctx = thread->currentContext;
 	CRClientState *clientState = &(ctx->clientState->client);
