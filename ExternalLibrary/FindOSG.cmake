@@ -33,6 +33,24 @@ find_library(OPENTHREADS_LIBRARY
 			NO_DEFAULT_PATH    
 )
 
+find_library(OSGDB_LIBRARY 
+			NAMES osgDB
+			PATHS ${EXTERNAL_LIBRARY_PATH}/osg-3.4/lib/x64
+			NO_DEFAULT_PATH    
+)
+
+find_library(OSGTEXT_LIBRARY 
+			NAMES osgText
+			PATHS ${EXTERNAL_LIBRARY_PATH}/osg-3.4/lib/x64
+			NO_DEFAULT_PATH    
+)
+
+find_library(OSGUTIL_LIBRARY 
+			NAMES osgUtil
+			PATHS ${EXTERNAL_LIBRARY_PATH}/osg-3.4/lib/x64
+			NO_DEFAULT_PATH    
+)
+
 SET(OSG_FOUND "NO")
 IF(OSG_LIBRARY AND OSG_INCLUDE_DIR )
     SET(OSG_FOUND "YES")
@@ -42,4 +60,9 @@ ENDIF(OSG_LIBRARY AND OSG_INCLUDE_DIR)
 
 install(FILES ${EXTERNAL_LIBRARY_PATH}/osg-3.4/bin/x64/osg131-osg.dll
 			  ${EXTERNAL_LIBRARY_PATH}/osg-3.4/bin/x64/osg131-osgViewer.dll  
+			  ${EXTERNAL_LIBRARY_PATH}/osg-3.4/bin/x64/osg131-osgDB.dll
+			  ${EXTERNAL_LIBRARY_PATH}/osg-3.4/bin/x64/osg131-osgGA.dll
+			  ${EXTERNAL_LIBRARY_PATH}/osg-3.4/bin/x64/osg131-osgText.dll
+			  ${EXTERNAL_LIBRARY_PATH}/osg-3.4/bin/x64/osg131-osgUtil.dll
+			  ${EXTERNAL_LIBRARY_PATH}/osg-3.4/bin/x64/ot20-OpenThreads.dll
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
