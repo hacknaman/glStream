@@ -48,6 +48,7 @@ add_subdirectory(crutclientapi)
 add_subdirectory(crutproxy)
 add_subdirectory(crutserver)
 add_subdirectory(progs)
+add_subdirectory(ScenegraphUtil)
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/
 	DESTINATION include

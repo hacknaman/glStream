@@ -1,59 +1,14 @@
 #pragma once
 
 #include <iostream>
-#include "scenegraphspu.h"
 #include <osg/PolygonStipple>
 #include <osg/Geometry>
 #include <osg/Geode>
 #include <osgViewer/Viewer>
-#include <OpenThreads/Thread>
-#include <cr_server.h>
+#include <ScenegraphUtil.h>
 
 osg::Group* rootGroup;
 osg::Geode* patGroup;
-
-class SceneCallback :public osg::NodeCallback{
-
-public:
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv){
-        // update the group node
-        // we can get thread in which crserver is running
-        // then we can ask for scenegraphspu
-        if (rootGroup != NULL){
-            osg::Group* newGroup = appUpdate();
-            if (newGroup != NULL){
-                //rootGroup->removeChildren(0, rootGroup->getNumChildren());
-                rootGroup->addChild(newGroup);
-            }
-        }
-        traverse(node, nv);
-    }
-};
-
-class CRServerThread : public OpenThreads::Thread
-{
-public:
-    CRServerThread(int argc, char** argv)
-        : _argc(argc)
-        , _argv(argv)
-    {
-    }
-
-    void run()
-    {
-        //system("E:\\CHROMIUM64\\bin64\\bin\\crserver.exe");
-        CRServerMain(_argc, _argv);
-    }
-
-    int cancel()
-    {
-        return OpenThreads::Thread::cancel();
-    }
-
-protected:
-    int _argc;
-    char** _argv;
-};
 
 void createGeode(){
 
@@ -170,16 +125,27 @@ int main(int argc, char* argv[]){
     // start crserver 
     //
     system("pause");
+
+    ScenegraphUtil::ScenegraphUtil* sgviewer = new ScenegraphUtil::ScenegraphUtil();
     rootGroup = new osg::Group();
-    //rootGroup->addChild(createPolygon());
-    rootGroup->addUpdateCallback(new SceneCallback());
-    osgViewer::Viewer* viewer = new osgViewer::Viewer();
+
+    if (sgviewer){
+        sgviewer->setRootNode(rootGroup);
+    }
+
+    osgViewer::Viewer* viewer = NULL;
+    viewer = new osgViewer::Viewer();
+    
     viewer->setUpViewInWindow(100, 100, 400, 400);
 
     viewer->setSceneData(rootGroup);
 
-    CRServerThread thread(argc, argv);
-    thread.start();
+    if (sgviewer){
+        // passing argument for CRServer, 
+        // XXX Need to change it
+        sgviewer->run(argc,argv);
+    }
+
     // node PAT
     // update callback  
 
