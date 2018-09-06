@@ -38,7 +38,9 @@ namespace ScenegraphUtil{
 
 
 
-    class SceneCallback :public osg::NodeCallback{
+    class SceneCallback :public osg::NodeCallback {
+
+		osg::Group* oldGroup; 
 
     public:
         virtual void operator()(osg::Node* node, osg::NodeVisitor* nv){
@@ -47,10 +49,12 @@ namespace ScenegraphUtil{
             // then we can ask for scenegraphspu
             osg::Group* rootGroup = node->asGroup();
             if (rootGroup != NULL){
-                osg::Group* newGroup = appUpdate();
+				osg::Group* newGroup = NULL;
+				newGroup = appUpdate();
                 if (newGroup != NULL){
-                    //rootGroup->removeChildren(0, rootGroup->getNumChildren());
+					rootGroup->removeChild(oldGroup);
                     rootGroup->addChild(newGroup);
+					oldGroup = newGroup;
                 }
             }
             traverse(node, nv);

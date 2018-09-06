@@ -7,8 +7,8 @@
 #include <osgViewer/Viewer>
 #include <ScenegraphUtil.h>
 
-osg::Group* rootGroup;
-osg::Geode* patGroup;
+osg::Group* rootGroup = NULL;
+osg::Geode* patGroup = NULL;
 
 void createGeode(){
 
