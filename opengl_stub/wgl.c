@@ -176,11 +176,13 @@ BOOL WINAPI wglMakeCurrent_prox( HDC hdc, HGLRC hglrc )
 
 HGLRC WINAPI wglGetCurrentContext_prox( void )
 {
-	return (HGLRC) stub.currentContext;
+	return stub.wsInterface.wglGetCurrentContext();
+	return (HGLRC) stub.currentContext; 
 }
 
 HDC WINAPI wglGetCurrentDC_prox( void )
 {
+	return stub.wsInterface.wglGetCurrentDC();
 	if (stub.currentContext && stub.currentContext->currentDrawable)
 		return (HDC) stub.currentContext->currentDrawable->drawable;
 	else
@@ -191,7 +193,7 @@ int WINAPI wglGetPixelFormat_prox( HDC hdc )
 {
 	/* this is what we call our generic pixelformat, regardless of the HDC */
 	//return stub.wsInterface.wglGetPixelFormatAttribivEXT( hdc);
-	return 7;
+	return stub.wsInterface.wglGetPixelFormat(hdc);
 }
 
 int WINAPI wglDescribePixelFormat_prox( HDC hdc, int pixelFormat, UINT nBytes,
@@ -251,6 +253,7 @@ int WINAPI wglDescribePixelFormat_prox( HDC hdc, int pixelFormat, UINT nBytes,
 
 BOOL WINAPI wglShareLists_prox( HGLRC hglrc1, HGLRC hglrc2 )
 {
+	return stub.wsInterface.wglShareLists(hglrc1, hglrc2);
 	crWarning( "wglShareLists: unsupported" );
 	return 0;
 }
@@ -376,6 +379,10 @@ BOOL WINAPI wglUseFontOutlinesW_prox( HDC hdc, DWORD first, DWORD count, DWORD l
 
 BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
 {
+	// force wglswapbuffer since swaplayerbuffer isn't implemented
+	const WindowInfo *window = stubGetWindowInfo(hdc);
+	stubSwapBuffers(window, 0);
+	return stub.wsInterface.wglSwapLayerBuffers(hdc, planes);
 	crWarning( "wglSwapLayerBuffers: unsupported" );
 	return 0;
 }

@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 project(cr)
 
+SET(EXTERNAL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary")
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary;${CMAKE_MODULE_PATH}")
+
 find_package(PythonInterp REQUIRED)
 find_package(Threads)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
+find_package(OSG REQUIRED)
 
 set(EXTRA_LIBS)
 if(CMAKE_THREAD_LIBS_INIT)
@@ -44,6 +48,7 @@ add_subdirectory(crutclientapi)
 add_subdirectory(crutproxy)
 add_subdirectory(crutserver)
 add_subdirectory(progs)
+add_subdirectory(ScenegraphUtil)
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/
 	DESTINATION include

@@ -6,6 +6,7 @@
 
 #ifdef WINDOWS
 #define WIN32_LEAN_AND_MEAN
+#pragma once
 #pragma warning( push, 3 )
 #include <winsock2.h>
 #pragma warning( pop )
@@ -695,6 +696,12 @@ crTCPIPSend( CRConnection *conn, void **bufp,
 void
 __tcpip_dead_connection( CRConnection *conn )
 {
+	// Handle a weird connection type
+	if (conn->type == -572662307)
+	{
+		return;
+	}
+	
 	crDebug("Dead TCP/IP connection (sock=%d, host=%s)",
 					conn->tcp_socket, conn->hostname);
 	/* remove from connection pool */

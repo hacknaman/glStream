@@ -900,7 +900,7 @@ stubDestroyContext( unsigned long contextId )
 
 	CRASSERT(context);
 
-	if (context->type == NATIVE) {
+	if (context->type == NATIVE || context->type == UNDECIDED) {
 #ifdef WINDOWS
 		stub.wsInterface.wglDeleteContext( context->hglrc );
 #elif defined(Darwin)

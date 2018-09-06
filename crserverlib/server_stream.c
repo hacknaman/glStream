@@ -480,6 +480,16 @@ crServerServiceClients(void)
 	RunQueue *q;
 
 	q = getNextClient(GL_FALSE); /* don't block */
+#if 0
+	// This is added so that the client window stay responsive
+	// Client window syncs state from server 
+	// if the server stops sending swapbuffer 
+	// client becomes unresponsive. 
+
+	// This code only works for Sketchup 
+	// Need a better way to make it generic.
+	crServerDispatchSwapBuffers(14, 0);
+#endif 
 	if (q) {
 		ClientStatus stat = crServerServiceClient(q);
 		if (stat == CLIENT_NEXT && cr_server.run_queue->next) {
