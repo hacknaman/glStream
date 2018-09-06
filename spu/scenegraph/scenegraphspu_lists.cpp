@@ -188,7 +188,4 @@ const char *printspuListToStr(GLsizei n, GLenum type, const GLvoid *list)
 
 void PRINT_APIENTRY printCallLists( GLsizei n, GLenum type, const GLvoid * lists )
 {
-	fprintf( print_spu.fp, "CallLists( %u, %s, %s )\n", (unsigned) n, printspuEnumToStr( type ), printspuListToStr(n, type, lists));
-	fflush( print_spu.fp );
-	print_spu.passthrough.CallLists( n, type, lists );
 }
