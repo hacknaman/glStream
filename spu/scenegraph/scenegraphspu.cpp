@@ -9,6 +9,9 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "cr_error.h"
 #include "cr_spu.h"
 #include "scenegraphspu.h"
+#include <vector>
+#include <osg/LineWidth>
+#include <osg/BlendFunc>
 #include <osg/Group>
 #include <osg/Geode>
 #include <osg/Node>
@@ -24,11 +27,14 @@ static int ret_count = 2000;
 
 osg::Vec3Array* vertexArray;
 osg::Vec3Array* normalArray;
-osg::Vec4Array* colorArray;
+osg::Vec3Array* colorArray = new osg::Vec3Array();
 osg::Geometry* geom;
 osg::Geode* geode;
 
+std::vector< osg::PositionAttitudeTransform* > PatArray;
+
 osg::PositionAttitudeTransform* listPat;
+
 bool groupAdded = false;
 //osgViewer::Viewer* viewer;
 
@@ -63,7 +69,19 @@ int startReading = false;
 int isReading = false;
 int canAdd = false;
 
+int calledreadFromApp = false;
+int hasTouchedBegin = false;
+
 extern osg::Group* appUpdate(){
+
+	if (GetKeyState('A') & 0x8000 && calledreadFromApp == false)
+	{
+		if (isReading == false){
+			calledreadFromApp = true;
+		}
+		
+	}
+
 	if (spuRootGroup != NULL && canAdd == true && isReading == false){
 		canAdd = false;
 		return spuRootGroup;
@@ -115,9 +133,12 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 {
 	if (isReading)
 	{
+		hasTouchedBegin = true;
 		geometryMode = mode;
 		geode = new osg::Geode();
 		vertexArray = new osg::Vec3Array();
+		normalArray = new osg::Vec3Array();
+		
 	}
 }
 
@@ -231,22 +252,42 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
+	if (isReading && colorArray)
+	{
+		colorArray->push_back(osg::Vec3(red, green, blue));
+	}
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
+	if (isReading && colorArray)
+	{
+		colorArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+	}
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
+	if (isReading && colorArray)
+	{
+		colorArray->push_back(osg::Vec3(red, green, blue));
+	}
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
+	if (isReading && colorArray)
+	{
+		colorArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+	}
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
+	if (isReading && colorArray)
+	{
+		colorArray->push_back(osg::Vec3(red, green, blue));
+	}
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
@@ -279,42 +320,52 @@ static void PRINT_APIENTRY printColor3usv(const GLushort * v)
 
 static void PRINT_APIENTRY printColor4b(GLbyte red, GLbyte green, GLbyte blue, GLbyte alpha)
 {
+	printColor3b(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4bv(const GLbyte * v)
 {
+	printColor4bv(v);
 }
 
 static void PRINT_APIENTRY printColor4d(GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha)
 {
+	printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4dv(const GLdouble * v)
 {
+	printColor3dv(v);
 }
 
 static void PRINT_APIENTRY printColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
+	printColor3f(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4fv(const GLfloat * v)
 {
+	printColor3fv(v);
 }
 
 static void PRINT_APIENTRY printColor4i(GLint red, GLint green, GLint blue, GLint alpha)
 {
+	printColor3i(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4iv(const GLint * v)
 {
+	printColor3iv(v);
 }
 
 static void PRINT_APIENTRY printColor4s(GLshort red, GLshort green, GLshort blue, GLshort alpha)
 {
+	printColor3s(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4sv(const GLshort * v)
 {
+	printColor3sv(v);
 }
 
 static void PRINT_APIENTRY printColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
@@ -545,15 +596,48 @@ static void PRINT_APIENTRY printEnd(void)
 	{
 		geom = new osg::Geometry();
 		// create a geode and add it to the pat
-		if (vertexArray->size() > 0){
-			geom->setVertexArray(vertexArray);
+		if (vertexArray->size() > 0)
+		{
 			geom->addPrimitiveSet(new osg::DrawArrays(geometryMode, 0, vertexArray->size()));
+			geom->setVertexArray(vertexArray);
+			geom->setColorArray(colorArray, osg::Array::BIND_PER_VERTEX);
+			geom->setNormalArray(normalArray, osg::Array::BIND_PER_VERTEX);
+
+			if (normalArray->size() != vertexArray->size())
+			{
+				if (normalArray->size())
+				{
+					geom->setNormalBinding(osg::Geometry::BIND_OVERALL);
+				}
+				else
+				{
+					geom->setNormalBinding(osg::Geometry::BIND_OFF);
+				}
+			}
+
+
+			if (colorArray->size() != vertexArray->size())
+			{
+				if (colorArray->size())
+				{
+					osg::Vec3Array* colorArray2 = new osg::Vec3Array();
+					colorArray2->push_back(colorArray->back());
+					geom->setColorArray(colorArray2, osg::Array::BIND_OVERALL);
+					//geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+				}
+				else
+				{
+					geom->setColorBinding(osg::Geometry::BIND_OFF);
+				}
+			}
+	
+			geom->setUseDisplayList(false);		
 			geode->addDrawable(geom);
 		}
 
 		if (geode){
-			geode->getOrCreateStateSet()->setAttributeAndModes(polygonMode);
-			spuRootGroup->addChild(geode);
+			//geode->getOrCreateStateSet()->setAttributeAndModes(polygonMode);
+			PatArray.back()->addChild(geode);
 		}
 	}
 }
@@ -1341,72 +1425,70 @@ static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 
 static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(nx, ny, nz));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
 {
-
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(nx, ny, nz));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(nx, ny, nz));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(nx, ny, nz));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
-
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(nx, ny, nz));
 	}
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
-	if (normalArray){
+	if (isReading && normalArray){
 		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
@@ -1497,7 +1579,10 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 
 static void PRINT_APIENTRY printPopMatrix(void)
 {
-	transformationLock.release();
+	if (isReading)
+	{		
+		PatArray.pop_back();
+	}
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -1594,6 +1679,13 @@ static void PRINT_APIENTRY printPushClientAttrib(GLbitfield mask)
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
+	if (isReading)
+	{
+		// create a pat node
+		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
+		PatArray.back()->addChild(pat);
+		PatArray.push_back(pat);
+	}
 }
 
 static void PRINT_APIENTRY printPushName(GLuint name)
@@ -1747,11 +1839,18 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
+	if (isReading)
+	{
+		//PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
+	}
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-
+	if (isReading)
+	{
+		//PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
+	}
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -1760,10 +1859,18 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
+	if (isReading)
+	{
+		//PatArray.back()->setScale(osg::Vec3( x, y, z));
+	}
 }
 
 static void PRINT_APIENTRY printScalef(GLfloat x, GLfloat y, GLfloat z)
 {
+	if (isReading)
+	{
+		//PatArray.back()->setScale(osg::Vec3( x, y, z));
+	}
 }
 
 static void PRINT_APIENTRY printScissor(GLint x, GLint y, GLsizei width, GLsizei height)
@@ -1886,17 +1993,30 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 		canAdd = true;
 		isReading = false;
 		startReading = false;
+		spuRootGroup->addChild(PatArray.back());
+		PatArray.pop_back();
+
+		if (hasTouchedBegin == false)
+		{
+			calledreadFromApp = true;
+		}
 	}
 
-	if (GetKeyState('A') & 0x8000)
+	if (GetKeyState('A') & 0x8000 || calledreadFromApp)
 	{
+		calledreadFromApp = false;
 		startReading = true;
 		isReading = true;
+		hasTouchedBegin = false;
 	}
 
 	if (startReading)
 	{
 		spuRootGroup = new osg::Group;
+		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
+		//pat->setScale(osg::Vec3(10,10,10));
+
+		PatArray.push_back(pat);
 		startReading = false;
 	}
 }
@@ -2112,10 +2232,18 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
+	if (isReading && PatArray.size() > 1)
+	{
+		PatArray.back()->setPosition(osg::Vec3(x, y, z));
+	}
 }
 
 static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
+	if (isReading && PatArray.size() > 1)
+	{
+		PatArray.back()->setPosition(osg::Vec3(x, y, z));
+	}
 }
 
 static GLboolean PRINT_APIENTRY printUnmapBufferARB(GLenum target)
@@ -2158,21 +2286,21 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(x, z, y));
+		vertexArray->push_back(osg::Vec3(x, y, z));
 	}
 }
 
 static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)
 {
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
+		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
 static void PRINT_APIENTRY printVertex3f(GLfloat x, GLfloat y, GLfloat z)
 {
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(x, z, y));
+		vertexArray->push_back(osg::Vec3(x, y, z));
 	}
 }
 
@@ -2180,35 +2308,35 @@ static void PRINT_APIENTRY printVertex3fv(const GLfloat * v)
 {
 
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
+		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
 static void PRINT_APIENTRY printVertex3i(GLint x, GLint y, GLint z)
 {
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(x, z, y));
+		vertexArray->push_back(osg::Vec3(x, y, z));
 	}
 }
 
 static void PRINT_APIENTRY printVertex3iv(const GLint * v)
 {
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
+		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
 static void PRINT_APIENTRY printVertex3s(GLshort x, GLshort y, GLshort z)
 {
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(x, z, y));
+		vertexArray->push_back(osg::Vec3(x, y, z));
 	}
 }
 
 static void PRINT_APIENTRY printVertex3sv(const GLshort * v)
 {
 	if (isReading && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[2], v[1]));
+		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
 	}
 }
 
@@ -2572,8 +2700,8 @@ void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *par
 		}
 	}
 
-	colorArray = new osg::Vec4Array();
-	colorArray->push_back(osg::Vec4f(params[0], params[1], params[2], params[3]));
+	//colorArray = new osg::Vec4Array();
+	//colorArray->push_back(osg::Vec4f(params[0], params[1], params[2], params[3]));
 }
 
 SPUNamedFunctionTable _cr_print_table[] = {

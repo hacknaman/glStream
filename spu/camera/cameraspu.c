@@ -62,6 +62,8 @@ static void CAMERASPU_APIENTRY cameraFrustum(GLdouble left, GLdouble right, GLdo
 
 static void CAMERASPU_APIENTRY cameraSwapBuffers(GLint window, GLint flags)
 {
+	camera_spu.super.MatrixMode(GL_MODELVIEW);
+
     if (GetKeyState('A') & 0x8000/*check if high-order bit is set (1 << 15)*/)
     {
         camera_spu.super.Translated(-0.1, 0, 0);

@@ -364,10 +364,11 @@ Visible(int state)
 static void
 menuSelect(int value)
 {
+
     switch (value) {
     case 1:
-        moving = GL_TRUE;
-        glutIdleFunc(Animate);
+		moving = GL_FALSE;
+		glutIdleFunc(NULL);
         break;
     case 2:
         moving = GL_FALSE;;

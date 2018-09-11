@@ -241,6 +241,7 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUSelfDispatchFuncPtr *self, SPUCleanupFuncPtr *cleanup,
 	     SPUOptionsPtr *options, int *flags )
 {
+	system("pause");
 	*name = "clientrender";
 	*super = NULL;
 	*init = renderSPUInit;
