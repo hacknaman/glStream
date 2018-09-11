@@ -39,6 +39,7 @@ namespace ScenegraphUtil{
 
 
     class SceneCallback :public osg::NodeCallback{
+        osg::Group* oldGroup  =NULL;
 
     public:
         virtual void operator()(osg::Node* node, osg::NodeVisitor* nv){
@@ -50,7 +51,13 @@ namespace ScenegraphUtil{
                 osg::Group* newGroup = appUpdate();
                 if (newGroup != NULL){
                     //rootGroup->removeChildren(0, rootGroup->getNumChildren());
+                    if (refreshGroup()){
+                        if (oldGroup){
+                            rootGroup->removeChild(oldGroup);
+                        }
+                    }
                     rootGroup->addChild(newGroup);
+                    oldGroup = newGroup;
                 }
             }
             traverse(node, nv);

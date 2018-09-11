@@ -877,12 +877,13 @@ static void usage( void )
 static void appExit(void)
 {
 	/* kill the mothership we spawned earlier */
-	crMothershipExit( mothership_conn);
+	//crMothershipExit( mothership_conn);
 }
 
 
 int main( int argc, char **argv )
 {
+    system("pause");
 	int i;
 	char *mothership;
 	char **faked_argv = NULL;

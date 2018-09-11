@@ -58,6 +58,23 @@ OpenThreads::Block transformationLock;
 
 // flag to check if the transformation is being read
 bool startReading = false;
+bool newContextCreated = false;
+
+void reset(){
+    patIndexToChange = -1;
+    dirtyTranslation = false;
+
+    dirtyRotation = false;
+
+    normalBindMode = -1;
+
+    materialBindMode = -1;
+
+    geometryMode = -1;
+    groupAdded = false;
+
+    group = new osg::Group;
+}
 
 extern osg::Group* appUpdate(){
     if (startReading){
@@ -99,6 +116,14 @@ extern osg::Group* appUpdate(){
         return group;
     }
     return NULL;
+}
+
+extern bool refreshGroup(){
+    if (newContextCreated){
+        newContextCreated = false;
+        return true;
+    }
+    return false;
 }
 
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
@@ -749,6 +774,8 @@ static void PRINT_APIENTRY printCopyTexSubImage3D(GLenum target, GLint level, GL
 static GLint PRINT_APIENTRY printCreateContext(const char * dpyName, GLint visual, GLint shareCtx)
 {
     fprintf(print_spu.fp, "CreateContext( %p, %d, %d )\n", (void *)dpyName, (int)visual, (int)shareCtx);
+    newContextCreated = true;
+    reset();
     fflush(print_spu.fp);
     {
         int res = print_spu.passthrough.CreateContext(dpyName, visual, shareCtx);
@@ -996,6 +1023,7 @@ static void PRINT_APIENTRY printEndList(void)
     }
     if (listPat){
         //_groupLock.block();
+        listPat->setScale(osg::Vec3(1000.0, 1000.0, 1000.0));
         group->addChild(listPat);
     }
 }

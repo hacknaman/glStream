@@ -39,6 +39,7 @@ extern const char *printspuEnumToStr( GLenum e );
 extern const char *printspuListToStr(GLsizei n, GLenum type, const GLvoid *list);
 
 extern OSGEXPORT osg::Group* appUpdate();
+extern OSGEXPORT bool refreshGroup();
 
 extern void PRINT_APIENTRY printGetIntegerv( GLenum pname, GLint *params );
 extern void PRINT_APIENTRY printGetFloatv( GLenum pname, GLfloat *params );
