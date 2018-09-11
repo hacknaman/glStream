@@ -877,7 +877,7 @@ static void usage( void )
 static void appExit(void)
 {
 	/* kill the mothership we spawned earlier */
-	crMothershipExit( mothership_conn);
+	//crMothershipExit( mothership_conn);
 }
 
 
