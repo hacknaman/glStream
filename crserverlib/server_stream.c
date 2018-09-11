@@ -15,6 +15,9 @@
 /**
  * Accept a new client connection, create a new CRClient and add to run queue.
  */
+
+/* THis flag will set if the clienmt is closed or crashes*/
+GLboolean isClientDeleted = 0;
 void
 crServerAddNewClient(void)
 {
@@ -119,6 +122,7 @@ crServerDeleteClient( CRClient *client )
 
 	crDebug("Deleting client %p (%d msgs left)", client,
 					crNetNumMessages(client->conn));
+    isClientDeleted = 1;
 
 #if 0
 	if (crNetNumMessages(client->conn) > 0) {
@@ -494,9 +498,23 @@ crServerServiceClients(void)
 		ClientStatus stat = crServerServiceClient(q);
 		if (stat == CLIENT_NEXT && cr_server.run_queue->next) {
 			/* advance to next client */
+            isClientDeleted = 0;
 			cr_server.run_queue = cr_server.run_queue->next;
 		}
+        else if (stat == CLIENT_GONE){
+            int argc=-1;
+            char *argv[1000] = { "" };
+            CRServerMain(argc,argv);
+        }
 	}
+    else if (isClientDeleted)
+    {
+        /*if client is dead and the flag is set, run CRServerMain agian,*/
+        isClientDeleted = 0;
+        int argc = -1;
+        char *argv[1000] = { "" };
+        CRServerMain(argc, argv);
+    }
 	else {
 		/* no clients ready, do a receive and maybe we'll get a new
 		 * client message
