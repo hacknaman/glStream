@@ -30,12 +30,16 @@ static int ret_count = 2000;
 
 osg::ref_ptr<osg::Vec3Array> vertexArray;
 osg::ref_ptr<osg::Vec3Array> normalArray;
-osg::ref_ptr<osg::Vec3Array> colorArray = new osg::Vec3Array();
+osg::ref_ptr<osg::Vec3Array> colorArray;
+
+osg::Vec3 CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
+osg::Vec3 CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+
+
 osg::ref_ptr<osg::Geometry> geom;
 osg::ref_ptr<osg::Geode> geode;
 
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > PatArray;
-
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > PatArrayDisplayList;
 
 osg::ref_ptr<osg::PositionAttitudeTransform> listPat;
@@ -72,6 +76,8 @@ int canAdd = false;
 
 int calledreadFromApp = false;
 int hasTouchedBegin = false;
+
+int isDisplayList = false;
 
 std::time_t t = std::time(0);
 
@@ -149,6 +155,16 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 		geode = new osg::Geode();
 		vertexArray = new osg::Vec3Array();
 		normalArray = new osg::Vec3Array();	
+		colorArray = new osg::Vec3Array();
+	}
+
+	if (isDisplayList)
+	{
+		geometryMode = mode;
+		geode = new osg::Geode();
+		vertexArray = new osg::Vec3Array();
+		normalArray = new osg::Vec3Array();
+		colorArray = new osg::Vec3Array();
 	}
 }
 
@@ -206,6 +222,10 @@ static void PRINT_APIENTRY printBufferSubDataARB(GLenum target, GLintptrARB offs
 
 static void PRINT_APIENTRY printCallList(GLuint list)
 {
+	if (isReading) {
+		hasTouchedBegin = true;
+		PatArray.back()->addChild(PatArrayDisplayList[list-1].get());
+	}
 }
 
 static void PRINT_APIENTRY printChromiumParameterfCR(GLenum target, GLfloat value)
@@ -262,46 +282,32 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
-	if (isReading && colorArray)
-	{
-		colorArray->push_back(osg::Vec3(red, green, blue));
-	}
+	CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
-	if (isReading && colorArray)
-	{
-		colorArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-	}
+	CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
-	if (isReading && colorArray)
-	{
-		colorArray->push_back(osg::Vec3(red, green, blue));
-	}
+	CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-	if (isReading && colorArray)
-	{
-		colorArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-	}
+	CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
-	if (isReading && colorArray)
-	{
-		colorArray->push_back(osg::Vec3(red, green, blue));
-	}
+	CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
+	CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -625,32 +631,6 @@ static void PRINT_APIENTRY printEnd(void)
 			geom->setVertexArray(vertexArray);
 			geom->setColorArray(colorArray, osg::Array::BIND_PER_VERTEX);
 			geom->setNormalArray(normalArray, osg::Array::BIND_PER_VERTEX);
-
-			if (normalArray->size() != vertexArray->size())
-			{
-				if (normalArray->size())
-				{
-					geom->setNormalBinding(osg::Geometry::BIND_OVERALL);
-				}
-				else
-				{
-					geom->setNormalBinding(osg::Geometry::BIND_OFF);
-				}
-			}
-
-			if (colorArray->size() != vertexArray->size())
-			{
-				if (colorArray->size())
-				{
-					osg::Vec3Array* Lastcolor = new osg::Vec3Array();
-					Lastcolor->push_back(colorArray->back());
-					geom->setColorArray(Lastcolor, osg::Array::BIND_OVERALL);
-				}
-				else
-				{
-					geom->setColorBinding(osg::Geometry::BIND_OFF);
-				}
-			}
 	
 			geode->addDrawable(geom);
 		}
@@ -659,21 +639,29 @@ static void PRINT_APIENTRY printEnd(void)
 			PatArray.back()->addChild(geode);
 		}
 	}
+
+	if (isDisplayList)
+	{
+		geom = new osg::Geometry();
+		// create a geode and add it to the pat
+		if (vertexArray->size() > 0)
+		{
+			geom->addPrimitiveSet(new osg::DrawArrays(geometryMode, 0, vertexArray->size()));
+			geom->setVertexArray(vertexArray);
+			geom->setColorArray(colorArray, osg::Array::BIND_PER_VERTEX);
+			geom->setNormalArray(normalArray, osg::Array::BIND_PER_VERTEX);
+			geode->addDrawable(geom);
+		}
+
+		if (geode) {
+			PatArrayDisplayList.back()->addChild(geode);
+		}
+	}
 }
 
 static void PRINT_APIENTRY printEndList(void)
 {
-
-	listPat = new osg::PositionAttitudeTransform();
-
-	if (geode){
-		if (geode->getNumChildren() > 0){
-			listPat->addChild(geode);
-		}
-	}
-	if (listPat){
-		spuRootGroup->addChild(listPat);
-	}
+	isDisplayList = false;
 }
 
 static void PRINT_APIENTRY printEndQueryARB(GLenum target)
@@ -1429,87 +1417,59 @@ static void PRINT_APIENTRY printMultiTexCoord4svARB(GLenum texture, const GLshor
 
 static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 {
-
-	//// initialize vertex array;
-	//vertexArray = new osg::Vec3Array();
-
-	//// initialize normal array;
-	//normalArray = new osg::Vec3Array();
-
-	//// initialize material array
-	//colorArray = new osg::Vec4Array();
-
-	geode = new osg::Geode();
+	isDisplayList = true;
+	osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform();
+	PatArrayDisplayList.push_back(pat);
 }
 
 static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(nx, ny, nz));
-	}
+	CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-	}
+	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(nx, ny, nz));
-	}
+	CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-	}
+	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(nx, ny, nz));
-	}
+	CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-	}
+	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(nx, ny, nz));
-	}
+	CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-	}
+	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(nx, ny, nz));
-	}
+	CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
-	if (isReading && normalArray){
-		normalArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-	}
+	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -2304,58 +2264,74 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (isReading && vertexArray){
+	if ( (isReading || isDisplayList) && vertexArray ){
 		vertexArray->push_back(osg::Vec3(x, y, z));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)
 {
-	if (isReading && vertexArray){
+	if ((isReading || isDisplayList) && vertexArray){
 		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3f(GLfloat x, GLfloat y, GLfloat z)
 {
-	if (isReading && vertexArray){
+	if ((isReading || isDisplayList) && vertexArray){
 		vertexArray->push_back(osg::Vec3(x, y, z));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3fv(const GLfloat * v)
 {
 
-	if (isReading && vertexArray){
+	if ((isReading || isDisplayList) && vertexArray){
 		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3i(GLint x, GLint y, GLint z)
 {
-	if (isReading && vertexArray){
+	if ((isReading || isDisplayList) && vertexArray){
 		vertexArray->push_back(osg::Vec3(x, y, z));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3iv(const GLint * v)
 {
-	if (isReading && vertexArray){
+	if ((isReading || isDisplayList) && vertexArray){
 		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3s(GLshort x, GLshort y, GLshort z)
 {
-	if (isReading && vertexArray){
+	if ((isReading || isDisplayList) && vertexArray){
 		vertexArray->push_back(osg::Vec3(x, y, z));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3sv(const GLshort * v)
 {
-	if (isReading && vertexArray){
+	if ((isReading || isDisplayList) && vertexArray){
 		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
+		normalArray->push_back(CurrentNormal);
+		colorArray->push_back(CurrentColor);
 	}
 }
 
@@ -2702,9 +2678,11 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 }
 
 // material function copied here for color
-void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
+static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
-
+	if (face == GL_FRONT && mode == GL_AMBIENT_AND_DIFFUSE) {
+		CurrentColor = osg::Vec3(params[0], params[1], params[2]);
+	}
 }
 
 SPUNamedFunctionTable _cr_print_table[] = {
