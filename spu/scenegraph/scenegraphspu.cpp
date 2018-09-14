@@ -45,29 +45,7 @@ std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > PatArrayDisplayList;
 
 osg::ref_ptr<osg::PositionAttitudeTransform> listPat;
 
-bool groupAdded = false;
-//osgViewer::Viewer* viewer;
-
 static osg::ref_ptr<osg::Group> spuRootGroup = new osg::Group;
-
-// update translation Values
-osg::Vec3f translateData;
-
-// updated Rotation Values
-osg::Quat rotateData;
-
-// update the Pat at the index
-int patIndexToChange = -1;
-
-// flag to check if the translation is to be done or not
-bool dirtyTranslation = false;
-
-// flag to check if the translation is to be done or not
-bool dirtyRotation = false;
-
-int normalBindMode = -1;
-
-int materialBindMode = -1;
 
 int geometryMode = -1;
 
@@ -79,8 +57,30 @@ int calledreadFromApp = false;
 int hasTouchedBegin = false;
 
 int isDisplayList = false;
-
 std::time_t t = std::time(0);
+
+extern void PRINT_APIENTRY scenegraphSPUReset()
+{
+	ret_count = 2000;
+
+	CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
+	CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+
+	spuRootGroup = new osg::Group;
+
+	geometryMode = -1;
+
+	startReading = false;
+	isReading = false;
+	canAdd = false;
+
+	calledreadFromApp = false;
+	hasTouchedBegin = false;
+
+	isDisplayList = false;
+
+	t = std::time(0);
+}
 
 extern osg::Group* appUpdate(){
 

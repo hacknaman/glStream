@@ -157,6 +157,6 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	*cleanup = printSPUCleanup;
 	*options = printSPUOptions;
 	*flags = (SPU_NO_PACKER|SPU_IS_TERMINAL|SPU_MAX_SERVERS_ZERO);
-	
+	scenegraphSPUReset();
 	return 1;
 }
