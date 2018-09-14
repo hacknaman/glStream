@@ -12,9 +12,19 @@
 #include "server_dispatch.h"
 #include "server.h"
 
+
 /**
- * Generate a new window ID.
- */
+* Generate a new window ID.
+*/
+
+static GLint freeID = 1;
+
+void SERVER_DISPATCH_APIENTRY
+contextIDreset(void)
+{
+	freeID = 1;
+}
+
 static GLint
 generateID(void)
 {
@@ -27,10 +37,11 @@ generateID(void)
 		return crRandInt(20000, 50000); /* XXX FIX */
 	}
 	else {
-		static GLint freeID = 1;
 		return freeID++;
 	}
 }
+
+
 
 
 GLint SERVER_DISPATCH_APIENTRY

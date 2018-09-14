@@ -11,7 +11,6 @@ namespace ScenegraphUtil{
     {
     }
 
-    // destructor 
     ScenegraphUtil::~ScenegraphUtil(){}
 
     // set or returns the root Node from the scene
@@ -27,7 +26,6 @@ namespace ScenegraphUtil{
 
     void CRServerThread::run()
     {
-        //system("E:\\CHROMIUM64\\bin64\\bin\\crserver.exe");
         CRServerMain(_argc, _argv);
     }
 
@@ -36,10 +34,9 @@ namespace ScenegraphUtil{
         return OpenThreads::Thread::cancel();
     }
 
+    class SceneCallback :public osg::NodeCallback {
 
-
-    class SceneCallback :public osg::NodeCallback{
-        osg::Group* oldGroup  =NULL;
+	osg::Group* oldGroup; 
 
     public:
         virtual void operator()(osg::Node* node, osg::NodeVisitor* nv){
@@ -48,32 +45,38 @@ namespace ScenegraphUtil{
             // then we can ask for scenegraphspu
             osg::Group* rootGroup = node->asGroup();
             if (rootGroup != NULL){
-                osg::Group* newGroup = appUpdate();
+				osg::Group* newGroup = NULL;
+				newGroup = appUpdate();
                 if (newGroup != NULL){
-                    //rootGroup->removeChildren(0, rootGroup->getNumChildren());
-                    if (refreshGroup()){
-                        if (oldGroup){
-                            rootGroup->removeChild(oldGroup);
-                        }
-                    }
-                    rootGroup->addChild(newGroup);
-                    oldGroup = newGroup;
+
+					if (oldGroup != NULL) {
+						rootGroup->replaceChild(oldGroup, newGroup);
+					}
+					else {
+						rootGroup->addChild(newGroup);
+					}
+
+					oldGroup = newGroup;
                 }
             }
             traverse(node, nv);
         }
-    };
 
+		SceneCallback() {
+			oldGroup = NULL;
+		}
+    };
 
     osg::ref_ptr<osg::Group> ScenegraphUtil::getRootNode(){
         return _rootNode;
     }
 
-    void ScenegraphUtil::run(int argc, char* argv[]){
+    void ScenegraphUtil::run(int argc, char* argv[]) {
+
         // attach node Call to root Node
         _rootNode->addUpdateCallback(new SceneCallback());
-        // start crserver in separate thread
 
+        // start crserver in separate thread
         _thread = new CRServerThread(argc, argv);
         _thread->start();
     }

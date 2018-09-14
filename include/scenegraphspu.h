@@ -32,7 +32,6 @@ typedef struct {
 } PrintSpu;
 
 extern PrintSpu print_spu;
-extern osg::Group* group;
 
 extern void printspuGatherConfiguration( const SPU *child_spu );
 extern const char *printspuEnumToStr( GLenum e );
