@@ -34,7 +34,7 @@ setDefaults(void)
 	cr_server.sharedPrograms = 1;
 	cr_server.sharedWindows = 0;
 	cr_server.useDMX = 0;
-	cr_server.exitIfNoClients = 1;
+	cr_server.exitIfNoClients = 0;
 	cr_server.vpProjectionMatrixParameter = -1;
 	cr_server.vpProjectionMatrixVariable = NULL;
 	cr_server.currentProgram = 0;

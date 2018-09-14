@@ -10,7 +10,6 @@ void PRINT_APIENTRY printMaterialiv( GLenum face, GLenum mode, const GLint *para
 {
 	int i;
 	int num_params = 4;
-	fprintf( print_spu.fp, "Materialiv( %s, %s, [ ", printspuEnumToStr( face ), printspuEnumToStr( mode ) );
 
 	if (mode == GL_SHININESS)
 	{
@@ -19,22 +18,16 @@ void PRINT_APIENTRY printMaterialiv( GLenum face, GLenum mode, const GLint *para
 
 	for (i = 0 ; i < num_params ; i++)
 	{
-		fprintf( print_spu.fp, "%d", (int) params[i] );
 		if (i != num_params -1)
 		{
-			fprintf( print_spu.fp, ", " );
 		}
 	}
-	fprintf( print_spu.fp, " ] )\n" );
-	fflush( print_spu.fp );
-	print_spu.passthrough.Materialiv( face, mode, params );
 }
 
 void PRINT_APIENTRY printLightfv( GLenum light, GLenum pname, const GLfloat *params )
 {
 	int i;
 	int num_params = 4;
-	fprintf( print_spu.fp, "Lightfv( %s, %s, [ ", printspuEnumToStr( light ), printspuEnumToStr( pname ) );
 
 	if (pname == GL_SPOT_EXPONENT || pname == GL_SPOT_CUTOFF || pname == GL_CONSTANT_ATTENUATION || pname == GL_LINEAR_ATTENUATION || pname == GL_QUADRATIC_ATTENUATION )
 	{
@@ -43,22 +36,16 @@ void PRINT_APIENTRY printLightfv( GLenum light, GLenum pname, const GLfloat *par
 
 	for (i = 0 ; i < num_params ; i++)
 	{
-		fprintf( print_spu.fp, "%f", params[i] );
 		if (i != num_params -1)
 		{
-			fprintf( print_spu.fp, ", " );
 		}
 	}
-	fprintf( print_spu.fp, " ] )\n" );
-	fflush( print_spu.fp );
-	print_spu.passthrough.Lightfv( light, pname, params );
 }
 
 void PRINT_APIENTRY printLightiv( GLenum light, GLenum pname, const GLint *params )
 {
 	int i;
 	int num_params = 4;
-	fprintf( print_spu.fp, "Lightiv( %s, %s, [ ", printspuEnumToStr( light ), printspuEnumToStr( pname ) );
 
 	if (pname == GL_SPOT_EXPONENT || pname == GL_SPOT_CUTOFF || pname == GL_CONSTANT_ATTENUATION || pname == GL_LINEAR_ATTENUATION || pname == GL_QUADRATIC_ATTENUATION )
 	{
@@ -67,14 +54,9 @@ void PRINT_APIENTRY printLightiv( GLenum light, GLenum pname, const GLint *param
 
 	for (i = 0 ; i < num_params ; i++)
 	{
-		fprintf( print_spu.fp, "%d", (int) params[i] );
 		if (i != num_params -1)
 		{
-			fprintf( print_spu.fp, ", " );
 		}
 	}
-	fprintf( print_spu.fp, " ] )\n" );
-	fflush( print_spu.fp );
-	print_spu.passthrough.Lightiv( light, pname, params );
 }
 

@@ -27,26 +27,7 @@ static void set_marker_signal( void *foo, const char *response )
 
 static void set_log_file( void *foo, const char *response )
 {
-	if (crStrcmp( response, "stderr" ) == 0)
-	{
-		print_spu.fp = stderr;
-	} 
-	else if (crStrcmp( response, "stdout" ) == 0)
-	{
-		print_spu.fp = stdout;
-	}
-	else if (*response)
-	{
-		print_spu.fp = fopen( response, "w" );
-		if (print_spu.fp == NULL)
-		{
-			crError( "Couldn't open print SPU log file %s", response );
-		}
-	}
-	else
-	{
-		print_spu.fp = stderr;
-	}
+	print_spu.fp = stdout;
 }
 
 

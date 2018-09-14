@@ -178,6 +178,9 @@ crServerInit(int argc, char *argv[])
 	char *mothership = NULL;
 	CRMuralInfo *defaultMural;
 
+	windowIDreset();
+	contextIDreset();
+
 	for (i = 1 ; i < argc ; i++)
 	{
 		if (!crStrcmp( argv[i], "-mothership" ))
@@ -249,8 +252,7 @@ crServerInit(int argc, char *argv[])
 	 * Default context
 	 */
 	cr_server.contextTable = crAllocHashtable();
-	cr_server.DummyContext = crStateCreateContext( &cr_server.limits,
-																								 CR_RGB_BIT | CR_DEPTH_BIT, NULL );
+	cr_server.DummyContext = crStateCreateContext( &cr_server.limits, CR_RGB_BIT | CR_DEPTH_BIT, NULL );
 	cr_server.curClient->currentCtx = cr_server.DummyContext;
 
 	crServerInitDispatch();
