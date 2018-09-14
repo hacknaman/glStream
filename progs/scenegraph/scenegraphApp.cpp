@@ -4,6 +4,7 @@
 #include <osg/PolygonStipple>
 #include <osg/Geometry>
 #include <osg/Geode>
+#include <osg/PositionAttitudeTransform>
 #include <osgDB/Export>
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
@@ -20,7 +21,6 @@
 #include <osgGA/TerrainManipulator>
 #include <osgGA/SphericalManipulator>
 
-#include <osg/PositionAttitudeTransform>
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
 #include <ScenegraphUtil.h>

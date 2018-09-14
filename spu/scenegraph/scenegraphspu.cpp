@@ -35,6 +35,7 @@ osg::ref_ptr<osg::Vec3Array> colorArray;
 osg::Vec3 CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
 osg::Vec3 CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
+osg::Matrix CurrentMatrix;
 
 osg::ref_ptr<osg::Geometry> geom;
 osg::ref_ptr<osg::Geode> geode;
@@ -1196,6 +1197,17 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
+	CurrentMatrix = osg::Matrix();
+}
+
+static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
+{
+	CurrentMatrix.set(m);
+}
+
+static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
+{
+	CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -2265,102 +2277,90 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
 	if ( (isReading || isDisplayList) && vertexArray ){
-		vertexArray->push_back(osg::Vec3(x, y, z));
-		normalArray->push_back(CurrentNormal);
+		osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
+		osg::Matrix matFinal = mat * CurrentMatrix;
+		osg::Vec3 vertexPoint = matFinal.getTrans();
+
+		osg::Matrix Normalmat = osg::Matrix::translate(CurrentNormal);
+		osg::Matrix CurrentMatrixNew = CurrentMatrix;
+		CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
+		osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
+		osg::Vec3 normalPoint = NormalmatFinal.getTrans();
+
+		vertexArray->push_back(vertexPoint);
+		normalArray->push_back(normalPoint);
 		colorArray->push_back(CurrentColor);
 	}
 }
 
 static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)
 {
-	if ((isReading || isDisplayList) && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-		normalArray->push_back(CurrentNormal);
-		colorArray->push_back(CurrentColor);
-	}
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex3f(GLfloat x, GLfloat y, GLfloat z)
 {
-	if ((isReading || isDisplayList) && vertexArray){
-		vertexArray->push_back(osg::Vec3(x, y, z));
-		normalArray->push_back(CurrentNormal);
-		colorArray->push_back(CurrentColor);
-	}
+	printVertex3d(x,y,z);
 }
 
 static void PRINT_APIENTRY printVertex3fv(const GLfloat * v)
 {
-
-	if ((isReading || isDisplayList) && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-		normalArray->push_back(CurrentNormal);
-		colorArray->push_back(CurrentColor);
-	}
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex3i(GLint x, GLint y, GLint z)
 {
-	if ((isReading || isDisplayList) && vertexArray){
-		vertexArray->push_back(osg::Vec3(x, y, z));
-		normalArray->push_back(CurrentNormal);
-		colorArray->push_back(CurrentColor);
-	}
+	printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex3iv(const GLint * v)
 {
-	if ((isReading || isDisplayList) && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-		normalArray->push_back(CurrentNormal);
-		colorArray->push_back(CurrentColor);
-	}
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex3s(GLshort x, GLshort y, GLshort z)
 {
-	if ((isReading || isDisplayList) && vertexArray){
-		vertexArray->push_back(osg::Vec3(x, y, z));
-		normalArray->push_back(CurrentNormal);
-		colorArray->push_back(CurrentColor);
-	}
+	printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex3sv(const GLshort * v)
 {
-	if ((isReading || isDisplayList) && vertexArray){
-		vertexArray->push_back(osg::Vec3(v[0], v[1], v[2]));
-		normalArray->push_back(CurrentNormal);
-		colorArray->push_back(CurrentColor);
-	}
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w)
 {
+	printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4dv(const GLdouble * v)
 {
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
+	printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4fv(const GLfloat * v)
 {
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4i(GLint x, GLint y, GLint z, GLint w)
 {
+	printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4iv(const GLint * v)
 {
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4s(GLshort x, GLshort y, GLshort z, GLshort w)
 {
+	printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4sv(const GLshort * v)
