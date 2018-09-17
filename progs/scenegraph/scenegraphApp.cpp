@@ -58,10 +58,12 @@ int main(int argc, char* argv[]) {
 
 	viewer->setCameraManipulator(manipulator.get());
 
+	viewer->setUpViewInWindow(100, 100, 640, 480);
+	viewer->realize();
+
 	// OSG window settings
 	osgViewer::Viewer::Windows ViewerWindow;
 	viewer->getWindows(ViewerWindow);
-	viewer->setUpViewInWindow(100, 100, 640, 480);
 	if (!ViewerWindow.empty())
 	{
 		ViewerWindow.front()->setWindowName("TransViz Client");
