@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer();
 
 	// Test Model
-	rootGroup->addChild(osgDB::readNodeFile("C:/Project/TransViz/TestData/axes.osgt"));    
+	rootGroup->addChild(osgDB::readNodeFile("C:/Project/TransViz/TestData/axes.osgt"));    // This won't crash the program. if the file isn't found.
     viewer->setSceneData(rootGroup);
 
 	// State Manipulator and show states

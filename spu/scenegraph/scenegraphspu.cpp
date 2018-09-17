@@ -17,6 +17,7 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include <osg/Polygonmode>
 #include <osg/Material>
 #include <osg/PositionAttitudeTransform>
+#include <osg/PolygonStipple>
 #include <OpenThreads/Mutex>
 #include <osgDB/Export>
 #include <osgDB/Registry>
@@ -24,84 +25,86 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include <osgDB/Writefile>
 #include <ctime>
 
-static int ret_count = 2000;
-
 #define PRINT_UNUSED(x) ((void)x)
+static int g_ret_count = 2000;
 
-osg::ref_ptr<osg::Vec3Array> vertexArray;
-osg::ref_ptr<osg::Vec3Array> normalArray;
-osg::ref_ptr<osg::Vec3Array> colorArray;
+osg::ref_ptr<osg::Vec3Array> g_vertexArray;
+osg::ref_ptr<osg::Vec3Array> g_normalArray;
+osg::ref_ptr<osg::Vec3Array> g_colorArray;
 
-osg::Vec3 CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-osg::Vec3 CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+osg::Vec3 g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
+osg::Vec3 g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
-osg::Matrix CurrentMatrix;
+osg::Matrix g_CurrentMatrix;
 
-osg::ref_ptr<osg::Geometry> geom;
-osg::ref_ptr<osg::Geode> geode;
+osg::ref_ptr<osg::Geometry> g_geom;
+osg::ref_ptr<osg::Geode> g_geode;
 
-std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > PatArray;
-std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > PatArrayDisplayList;
+std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArray;
+std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
 
-osg::ref_ptr<osg::PositionAttitudeTransform> listPat;
+osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet();
 
-static osg::ref_ptr<osg::Group> spuRootGroup = new osg::Group;
+static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
 
-int geometryMode = -1;
+int g_geometryMode = -1;
 
-int startReading = false;
-int isReading = false;
-int canAdd = false;
+int g_startReading = false;
+int g_isReading = false;
+int g_canAdd = false;
 
-int calledreadFromApp = false;
-int hasTouchedBegin = false;
+int g_calledreadFromApp = false;
+int g_hasTouchedBegin = false;
 
-int isDisplayList = false;
-std::time_t t = std::time(0);
+int g_isDisplayList = false;
+std::time_t g_time = std::time(0);
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
-	ret_count = 2000;
+	g_ret_count = 2000;
 
-	CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-	CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+	g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
+	g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
-	spuRootGroup = new osg::Group;
+	g_PatArray.clear();
+	g_PatArrayDisplayList.clear();
 
-	geometryMode = -1;
+	g_spuRootGroup = new osg::Group;
 
-	startReading = false;
-	isReading = false;
-	canAdd = false;
+	g_geometryMode = -1;
 
-	calledreadFromApp = false;
-	hasTouchedBegin = false;
+	g_startReading = false;
+	g_isReading = false;
+	g_canAdd = false;
 
-	isDisplayList = false;
+	g_calledreadFromApp = false;
+	g_hasTouchedBegin = false;
 
-	t = std::time(0);
+	g_isDisplayList = false;
+
+	g_time = std::time(0);
 }
 
 extern osg::Group* appUpdate(){
 
 	// Get uptead model when Alt + A is pressed
-	if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && calledreadFromApp == false)
+	if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && g_calledreadFromApp == false)
 	{
-		if (isReading == false && std::difftime(std::time(0), t) > 1){
-			t = std::time(0);
-			calledreadFromApp = true;
+		if (g_isReading == false && std::difftime(std::time(0), g_time) > 1){
+			g_time = std::time(0);
+			g_calledreadFromApp = true;
 		}		
 	}
 
 	// Save model when Y is pressed
-	if (GetKeyState('Y') & 0x8000 && spuRootGroup->getNumChildren() )
+	if (GetKeyState('Y') & 0x8000 && g_spuRootGroup->getNumChildren() )
 	{
-		osgDB::writeNodeFile(*spuRootGroup, "saved.ive");
+		osgDB::writeNodeFile(*g_spuRootGroup, "saved.ive");
 	}
 
-	if (spuRootGroup != NULL && canAdd == true && isReading == false){
-		canAdd = false;
-		return spuRootGroup.get();
+	if (g_spuRootGroup != NULL && g_canAdd == true && g_isReading == false){
+		g_canAdd = false;
+		return g_spuRootGroup.get();
 	}
 
 	return NULL;
@@ -149,23 +152,23 @@ static void PRINT_APIENTRY printBarrierExecCR(GLuint name)
 
 static void PRINT_APIENTRY printBegin(GLenum mode)
 {
-	if (isReading)
+	if (g_isReading)
 	{
-		hasTouchedBegin = true;
-		geometryMode = mode;
-		geode = new osg::Geode();
-		vertexArray = new osg::Vec3Array();
-		normalArray = new osg::Vec3Array();	
-		colorArray = new osg::Vec3Array();
+		g_hasTouchedBegin = true;
+		g_geometryMode = mode;
+		g_geode = new osg::Geode();
+		g_vertexArray = new osg::Vec3Array();
+		g_normalArray = new osg::Vec3Array();	
+		g_colorArray = new osg::Vec3Array();
 	}
 
-	if (isDisplayList)
+	if (g_isDisplayList)
 	{
-		geometryMode = mode;
-		geode = new osg::Geode();
-		vertexArray = new osg::Vec3Array();
-		normalArray = new osg::Vec3Array();
-		colorArray = new osg::Vec3Array();
+		g_geometryMode = mode;
+		g_geode = new osg::Geode();
+		g_vertexArray = new osg::Vec3Array();
+		g_normalArray = new osg::Vec3Array();
+		g_colorArray = new osg::Vec3Array();
 	}
 }
 
@@ -223,9 +226,9 @@ static void PRINT_APIENTRY printBufferSubDataARB(GLenum target, GLintptrARB offs
 
 static void PRINT_APIENTRY printCallList(GLuint list)
 {
-	if (isReading) {
-		hasTouchedBegin = true;
-		PatArray.back()->addChild(PatArrayDisplayList[list-1].get());
+	if (g_isReading) {
+		g_hasTouchedBegin = true;
+		g_PatArray.back()->addChild(g_PatArrayDisplayList[list-1].get());
 	}
 }
 
@@ -283,32 +286,32 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
-	CurrentColor = osg::Vec3(red, green, blue);
+	g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
-	CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
-	CurrentColor = osg::Vec3(red, green, blue);
+	g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-	CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
-	CurrentColor = osg::Vec3(red, green, blue);
+	g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
-	CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -499,7 +502,7 @@ static void PRINT_APIENTRY printCopyTexSubImage3D(GLenum target, GLint level, GL
 
 static GLint PRINT_APIENTRY printCreateContext(const char * dpyName, GLint visual, GLint shareCtx)
 {
-	return ret_count++;
+	return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printCullFace(GLenum mode)
@@ -548,6 +551,9 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
+	if (GL_POLYGON_STIPPLE){
+		g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
+	}
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -592,22 +598,9 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
-	if (isReading && cap == GL_BLEND) {
-
-		return;
-
-		osg::StateSet* state2 = PatArray.back()->getOrCreateStateSet(); //Creating material
-		osg::ref_ptr<osg::Material> mat2 = new osg::Material;
-
-		mat2->setAlpha(osg::Material::FRONT_AND_BACK, 0.1); //Making alpha channel
-		state2->setAttributeAndModes(mat2.get(),
-			osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-
-		osg::BlendFunc* bf = new                       
-			osg::BlendFunc(osg::BlendFunc::SRC_ALPHA,
-			osg::BlendFunc::ONE_MINUS_DST_COLOR);
-		state2->setAttributeAndModes(bf);
-
+	if (g_isReading && cap == GL_POLYGON_STIPPLE) {
+		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple();
+		g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
 	}
 }
 
@@ -622,47 +615,54 @@ static void PRINT_APIENTRY printEnableVertexAttribArrayARB(GLuint index)
 // 
 static void PRINT_APIENTRY printEnd(void)
 {
-	if (isReading)
+	if (g_isReading)
 	{
-		geom = new osg::Geometry();
-		// create a geode and add it to the pat
-		if (vertexArray->size() > 0)
+		g_geom = new osg::Geometry();
+		// create a g_geode and add it to the pat
+		if (g_vertexArray->size() > 0)
 		{
-			geom->addPrimitiveSet(new osg::DrawArrays(geometryMode, 0, vertexArray->size()));
-			geom->setVertexArray(vertexArray);
-			geom->setColorArray(colorArray, osg::Array::BIND_PER_VERTEX);
-			geom->setNormalArray(normalArray, osg::Array::BIND_PER_VERTEX);
-	
-			geode->addDrawable(geom);
+			g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
+			g_geom->setVertexArray(g_vertexArray);
+			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
+			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
+			if (g_state != NULL)
+			{
+				g_geom->setStateSet(new osg::StateSet(*g_state));
+			}
+			g_geode->addDrawable(g_geom);
 		}
 
-		if (geode){
-			PatArray.back()->addChild(geode);
+		if (g_geode){
+			g_PatArray.back()->addChild(g_geode);
 		}
 	}
 
-	if (isDisplayList)
+	if (g_isDisplayList)
 	{
-		geom = new osg::Geometry();
-		// create a geode and add it to the pat
-		if (vertexArray->size() > 0)
+		g_geom = new osg::Geometry();
+		// create a g_geode and add it to the pat
+		if (g_vertexArray->size() > 0)
 		{
-			geom->addPrimitiveSet(new osg::DrawArrays(geometryMode, 0, vertexArray->size()));
-			geom->setVertexArray(vertexArray);
-			geom->setColorArray(colorArray, osg::Array::BIND_PER_VERTEX);
-			geom->setNormalArray(normalArray, osg::Array::BIND_PER_VERTEX);
-			geode->addDrawable(geom);
+			g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
+			g_geom->setVertexArray(g_vertexArray);
+			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
+			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
+			if (g_state != NULL)
+			{
+				g_geom->setStateSet(new osg::StateSet(*g_state));
+			}
+			g_geode->addDrawable(g_geom);
 		}
 
-		if (geode) {
-			PatArrayDisplayList.back()->addChild(geode);
+		if (g_geode) {
+			g_PatArrayDisplayList.back()->addChild(g_geode);
 		}
 	}
 }
 
 static void PRINT_APIENTRY printEndList(void)
 {
-	isDisplayList = false;
+	g_isDisplayList = false;
 }
 
 static void PRINT_APIENTRY printEndQueryARB(GLenum target)
@@ -741,7 +741,7 @@ static void PRINT_APIENTRY printFlush(void)
 {
 }
 
-static void PRINT_APIENTRY printFlushVertexArrayRangeNV(void)
+static void PRINT_APIENTRY printFlushg_vertexArrayRangeNV(void)
 {
 }
 
@@ -799,7 +799,7 @@ static void PRINT_APIENTRY printGenFencesNV(GLsizei n, GLuint * fences)
 
 static GLuint PRINT_APIENTRY printGenLists(GLsizei range)
 {
-	return ret_count++;
+	return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printGenProgramsARB(GLsizei n, GLuint * programs)
@@ -1197,17 +1197,17 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-	CurrentMatrix = osg::Matrix();
+	g_CurrentMatrix = osg::Matrix();
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-	CurrentMatrix.set(m);
+	g_CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-	CurrentMatrix.set(m);
+	g_CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1429,59 +1429,59 @@ static void PRINT_APIENTRY printMultiTexCoord4svARB(GLenum texture, const GLshor
 
 static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 {
-	isDisplayList = true;
+	g_isDisplayList = true;
 	osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform();
-	PatArrayDisplayList.push_back(pat);
+	g_PatArrayDisplayList.push_back(pat);
 }
 
 static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
 {
-	CurrentNormal = osg::Vec3(nx, ny, nz);
+	g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
 {
-	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
-	CurrentNormal = osg::Vec3(nx, ny, nz);
+	g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
-	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
-	CurrentNormal = osg::Vec3(nx, ny, nz);
+	g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
-	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
-	CurrentNormal = osg::Vec3(nx, ny, nz);
+	g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
-	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
-	CurrentNormal = osg::Vec3(nx, ny, nz);
+	g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
-	CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -1570,9 +1570,9 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 
 static void PRINT_APIENTRY printPopMatrix(void)
 {
-	if (isReading)
+	if (g_isReading)
 	{		
-		PatArray.pop_back();
+		g_PatArray.pop_back();
 	}
 }
 
@@ -1670,12 +1670,12 @@ static void PRINT_APIENTRY printPushClientAttrib(GLbitfield mask)
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
-	if (isReading)
+	if (g_isReading)
 	{
 		// create a pat node
 		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-		PatArray.back()->addChild(pat);
-		PatArray.push_back(pat);
+		g_PatArray.back()->addChild(pat);
+		g_PatArray.push_back(pat);
 	}
 }
 
@@ -1821,7 +1821,7 @@ static void PRINT_APIENTRY printRectsv(const GLshort * v1, const GLshort * v2)
 
 static GLint PRINT_APIENTRY printRenderMode(GLenum mode)
 {
-	return ret_count++;
+	return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuint * ids)
@@ -1830,17 +1830,17 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
-	if (isReading)
+	if (g_isReading)
 	{
-		//PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
+		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
 	}
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-	if (isReading)
+	if (g_isReading)
 	{
-		//PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
+		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
 	}
 }
 
@@ -1850,18 +1850,15 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (isReading)
+	if (g_isReading)
 	{
-		PatArray.back()->setScale(osg::Vec3( x, y, z));
+		g_PatArray.back()->setScale(osg::Vec3( x, y, z));
 	}
 }
 
 static void PRINT_APIENTRY printScalef(GLfloat x, GLfloat y, GLfloat z)
 {
-	if (isReading)
-	{
-		PatArray.back()->setScale(osg::Vec3( x, y, z));
-	}
+	printScaled(x, y, z);
 }
 
 static void PRINT_APIENTRY printScissor(GLint x, GLint y, GLsizei width, GLsizei height)
@@ -1979,36 +1976,36 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
 
-	if (isReading)
+	if (g_isReading)
 	{
-		startReading = false;
-		spuRootGroup->addChild(PatArray.back());
-		PatArray.pop_back();
+		g_startReading = false;
+		g_spuRootGroup->addChild(g_PatArray.back());
+		g_PatArray.pop_back();
 
-		if (hasTouchedBegin == false)
+		if (g_hasTouchedBegin == false)
 		{
-			calledreadFromApp = true;
+			g_calledreadFromApp = true;
 		}
 
-		canAdd = true;
-		isReading = false;
+		g_canAdd = true;
+		g_isReading = false;
 	}
 
-	if (calledreadFromApp)
+	if (g_calledreadFromApp)
 	{
-		calledreadFromApp = false;
-		startReading = true;
-		isReading = true;
-		hasTouchedBegin = false;
+		g_calledreadFromApp = false;
+		g_startReading = true;
+		g_isReading = true;
+		g_hasTouchedBegin = false;
 	}
 
-	if (startReading)
+	if (g_startReading)
 	{
-		spuRootGroup = new osg::Group;
+		g_spuRootGroup = new osg::Group;
 		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
 
-		PatArray.push_back(pat);
-		startReading = false;
+		g_PatArray.push_back(pat);
+		g_startReading = false;
 	}
 }
 
@@ -2223,17 +2220,17 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (isReading && PatArray.size() > 1)
+	if (g_isReading && g_PatArray.size() > 1)
 	{
-		PatArray.back()->setPosition(osg::Vec3(x, y, z));
+		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
 	}
 }
 
 static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
-	if (isReading && PatArray.size() > 1)
+	if (g_isReading && g_PatArray.size() > 1)
 	{
-		PatArray.back()->setPosition(osg::Vec3(x, y, z));
+		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
 	}
 }
 
@@ -2276,20 +2273,21 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
-	if ( (isReading || isDisplayList) && vertexArray ){
+	if ((g_isReading || g_isDisplayList) && g_vertexArray){
+		// Math to transfrom vertex and normal to matrix mode
 		osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
-		osg::Matrix matFinal = mat * CurrentMatrix;
+		osg::Matrix matFinal = mat * g_CurrentMatrix;
 		osg::Vec3 vertexPoint = matFinal.getTrans();
 
-		osg::Matrix Normalmat = osg::Matrix::translate(CurrentNormal);
-		osg::Matrix CurrentMatrixNew = CurrentMatrix;
+		osg::Matrix Normalmat = osg::Matrix::translate(g_CurrentNormal);
+		osg::Matrix CurrentMatrixNew = g_CurrentMatrix;
 		CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
 		osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
 		osg::Vec3 normalPoint = NormalmatFinal.getTrans();
 
-		vertexArray->push_back(vertexPoint);
-		normalArray->push_back(normalPoint);
-		colorArray->push_back(CurrentColor);
+		g_vertexArray->push_back(vertexPoint);
+		g_normalArray->push_back(normalPoint);
+		g_colorArray->push_back(g_CurrentColor);
 	}
 }
 
@@ -2367,7 +2365,7 @@ static void PRINT_APIENTRY printVertex4sv(const GLshort * v)
 {
 }
 
-static void PRINT_APIENTRY printVertexArrayRangeNV(GLsizei length, const GLvoid * pointer)
+static void PRINT_APIENTRY printg_vertexArrayRangeNV(GLsizei length, const GLvoid * pointer)
 {
 }
 
@@ -2586,7 +2584,7 @@ static void PRINT_APIENTRY printViewport(GLint x, GLint y, GLsizei width, GLsize
 
 static GLint PRINT_APIENTRY printWindowCreate(const char * dpyName, GLint visBits)
 {
-	return ret_count++;
+	return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printWindowDestroy(GLint window)
@@ -2681,7 +2679,7 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 	if (face == GL_FRONT && mode == GL_AMBIENT_AND_DIFFUSE) {
-		CurrentColor = osg::Vec3(params[0], params[1], params[2]);
+		g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
 	}
 }
 
@@ -2823,7 +2821,7 @@ SPUNamedFunctionTable _cr_print_table[] = {
 	{ "Finish", (SPUGenericFunction)printFinish },
 	{ "FinishFenceNV", (SPUGenericFunction)printFinishFenceNV },
 	{ "Flush", (SPUGenericFunction)printFlush },
-	{ "FlushVertexArrayRangeNV", (SPUGenericFunction)printFlushVertexArrayRangeNV },
+	{ "Flushg_vertexArrayRangeNV", (SPUGenericFunction)printFlushg_vertexArrayRangeNV },
 	{ "FogCoordPointerEXT", (SPUGenericFunction)printFogCoordPointerEXT },
 	{ "FogCoorddEXT", (SPUGenericFunction)printFogCoorddEXT },
 	{ "FogCoorddvEXT", (SPUGenericFunction)printFogCoorddvEXT },
@@ -3213,7 +3211,7 @@ SPUNamedFunctionTable _cr_print_table[] = {
 	{ "Vertex4iv", (SPUGenericFunction)printVertex4iv },
 	{ "Vertex4s", (SPUGenericFunction)printVertex4s },
 	{ "Vertex4sv", (SPUGenericFunction)printVertex4sv },
-	{ "VertexArrayRangeNV", (SPUGenericFunction)printVertexArrayRangeNV },
+	{ "g_vertexArrayRangeNV", (SPUGenericFunction)printg_vertexArrayRangeNV },
 	{ "VertexAttrib1dARB", (SPUGenericFunction)printVertexAttrib1dARB },
 	{ "VertexAttrib1dvARB", (SPUGenericFunction)printVertexAttrib1dvARB },
 	{ "VertexAttrib1fARB", (SPUGenericFunction)printVertexAttrib1fARB },
