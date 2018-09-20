@@ -41,6 +41,9 @@ namespace ScenegraphUtil{
         // set or returns the root Node from the scene
         void setRootNode(osg::Group* root);
         osg::ref_ptr<osg::Group> getRootNode();
+		osg::ref_ptr<osg::Group> getLastGeneratedNode();
+
+		void updateNode(osg::ref_ptr<osg::Group> node);
 
         // start crServer and attach node callback to the root group
         void run(int argc, char* argv[]);
@@ -51,6 +54,7 @@ namespace ScenegraphUtil{
         // root Node for the Scene , This Root Node will be used by GraphicsWindowViewer as the sceneData
         // the same node will be used in SceneGraphApp for the updation of the Scene
         osg::ref_ptr<osg::Group> _rootNode;
+		osg::ref_ptr<osg::Group> _oldNode;
 
         CRServerThread* _thread;
 

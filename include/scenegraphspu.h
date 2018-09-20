@@ -33,12 +33,13 @@ typedef struct {
 
 extern PrintSpu print_spu;
 
+extern OSGEXPORT void getUpdatedScene();
+extern OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
+
 extern void printspuGatherConfiguration( const SPU *child_spu );
 extern const char *printspuEnumToStr( GLenum e );
 extern const char *printspuListToStr(GLsizei n, GLenum type, const GLvoid *list);
 extern void PRINT_APIENTRY scenegraphSPUReset();
-
-extern OSGEXPORT osg::Group* appUpdate();
 
 extern void PRINT_APIENTRY printGetIntegerv( GLenum pname, GLint *params );
 extern void PRINT_APIENTRY printGetFloatv( GLenum pname, GLfloat *params );

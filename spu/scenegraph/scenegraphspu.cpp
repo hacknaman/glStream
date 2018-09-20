@@ -85,29 +85,17 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 	g_time = std::time(0);
 }
 
-extern osg::Group* appUpdate(){
+extern OSGEXPORT void getUpdatedScene(){
+	g_calledreadFromApp = true;
+}
 
-	// Get uptead model when Alt + A is pressed
-	if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && g_calledreadFromApp == false)
-	{
-		if (g_isReading == false && std::difftime(std::time(0), g_time) > 1){
-			g_time = std::time(0);
-			g_calledreadFromApp = true;
-		}		
-	}
+void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
+void *g_context = NULL;
 
-	// Save model when Y is pressed
-	if (GetKeyState('Y') & 0x8000 && g_spuRootGroup->getNumChildren() )
-	{
-		osgDB::writeNodeFile(*g_spuRootGroup, "saved.ive");
-	}
+extern OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
 
-	if (g_spuRootGroup != NULL && g_canAdd == true && g_isReading == false){
-		g_canAdd = false;
-		return g_spuRootGroup.get();
-	}
-
-	return NULL;
+	g_pt2Func = pt2Func;
+	g_context = context;
 }
 
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
@@ -1976,6 +1964,14 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
 
+	if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && g_calledreadFromApp == false)
+	{
+		if (g_isReading == false && std::difftime(std::time(0), g_time) > 1){
+			g_time = std::time(0);
+			g_calledreadFromApp = true;
+		}
+	}
+
 	if (g_isReading)
 	{
 		g_startReading = false;
@@ -1987,8 +1983,8 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 			g_calledreadFromApp = true;
 		}
 
-		g_canAdd = true;
 		g_isReading = false;
+		g_pt2Func(g_context, g_spuRootGroup.get());
 	}
 
 	if (g_calledreadFromApp)
