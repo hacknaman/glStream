@@ -23,13 +23,13 @@
 
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
-#include <ScenegraphUtil.h>
+#include <TransVizUtil.h>
 
 int main(int argc, char* argv[]) {
 
     system("pause");
 
-    osg::ref_ptr<ScenegraphUtil::ScenegraphUtil> SceneGraphGenerator = new ScenegraphUtil::ScenegraphUtil();
+    osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator = new TransVizUtil::TransVizUtil();
 	osg::ref_ptr <osg::Group> rootGroup = new osg::Group();
 	SceneGraphGenerator->setRootNode(rootGroup);
 
