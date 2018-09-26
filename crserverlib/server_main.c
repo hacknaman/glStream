@@ -14,6 +14,9 @@
 #include "cr_hash.h"
 #include <signal.h>
 #include <stdlib.h>
+
+#include <lm_attr.h>
+#include <lmclient.h>
 #define DEBUG_FP_EXCEPTIONS 0
 #if DEBUG_FP_EXCEPTIONS
 #include <fpu_control.h>
@@ -167,6 +170,25 @@ crPrintHelp(void)
 	printf("  -help            Prints this information.\n");
 }
 
+/**
+ check License to execute crserver
+*/
+
+GLboolean checkLicense(){
+    LM_HANDLE* _lmHandle;
+
+        VENDORCODE code;
+        lc_new_job(NULL, lc_new_job_arg2, &code, &_lmHandle);
+
+        char* licensePath = "../../../Licenses";
+        lc_set_attr(_lmHandle, LM_A_LICENSE_DEFAULT, (LM_A_VAL_TYPE)licensePath);
+
+        char* featureName1 = "TRANSVIZ_CRSERVER_MODULE";
+
+        if (lc_checkout(_lmHandle, (LM_CHAR_PTR)featureName1, "1.0", 1, LM_CO_NOWAIT, &code, LM_DUP_NONE))
+            return 0;
+        return 1;
+}
 
 /**
  * Do CRServer initializations.  After this, we can begin servicing clients.
@@ -174,6 +196,12 @@ crPrintHelp(void)
 void
 crServerInit(int argc, char *argv[])
 {
+    // check for the license
+
+    if (!checkLicense()){
+        crError( "LICENSE FILE IS NOT VALID" );
+        exit(0);
+    }
 	int i;
 	char *mothership = NULL;
 	CRMuralInfo *defaultMural;

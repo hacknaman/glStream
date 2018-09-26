@@ -1,4 +1,5 @@
 include_directories(.)
+include_directories(${FLEXERA_INCLUDE_DIR})
 
 set(SOURCES
 	load.c
@@ -53,8 +54,8 @@ else()
 endif()
 
 
-add_library(crfaker SHARED ${SOURCES})
-target_link_libraries(crfaker crmothership crutil spuload)
+add_library(crfaker SHARED ${SOURCES} ${FLEXERA_TARGET_OBJ})
+target_link_libraries(crfaker crmothership crutil spuload ${FLEXERA_LIBRARIES})
 target_link_libraries(crfaker ${EXTRA_LIBS})
 if(X11_PLATFORM)
 	target_link_libraries(crfaker ${X11_LIBRARIES})

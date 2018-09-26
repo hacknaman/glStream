@@ -9,6 +9,7 @@ find_package(Threads)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(OSG REQUIRED)
+find_package(Flexera REQUIRED)
 
 set(EXTRA_LIBS)
 if(CMAKE_THREAD_LIBS_INIT)
