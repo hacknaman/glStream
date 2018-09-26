@@ -18,7 +18,10 @@
 #include <lm_attr.h>
 #include <lmclient.h>
 #define DEBUG_FP_EXCEPTIONS 0
+
+#define DEVELOPMENT_MDOE 1
 #if DEBUG_FP_EXCEPTIONS
+
 #include <fpu_control.h>
 #include <math.h>
 #endif
@@ -198,9 +201,11 @@ crServerInit(int argc, char *argv[])
 {
     // check for the license
 
-    if (!checkLicense()){
-        crError( "LICENSE FILE IS NOT VALID" );
-        exit(0);
+    if (!DEVELOPMENT_MDOE){
+        if (!checkLicense()){
+            crError("LICENSE FILE IS NOT VALID");
+            exit(0);
+        }
     }
 	int i;
 	char *mothership = NULL;

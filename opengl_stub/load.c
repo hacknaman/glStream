@@ -33,6 +33,8 @@
 
 #define CONFIG_LOOKUP_FILE ".crconfigs"
 
+#define DEVELOPMENT_MODE 1
+
 #ifdef WINDOWS
 #define PYTHON_EXE "python.exe"
 #else
@@ -710,10 +712,12 @@ stubInit(void)
 	 */
 
     // check License
-    if (!checkLicense()){
-        crError("LICENSE FILE IS NOT VALID");
+    if (!DEVELOPMENT_MODE){
+        if (!checkLicense()){
+            crError("LICENSE FILE IS NOT VALID");
 
-        exit(0);
+            exit(0);
+        }
     }
 	
 	char response[1024];
