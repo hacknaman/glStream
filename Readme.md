@@ -6,16 +6,15 @@ and the original project can be found here [Sourceforge](http://chromium.sourcef
 ## Getting Started
 
 The project supports Windows x64 and x86 architecture.
-Install Cmake, [freeGLUT](https://www.transmissionzero.co.uk/files/software/development/GLUT/freeglut-MSVC.zip) and [libJPEG-turbo](https://excellmedia.dl.sourceforge.net/project/libjpeg-turbo/1.3.1/libjpeg-turbo-1.3.1-vc64.exe) and add them to your system path.
-Open cmd in your Project directory write the following command to generate solution
-
+Install Cmake and svn add them to your system path.
+Run 
 ```
-mkdir x64
-cd x64
-cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_INSTALL_PREFIX=.. ..
-cr.sln
+FetchExternalDeps.bat
 ```
-
+then to generate solution
+```
+GenerateSolution.bat
+```
 Then Build the soluion
 
 ### Prerequisites [TODO]
