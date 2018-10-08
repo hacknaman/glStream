@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(cr)
+project(TransViz)
 
 SET(EXTERNAL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary")
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary;${CMAKE_MODULE_PATH}")
@@ -48,7 +48,9 @@ add_subdirectory(crutapi)
 add_subdirectory(crutclientapi)
 add_subdirectory(crutproxy)
 add_subdirectory(crutserver)
+
 add_subdirectory(progs)
+
 add_subdirectory(TransVizUtil)
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/

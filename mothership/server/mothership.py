@@ -35,7 +35,7 @@ import sys, string, types, traceback, re, threading, os, socket, select, signal,
 from crconfig import arch, crdir, crbindir, crlibdir
 
 # Version string
-Version = "1.9"
+Version = "1.0"
 
 # Default port we'll listen on (also set in cr_net.h)
 DefaultMothershipPort = 10000
@@ -973,7 +973,7 @@ class CR:
             self.all_sockets.append(self.mother.sock)
             self.wrappers[self.mother.sock] = self.mother
         else:
-            CRInfo("This is Chromium, Version " + Version)
+            CRInfo("This is TransViz, Version " + Version)
         try:
             if PORT == -1:
                 PORT = self.get_mothership_port()

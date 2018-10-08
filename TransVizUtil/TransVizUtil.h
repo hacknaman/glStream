@@ -26,7 +26,6 @@ namespace TransVizUtil{
     public:
         CRServerThread(int argc, char** argv);
         void run();
-
         int cancel();
 
     protected:
@@ -38,6 +37,7 @@ namespace TransVizUtil{
     class TRANSVIZ_UTIL_DLL_EXPORT TransVizUtil : public osg::Referenced{
     public:
         TransVizUtil();
+		~TransVizUtil();
 
         // set or returns the root Node from the scene
         void setRootNode(osg::Group* root);
@@ -51,7 +51,6 @@ namespace TransVizUtil{
         void run(int argc, char* argv[]);
 
     private:
-        ~TransVizUtil();
 
         // root Node for the Scene , This Root Node will be used by GraphicsWindowViewer as the sceneData
         // the same node will be used in SceneGraphApp for the updation of the Scene
@@ -60,7 +59,7 @@ namespace TransVizUtil{
 
         CRServerThread* _thread;
 
-    };// clas TransVizUtil
+    };// class TransVizUtil
 } // nameSpace TransVizUtil
 
 #endif //SG_VIEWER
