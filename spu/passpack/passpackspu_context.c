@@ -170,26 +170,30 @@ void PACKSPU_APIENTRY packspu_DestroyContext( GLint ctx )
 	GET_THREAD(thread);
 
 	CRASSERT(slot >= 0);
-	CRASSERT(slot < pack_spu.numContexts);
-	CRASSERT(thread);
 
-	context = &(pack_spu.context[slot]);
+	if (slot < pack_spu.numContexts)
+	{
+		CRASSERT(slot < pack_spu.numContexts);
+		CRASSERT(thread);
 
-	if (pack_spu.swap)
-		crPackDestroyContextSWAP( context->serverCtx );
-	else
-		crPackDestroyContext( context->serverCtx );
+		context = &(pack_spu.context[slot]);
 
-	crStateDestroyContext( context->clientState );
+		if (pack_spu.swap)
+			crPackDestroyContextSWAP(context->serverCtx);
+		else
+			crPackDestroyContext(context->serverCtx);
 
-	// This is needed if application creates a context and then deletes it
-	// this state is sent to the client while creation but not cleaned when deleted
-	//context->clientState = NULL;
-	//context->serverCtx = 0;
+		crStateDestroyContext(context->clientState);
 
-	if (thread->currentContext == context) {
-		thread->currentContext = NULL;
-		crStateMakeCurrent( NULL );
+		// This is needed if application creates a context and then deletes it
+		// this state is sent to the client while creation but not cleaned when deleted
+		//context->clientState = NULL;
+		//context->serverCtx = 0;
+
+		if (thread->currentContext == context) {
+			thread->currentContext = NULL;
+			crStateMakeCurrent(NULL);
+		}
 	}
 }
 
@@ -197,8 +201,8 @@ void PACKSPU_APIENTRY packspu_DestroyContext( GLint ctx )
 void PACKSPU_APIENTRY packspu_MakeCurrent( GLint window, GLint nativeWindow, GLint ctx )
 {
 	GET_THREAD(thread);
-	GLint serverCtx;
-	ContextInfo *newCtx;
+	GLint serverCtx = 0;
+	ContextInfo *newCtx = NULL;
 
 	if (!thread) {
 		thread = packspuNewThread( crThreadID() );
@@ -210,16 +214,20 @@ void PACKSPU_APIENTRY packspu_MakeCurrent( GLint window, GLint nativeWindow, GLi
 		const int slot = ctx - MAGIC_OFFSET;
 
 		CRASSERT(slot >= 0);
-		CRASSERT(slot < pack_spu.numContexts);
 
-		newCtx = &pack_spu.context[slot];
-		CRASSERT(newCtx->clientState);  /* verify valid */
+		if (slot < pack_spu.numContexts)
+		{
+			CRASSERT(slot < pack_spu.numContexts);
 
-		thread->currentContext = newCtx;
+			newCtx = &pack_spu.context[slot];
+			CRASSERT(newCtx->clientState);  /* verify valid */
 
-		crPackSetContext( thread->packer );
-		crStateMakeCurrent( newCtx->clientState );
-		serverCtx = pack_spu.context[slot].serverCtx;
+			thread->currentContext = newCtx;
+
+			crPackSetContext(thread->packer);
+			crStateMakeCurrent(newCtx->clientState);
+			serverCtx = pack_spu.context[slot].serverCtx;
+		}
 	}
 	else {
 		thread->currentContext = NULL;
