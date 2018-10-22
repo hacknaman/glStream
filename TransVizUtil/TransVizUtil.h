@@ -19,6 +19,14 @@
 #include <OpenThreads/Thread>
 #include <osg/Group>
 
+
+class ISpu 
+{
+	virtual void getUpdatedScene2() = 0;
+	virtual void changeScene() = 0;
+	virtual void funcNodeUpdate2(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context) = 0;
+};
+
 namespace TransVizUtil{
 
     class CRServerThread : public OpenThreads::Thread
@@ -46,6 +54,7 @@ namespace TransVizUtil{
 		void generateScenegraph();
 
 		void updateNode(osg::ref_ptr<osg::Group> node);
+		void update();
 
         // start crServer and attach node callback to the root group
         void run(int argc, char* argv[]);
@@ -56,6 +65,9 @@ namespace TransVizUtil{
         // the same node will be used in SceneGraphApp for the updation of the Scene
         osg::ref_ptr<osg::Group> _rootNode;
 		osg::ref_ptr<osg::Group> _oldNode;
+		osg::ref_ptr<osg::Group> _newNode;
+
+		bool _bIsNodeDirty;
 
         CRServerThread* _thread;
 

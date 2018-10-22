@@ -216,7 +216,7 @@ crServerDispatchMakeCurrent( GLint window, GLint nativeWindow, GLint context )
 		 */
 		cr_server.head_spu->dispatch_table.MakeCurrent( mural->spuWindow,
 																										nativeWindow,
-																										cr_server.SpuContext );
+																										context);
 		cr_server.firstCallMakeCurrent = GL_FALSE;
 		cr_server.currentWindow = window;
 		cr_server.currentNativeWindow = nativeWindow;
