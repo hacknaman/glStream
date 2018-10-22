@@ -78,7 +78,7 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUSelfDispatchFuncPtr *self, SPUCleanupFuncPtr *cleanup,
 	     SPUOptionsPtr *options, int *flags )
 {
-	*name = "pack";
+	*name = "passpack";
 	*super = "passthrough";
 	*init = packSPUInit;
 	*self = packSPUSelfDispatch;
