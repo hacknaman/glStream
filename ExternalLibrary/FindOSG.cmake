@@ -114,23 +114,3 @@ IF(OSG_LIBRARY AND OSG_INCLUDE_DIR )
 ELSE(OSG_LIBRARY AND OSG_INCLUDE_DIR)
     MESSAGE("OSG Not Found")
 ENDIF(OSG_LIBRARY AND OSG_INCLUDE_DIR)
-
-if( $ENV{BUILDENV} MATCHES "Release")
-	install(FILES $ENV{OSG_DIR}/osg131-osg.dll
-			  $ENV{OSG_BIN}/osg131-osgViewer.dll
-			  $ENV{OSG_BIN}/osg131-osgDB.dll
-			  $ENV{OSG_BIN}/osg131-osgGA.dll
-			  $ENV{OSG_BIN}/osg131-osgText.dll
-			  $ENV{OSG_BIN}/osg131-osgUtil.dll
-			  $ENV{OSG_BIN}/ot20-OpenThreads.dll
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
-else( $ENV{BUILDENV} MATCHES "Release")
-	install(FILES $ENV{OSG_BIN}/osg131-osgd.dll
-			  $ENV{OSG_BIN}/osg131-osgViewerd.dll
-			  $ENV{OSG_BIN}/osg131-osgDBd.dll
-			  $ENV{OSG_BIN}/osg131-osgGAd.dll
-			  $ENV{OSG_BIN}/osg131-osgTextd.dll
-			  $ENV{OSG_BIN}/osg131-osgUtild.dll
-			  $ENV{OSG_BIN}/ot20-OpenThreadsd.dll
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
-endif( $ENV{BUILDENV} MATCHES "Release")
