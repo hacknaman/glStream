@@ -15,6 +15,7 @@ install(TARGETS errorspu
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
 	RUNTIME DESTINATION bin COMPONENT runtime)
+	SET_TARGET_PROPERTIES( errorspu PROPERTIES FOLDER "SPU")
 
 # header dependency
 add_dependencies(crstate spuload)

@@ -1,9 +1,4 @@
-if(MSVC)
-	option(USE_FOLDERS "Use project folders? Not compatible with Visual C++ express!" OFF)
-else()
-	set(USE_FOLDERS ON)
-endif()
-set_property(GLOBAL PROPERTY USE_FOLDERS ${USE_FOLDERS})
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(WIN32)
 	set(ARCH WIN_NT)

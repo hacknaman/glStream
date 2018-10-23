@@ -12,4 +12,6 @@ target_link_libraries(dist_texturespu ${EXTRA_LIBS})
 install(TARGETS dist_texturespu
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
+	
+	RUNTIME DESTINATION bin COMPONENT runtime) 
+     SET_TARGET_PROPERTIES( dist_texturespu PROPERTIES FOLDER "SPU")

@@ -22,6 +22,7 @@ install(TARGETS renderspu
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
 	RUNTIME DESTINATION bin COMPONENT runtime)
+	SET_TARGET_PROPERTIES(renderspu  PROPERTIES FOLDER "SPU")
 
 if(WIN32)
 	target_link_libraries(renderspu user32 gdi32)
