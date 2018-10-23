@@ -25,7 +25,7 @@ add_subdirectory(threadtest)
 add_subdirectory(gears)
 add_subdirectory(simpleapp)
 add_subdirectory(scenegraph)
-add_subdirectory(gearsApp)
+
 if(WIN32)
 	add_subdirectory(wgl)
 elseif(APPLE)
