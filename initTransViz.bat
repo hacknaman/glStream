@@ -12,7 +12,7 @@ set FLEXERA_BIN=%FLEXERA_DIR%\bin
 
 ::set GLUT Libraries
 set GLUT_DIR=%OSSROOT%\glut
-set GLUT_BIN=%GLUT_DIR%\bin
+set GLUT_BIN=%GLUT_DIR%\bin\x64
 
 :: set libjpeg libraries
 set LIBJPEG_DIR=%OSSROOT%\libjpeg-turbo64
