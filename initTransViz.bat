@@ -24,13 +24,14 @@ set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%PATH
 
 :: set development mode
 set Development=false
+unset DBG
+unset RLS
 
 if "%1" EQU "debug" set DBG=1
-if "%1" EQU "release" set RLS=1
 
 set BUILDENV="Release"
+
 if DEFINED DBG set BUILDENV="Debug"
 
-if DEFINED RLS set BUILDENV="Release"
-
 call GenerateSolution.bat
+cd ..

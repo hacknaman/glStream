@@ -8,19 +8,15 @@ FIND_PATH(OSG_INCLUDE_DIR  osg/Node
 		$ENV{OSG_DIR}/include
 		NO_DEFAULT_PATH    
 	)
-MESSAGE("${BUILDENV}")
-MESSAGE("ABC")
-MESSAGE($ENV{BUILDENV})
 
 if( $ENV{BUILDENV} MATCHES "Release")
-	MESSAGE("$ENV{BUILDENV}")
+	
 	find_library(OSG_LIBRARY 
 			NAMES osg
 			PATHS $ENV{OSG_DIR}/lib/
 			NO_DEFAULT_PATH    
     )
 else( $ENV{BUILDENV} MATCHES "Release") 
-	MESSAGE("DEBUG")
 	find_library(OSG_LIBRARY 
 			NAMES osgd
 			PATHS $ENV{OSG_DIR}/lib/
@@ -29,14 +25,12 @@ else( $ENV{BUILDENV} MATCHES "Release")
 endif( $ENV{BUILDENV} MATCHES "Release")
 
 if( $ENV{BUILDENV} MATCHES "Release")
-	MESSAGE("Release")
 	find_library(OSG_VIEWER_LIBRARY 
 			NAMES osgViewer
 			PATHS $ENV{OSG_DIR}/lib/
 			NO_DEFAULT_PATH    
     )
 else( $ENV{BUILDENV} MATCHES "Release")
-	MESSAGE("DEBUG")
 	find_library(OSG_VIEWER_LIBRARY 
 			NAMES osgViewerd
 			PATHS $ENV{OSG_DIR}/lib/
