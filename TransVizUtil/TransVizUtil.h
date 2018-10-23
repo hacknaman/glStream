@@ -20,27 +20,30 @@
 #include <osg/Group>
 
 
-class ISpu 
+class ISpufunc
 {
-	virtual void getUpdatedScene2() = 0;
+public:
+	virtual void getUpdatedScene() = 0;
 	virtual void changeScene() = 0;
-	virtual void funcNodeUpdate2(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context) = 0;
+	virtual void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context) = 0;
 };
 
 namespace TransVizUtil{
 
-    class CRServerThread : public OpenThreads::Thread
-    {
-    public:
-        CRServerThread(int argc, char** argv);
-        void run();
-        int cancel();
+	//forward declaration
+	class TransVizUtil;
 
-    protected:
-        int _argc;
-        char** _argv;
-    };
-
+	class TransVizServerThread : public OpenThreads::Thread
+	{
+		TransVizUtil* _util;
+		int _argc;
+		char** _argv;
+	public:
+		TransVizServerThread(int argc, char* argv[], TransVizUtil* util);
+		void run();
+		int cancel();
+	protected:
+	};
 
     class TRANSVIZ_UTIL_DLL_EXPORT TransVizUtil : public osg::Referenced{
     public:
@@ -59,6 +62,8 @@ namespace TransVizUtil{
         // start crServer and attach node callback to the root group
         void run(int argc, char* argv[]);
 
+		ISpufunc* iSPU;
+
     private:
 
         // root Node for the Scene , This Root Node will be used by GraphicsWindowViewer as the sceneData
@@ -69,7 +74,7 @@ namespace TransVizUtil{
 
 		bool _bIsNodeDirty;
 
-        CRServerThread* _thread;
+		TransVizServerThread* _thread;
 
     };// class TransVizUtil
 } // nameSpace TransVizUtil

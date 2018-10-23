@@ -1,5 +1,6 @@
 include_directories(.)
 include_directories(${OSG_INCLUDE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/TransVizUtil)
 
 set(SOURCES
 	scenegraphspu_config.cpp

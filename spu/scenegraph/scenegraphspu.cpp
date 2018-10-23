@@ -85,14 +85,14 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 	g_time = std::time(0);
 }
 
-extern OSGEXPORT void getUpdatedScene(){
+extern OSGEXPORT void getUpdatedSceneSC(){
 	g_calledreadFromApp = true;
 }
 
 void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
 void *g_context = NULL;
 
-extern OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
+extern OSGEXPORT void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
 
 	g_pt2Func = pt2Func;
 	g_context = context;
@@ -333,7 +333,7 @@ static void PRINT_APIENTRY printColor4b(GLbyte red, GLbyte green, GLbyte blue, G
 
 static void PRINT_APIENTRY printColor4bv(const GLbyte * v)
 {
-	printColor4bv(v);
+	printColor3bv(v);
 }
 
 static void PRINT_APIENTRY printColor4d(GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha)

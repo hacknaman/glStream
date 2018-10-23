@@ -1,6 +1,5 @@
 include_directories(.)
 include_directories(${OSG_INCLUDE_DIR})
-include_directories(${VRTRACK_INCLUDE_DIR})
 
 SET(LIB_HEADERS
 	TransVizUtil.h
@@ -15,8 +14,8 @@ ADD_LIBRARY(TransVizUtil SHARED
     ${LIB_SOURCES}
 )
 
-target_link_libraries(TransVizUtil ${OSG_LIBRARY} ${OPENTHREADS_LIBRARY} ${OSG_VIEWER_LIBRARY} ${VRCORE_LIBRARY})
-target_link_libraries(TransVizUtil scenegraphspu crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)
+target_link_libraries(TransVizUtil ${OSG_LIBRARY} ${OPENTHREADS_LIBRARY} ${OSG_VIEWER_LIBRARY} ${OSGDB_LIBRARY})
+target_link_libraries(TransVizUtil crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)
 target_link_libraries(TransVizUtil ${EXTRA_LIBS})
 
 SET_TARGET_PROPERTIES(TransVizUtil

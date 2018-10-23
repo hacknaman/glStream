@@ -1,5 +1,4 @@
 #include <TransVizUtil.h>
-#include "scenegraphspu.h"
 #include <cr_server.h>
 
 #include <osgDB/Export>
@@ -20,16 +19,32 @@ namespace TransVizUtil{
 			_util = util;
 		}
 
-		void operator()(osg::Node* node, osg::NodeVisitor* nv) {
+		void operator()(osg::Node* node, osg::NodeVisitor* nv) 
+		{
 
 			if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
 			{
-				getUpdatedScene();
+				_util->iSPU->getUpdatedScene();
 			}
 
 			if ((GetKeyState('Y') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
 			{
 				osgDB::writeNodeFile( *(_util->getLastGeneratedNode().get()) , "saved.ive");
+			}
+
+			if ((GetKeyState('T') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
+			{
+				_util->iSPU->changeScene();
+			}
+
+			if ((GetKeyState('S') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
+			{
+				osgDB::writeNodeFile(*(_util->getLastGeneratedNode().get()), "saved.osgt");
+			}
+
+			if ((GetKeyState('L') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
+			{
+				_util->updateNode(osgDB::readRefNodeFile("saved.osgt")->asGroup());
 			}
 
 			traverse(node, nv);
@@ -69,7 +84,7 @@ namespace TransVizUtil{
 	}
 
 	void TransVizUtil::generateScenegraph() {
-		getUpdatedScene();
+		iSPU->getUpdatedScene();
 	}
 
 	void TransVizUtil::update()
@@ -100,27 +115,28 @@ namespace TransVizUtil{
 
 	void TransVizUtil::run(int argc, char* argv[]) {
 
-		// This function is in scenegraph SPU
-		funcNodeUpdate(&forwarder, this);
-
 		// start crserver in separate thread
-		_thread = new CRServerThread(argc, argv);
+		_thread = new TransVizServerThread(argc, argv, this);
 		_thread->start();
 	}
 
-    CRServerThread::CRServerThread(int argc, char** argv)
-        : _argc(argc)
-        , _argv(argv)
+	TransVizServerThread::TransVizServerThread(int argc, char* argv[], TransVizUtil* util) :
+		_argc(argc),
+		_argv(argv),
+		_util(util)
     {
 
     }
 
-    void CRServerThread::run()
+	void TransVizServerThread::run()
     {
 		crServerInit(_argc, _argv);
 
 		SPU* spu = crServerHeadSPU();
-		//IFunc* fun = spu->privatePtr;
+		_util->iSPU = (ISpufunc*)spu->privatePtr;
+
+		// This function is in scenegraph SPU
+		_util->iSPU->funcNodeUpdate(&forwarder, this);
 
 		while (1)
 		{
@@ -128,7 +144,7 @@ namespace TransVizUtil{
 		}
     }
 
-    int CRServerThread::cancel()
+	int TransVizServerThread::cancel()
     {
         return OpenThreads::Thread::cancel();
     }

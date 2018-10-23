@@ -10,6 +10,9 @@
 #include "scenegraphspu.h"
 #include <stdio.h>
 #include <signal.h>
+
+#include <TransVizUtil.h>
+
 #ifndef WINDOWS
 #include <sys/time.h>
 #endif
@@ -23,6 +26,25 @@ static SPUFunctions print_functions = {
 };
 
 PrintSpu print_spu;
+
+class Scenespufunc : public ISpufunc
+{
+public:
+	void getUpdatedScene()
+	{
+		getUpdatedSceneSC();
+	}
+
+	void changeScene()
+	{
+		
+	}
+
+	void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
+	{
+		funcNodeUpdateSC(pt2Func, context);
+	}
+};
 
 #ifndef WINDOWS
 static void printspu_signal_handler(int signum)
@@ -117,6 +139,10 @@ printSPUInit( int id, SPU *child, SPU *self,
 
 	print_spu.id = id;
 	printspuGatherConfiguration( child );
+
+	// Interface class to call special fuctions
+	Scenespufunc* func = new Scenespufunc();
+	self->privatePtr = (void*)func;
 
 	crSPUInitDispatchTable( &(print_spu.passthrough) );
 	crSPUCopyDispatchTable( &(print_spu.passthrough), &(self->superSPU->dispatch_table) );
