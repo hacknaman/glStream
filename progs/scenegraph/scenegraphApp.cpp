@@ -49,18 +49,16 @@ int main(int argc, char* argv[]) {
 	// Adding camera manipulator
 	osg::ref_ptr<osgGA::KeySwitchMatrixManipulator> manipulator = new osgGA::KeySwitchMatrixManipulator;
 	manipulator->addMatrixManipulator('1', "Trackball", new osgGA::TrackballManipulator());
-	manipulator->addMatrixManipulator('2', "Flight", new osgGA::FlightManipulator());
-	manipulator->addMatrixManipulator('3', "Drive", new osgGA::DriveManipulator());
-	manipulator->addMatrixManipulator('4', "Terrain", new osgGA::TerrainManipulator());
-	manipulator->addMatrixManipulator('5', "Orbit", new osgGA::OrbitManipulator());
+	manipulator->addMatrixManipulator('2', "Flight",	new osgGA::FlightManipulator());
+	manipulator->addMatrixManipulator('3', "Drive",		new osgGA::DriveManipulator());
+	manipulator->addMatrixManipulator('4', "Terrain",	new osgGA::TerrainManipulator());
+	manipulator->addMatrixManipulator('5', "Orbit",		new osgGA::OrbitManipulator());
 	manipulator->addMatrixManipulator('6', "FirstPerson", new osgGA::FirstPersonManipulator());
 	manipulator->addMatrixManipulator('7', "Spherical", new osgGA::SphericalManipulator());
 
 	viewer->setCameraManipulator(manipulator.get());
-
-	viewer->setUpViewInWindow(100, 100, 640, 480);
-	viewer->realize();
-
+	viewer->setUpViewInWindow(100, 100, 1024, 786);
+	
 	// OSG window settings
 	osgViewer::Viewer::Windows ViewerWindow;
 	viewer->getWindows(ViewerWindow);
@@ -70,5 +68,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	SceneGraphGenerator->run(argc, argv);
-    viewer->run();
+
+	//viewer->realize();
+	while (!viewer->done()){
+		SceneGraphGenerator->update();
+		viewer->frame();
+	}
 }

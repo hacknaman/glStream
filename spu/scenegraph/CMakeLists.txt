@@ -15,8 +15,6 @@ set(SOURCES
 	scenegraph.def
 )
 
-#generate_with_python(print.py printspu.c printspu_unimplemented_special printspu_special ${APIFILES})
-
 #TODO
 #To generate a new printspu_enums.c file, do this:
 #	python enums.py /usr/include/GL/gl.h ../../include/GL/glext.h ../../include/chromium.h > printspu_enums.c
