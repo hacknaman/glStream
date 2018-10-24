@@ -21,7 +21,11 @@ set(SOURCES
 #	python enums.py /usr/include/GL/gl.h ../../include/GL/glext.h ../../include/chromium.h > printspu_enums.c
 
 add_library(scenegraphspu SHARED ${SOURCES})
-target_link_libraries(scenegraphspu crutil crmothership spuload ${OSG_LIBRARY} ${OPENTHREADS_LIBRARY} ${OSG_VIEWER_LIBRARY}  ${OSGDB_LIBRARY})
+target_link_libraries(scenegraphspu crutil crmothership spuload)
+target_link_libraries(scenegraphspu 
+	debug		${OSG_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D}   debug ${OSGDB_LIBRARY_D}
+	optimized	${OSG_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSG_VIEWER_LIBRARY} optimized ${OSGDB_LIBRARY}
+ )
 target_link_libraries(scenegraphspu ${EXTRA_LIBS})
 install(TARGETS scenegraphspu
 	LIBRARY DESTINATION lib COMPONENT runtime

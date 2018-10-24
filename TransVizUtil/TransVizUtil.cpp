@@ -136,7 +136,7 @@ namespace TransVizUtil{
 		_util->iSPU = (ISpufunc*)spu->privatePtr;
 
 		// This function is in scenegraph SPU
-		_util->iSPU->funcNodeUpdate(&forwarder, this);
+		_util->iSPU->funcNodeUpdate(&forwarder, _util);
 
 		while (1)
 		{

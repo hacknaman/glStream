@@ -14,7 +14,11 @@ ADD_LIBRARY(TransVizUtil SHARED
     ${LIB_SOURCES}
 )
 
-target_link_libraries(TransVizUtil ${OSG_LIBRARY} ${OPENTHREADS_LIBRARY} ${OSG_VIEWER_LIBRARY} ${OSGDB_LIBRARY})
+target_link_libraries(TransVizUtil
+  debug      ${OSG_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D} debug ${OSGDB_LIBRARY_D}
+  optimized  ${OSG_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSG_VIEWER_LIBRARY} optimized ${OSGDB_LIBRARY}
+)
+
 target_link_libraries(TransVizUtil crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)
 target_link_libraries(TransVizUtil ${EXTRA_LIBS})
 

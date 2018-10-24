@@ -1,5 +1,5 @@
 :: SET OSS ROOT PATH
-set OSSROOT=E:\CHROMIUM64\ExternalLibrary
+set OSSROOT=C:\Project\TransViz\ExternalLibrary
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4
@@ -23,15 +23,10 @@ set LIBJPEG_BIN=%LIBJPEG_DIR%\bin
 set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%PATH%
 
 :: set development mode
+:: This is used for licensing
 set Development=false
 unset DBG
 unset RLS
-
-if "%1" EQU "debug" set DBG=1
-
-set BUILDENV="Release"
-
-if DEFINED DBG set BUILDENV="Debug"
 
 call GenerateSolution.bat
 cd ..

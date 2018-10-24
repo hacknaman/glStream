@@ -9,104 +9,90 @@ FIND_PATH(OSG_INCLUDE_DIR  osg/Node
 		NO_DEFAULT_PATH    
 	)
 
-if( $ENV{BUILDENV} MATCHES "Release")
-	
-	find_library(OSG_LIBRARY 
-			NAMES osg
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-    )
-else( $ENV{BUILDENV} MATCHES "Release") 
-	find_library(OSG_LIBRARY 
-			NAMES osgd
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-    )
-endif( $ENV{BUILDENV} MATCHES "Release")
+find_library(OSG_LIBRARY 
+		NAMES osg
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
 
-if( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSG_VIEWER_LIBRARY 
-			NAMES osgViewer
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-    )
-else( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSG_VIEWER_LIBRARY 
-			NAMES osgViewerd
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-    )
-endif( $ENV{BUILDENV} MATCHES "Release")
+find_library(OSG_LIBRARY_D 
+		NAMES osgd
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
 
-if( $ENV{BUILDENV} MATCHES "Release")	
-	find_library(OSG_GA_LIBRARY 
-			NAMES osgGA
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-else( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSG_GA_LIBRARY 
-			NAMES osgGAd
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-endif( $ENV{BUILDENV} MATCHES "Release")
-	
-if( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OPENTHREADS_LIBRARY 
-			NAMES OpenThreads
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-else( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OPENTHREADS_LIBRARY 
-			NAMES OpenThreadsd
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-endif( $ENV{BUILDENV} MATCHES "Release")
+find_library(OSG_VIEWER_LIBRARY 
+		NAMES osgViewer
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
 
-if( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSGDB_LIBRARY 
-			NAMES osgDB
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-else( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSGDB_LIBRARY 
-			NAMES osgDBd
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-endif( $ENV{BUILDENV} MATCHES "Release")
+find_library(OSG_VIEWER_LIBRARY_D 
+		NAMES osgViewerd
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
 
-if( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSGTEXT_LIBRARY 
-			NAMES osgText
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-else( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSGTEXT_LIBRARY 
-			NAMES osgTextd
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-endif( $ENV{BUILDENV} MATCHES "Release")
+find_library(OSG_GA_LIBRARY 
+		NAMES osgGA
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
 
-if( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSGUTIL_LIBRARY 
-			NAMES osgUtil
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-else( $ENV{BUILDENV} MATCHES "Release")
-	find_library(OSGUTIL_LIBRARY 
-			NAMES osgUtild
-			PATHS $ENV{OSG_DIR}/lib/
-			NO_DEFAULT_PATH    
-	)
-endif( $ENV{BUILDENV} MATCHES "Release")
+find_library(OSG_GA_LIBRARY_D 
+		NAMES osgGAd
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OPENTHREADS_LIBRARY 
+		NAMES OpenThreads
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OPENTHREADS_LIBRARY_D 
+		NAMES OpenThreadsd
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OSGDB_LIBRARY 
+		NAMES osgDB
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OSGDB_LIBRARY_D 
+		NAMES osgDBd
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OSGTEXT_LIBRARY 
+		NAMES osgText
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OSGTEXT_LIBRARY_D 
+		NAMES osgTextd
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OSGUTIL_LIBRARY 
+		NAMES osgUtil
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
+find_library(OSGUTIL_LIBRARY_D 
+		NAMES osgUtild
+		PATHS $ENV{OSG_DIR}/lib/
+		NO_DEFAULT_PATH    
+)
+
 
 SET(OSG_FOUND "NO")
 IF(OSG_LIBRARY AND OSG_INCLUDE_DIR )
