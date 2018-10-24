@@ -46,7 +46,6 @@ else()
 	generate_with_python(defs.py opengl.def ${APIFILES})
 endif()
 
-
 if(WIN32)
 	generate_with_python(windows_getprocaddress.py getprocaddress.c ${APIFILES})
 else()
@@ -65,6 +64,9 @@ install(TARGETS crfaker
 	ARCHIVE DESTINATION lib COMPONENT dev
 	RUNTIME DESTINATION bin COMPONENT runtime)
 target_link_libraries(crfaker ${OPENGL_LIBRARIES})
+
+# Uncomment this to rename crfaker.dll to opengl32.dll
+# set_target_properties(crfaker PROPERTIES OUTPUT_NAME "opengl32")
 
 if(X11_PLATFORM)
 	target_link_libraries(crfaker ${X11_LIBRARIES})
