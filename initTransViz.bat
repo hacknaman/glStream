@@ -18,9 +18,13 @@ set GLUT_BIN=%GLUT_DIR%\bin\x64
 set LIBJPEG_DIR=%OSSROOT%\libjpeg-turbo64
 set LIBJPEG_BIN=%LIBJPEG_DIR%\bin
 
+:: set Review API libraries
+set REVIEW_DIR=%OSSROOT%\ReviewApi
+set REVIEW_BIN=%REVIEW_DIR%\bin
+
 :: add external DLLs to the PATH
 :: dynamic libs paths
-set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%PATH%
+set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVIEW_BIN%;%PATH%
 
 :: set development mode
 :: This is used for licensing
