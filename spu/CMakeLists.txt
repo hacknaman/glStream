@@ -33,6 +33,8 @@ add_subdirectory(tracker)
 add_subdirectory(windowtracker)
 add_subdirectory(camera)
 add_subdirectory(scenegraph)
+add_subdirectory(avevascenegraph)
+
 if(NOT WIN32)
 	add_subdirectory(zpix)
 endif()
