@@ -29,7 +29,7 @@ target_link_libraries(avevascenegraphspu
 	optimized	${OSG_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSG_VIEWER_LIBRARY}  optimized ${OSGDB_LIBRARY}
 )
 target_link_libraries(avevascenegraphspu ${EXTRA_LIBS})
-target_link_libraries(avevascenegraphspu ${REVIEW_LIBRARY}) 
+target_link_libraries(avevascenegraphspu debug ${REVIEW_LIBRARY_D} optimized ${REVIEW_LIBRARY}) 
 
 install(TARGETS avevascenegraphspu
 	LIBRARY DESTINATION lib COMPONENT runtime
