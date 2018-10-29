@@ -122,7 +122,6 @@ void createGroupTree(ReviewCppWrapper::Element& node, osg::ref_ptr<osg::Group> R
 		g_spuRootGroupChair.push_back(RootGroup);
 	}
 
-
 	for (int i = 0; i < node.Children.size(); ++i)
 	{
 		osg::ref_ptr<osg::Group> newRootGroup = new osg::Group();
@@ -140,6 +139,10 @@ extern void getUpdatedSceneASC(){
 
 	//rapi.MakeInvisible();
 	rapi.GetElementList(avevaRootNode);
+
+	// this is to get the chair element of bridge model
+	// TODO:- this should be for entire model
+	// this is done due to performance issue.
 	avevaFakeRootNode = avevaRootNode.Children[3].Children[0].Children[442];
 
 	rapi.SetMaterialOnTree(avevaFakeRootNode);
@@ -720,11 +723,6 @@ static void PRINT_APIENTRY printEnd(void)
 			if (index < g_spuRootGroupMap.back().size())
 			{
 				g_spuRootGroupMap.back()[index]->addChild(g_PatArray.back());
-				std::string name;
-				int id;
-				g_spuRootGroupMap.back()[index]->getUserValue("Name", name);
-				g_spuRootGroupMap.back()[index]->getUserValue("id", id);
-				name;
 			}
 		}
 	}
