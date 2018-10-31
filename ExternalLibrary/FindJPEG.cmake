@@ -6,12 +6,14 @@
 
 FIND_PATH(JPEG_INCLUDE_DIR jpeglib.h   
 		${LIBJPEG_DIR}/include
+		$ENV{LIBJPEG_DIR}/include
 		NO_DEFAULT_PATH    
 	)	
 	
 FIND_LIBRARY(JPEG_LIBRARY 
 		NAMES turbojpeg
 		PATHS ${LIBJPEG_DIR}/lib
+		$ENV{LIBJPEG_DIR}/lib
 		NO_DEFAULT_PATH    
     )
 

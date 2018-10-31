@@ -1,5 +1,5 @@
-# cmake should be added to the path before 
-# executing this command
+:: cmake should be added to the path before 
+:: executing this command
 
 mkdir x64
 cd x64
