@@ -14,6 +14,8 @@
 #include "passpackspu.h"
 #include "passpackspu_proto.h"
 
+int IsConnectionClosedByForce;
+
 static void
 packspuWriteback( const CRMessageWriteback *wb )
 {
@@ -112,6 +114,14 @@ __prependHeader( CRPackBuffer *buf, unsigned int *len, unsigned int senderID )
 void
 packspuFlush(void *arg )
 {
+	if (IsConnectionClosedByForce)
+	{
+		ThreadInfo *thread = (ThreadInfo *)arg;
+		thread->packer->IsConnectionClosedByForce = IsConnectionClosedByForce;
+		crPackSetBuffer(thread->packer, &(thread->buffer));
+		return;
+	}
+
 	ThreadInfo *thread = (ThreadInfo *) arg;
 	ContextInfo *ctx;
 	unsigned int len;
@@ -158,7 +168,7 @@ packspuFlush(void *arg )
 	/* The network may have found a new mtu */
 	buf->mtu = thread->netServer.conn->mtu;
 
-	crPackSetBuffer( thread->packer, buf );
+	crPackSetBuffer(thread->packer, buf);
 
 	crPackResetPointers(thread->packer);
 	(void) arg;
@@ -221,7 +231,9 @@ packspuCloseCallback(CRConnection *conn)
 	GET_THREAD(thread);
 	if (thread && conn == thread->netServer.conn) {
 		crDebug("Pack SPU: Server connection closed - exiting.");
-		exit(0);
+		IsConnectionClosedByForce = 1;
+
+		//exit(0); // not exit the program if the connection is closed
 	}
 }
 

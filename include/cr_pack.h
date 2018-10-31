@@ -66,6 +66,7 @@ struct CRPackContext_t
 	CRPackBuffer *currentBuffer;
 	char *file;  /**< for debugging only */
 	int line;    /**< for debugging only */
+	int IsConnectionClosedByForce;
 };
 
 
@@ -149,7 +150,7 @@ static INLINE int
 crPackNumOpcodes(const CRPackBuffer *buffer)
 {
 	CRASSERT(buffer->opcode_start - buffer->opcode_current >= 0);
-	return buffer->opcode_start - buffer->opcode_current;
+	return (int)(buffer->opcode_start - buffer->opcode_current);
 }
 
 
@@ -160,23 +161,36 @@ static INLINE int
 crPackNumData(const CRPackBuffer *buffer)
 {
 	CRASSERT(buffer->data_current - buffer->data_start >= 0);
-	return buffer->data_current - buffer->data_start; /* in bytes */
+	return (int)(buffer->data_current - buffer->data_start); /* in bytes */
 }
 
 
 static INLINE int
-crPackCanHoldOpcode(const CRPackContext *pc, int num_opcode, int num_data)
+crPackCanHoldOpcode(CRPackContext *pc, int num_opcode, int num_data)
 {
-  int fitsInMTU, opcodesFit, dataFits;
+	int fitsInMTU, opcodesFit, dataFits;
 
-  CRASSERT(pc->currentBuffer);
+	CRASSERT(pc->currentBuffer);
 
-  fitsInMTU = (((pc->buffer.data_current - pc->buffer.opcode_current - 1
-                 + num_opcode + num_data
-                 + 0x3 ) & ~0x3) + sizeof(CRMessageOpcodes)
-               <= pc->buffer.mtu);
-  opcodesFit = (pc->buffer.opcode_current - num_opcode >= pc->buffer.opcode_end);
-  dataFits = (pc->buffer.data_current + num_data <= pc->buffer.data_end);
+	fitsInMTU = (((pc->buffer.data_current - pc->buffer.opcode_current - 1
+		+ num_opcode + num_data
+		+ 0x3) & ~0x3) + sizeof(CRMessageOpcodes)
+		<= pc->buffer.mtu);
+	opcodesFit = (pc->buffer.opcode_current - num_opcode >= pc->buffer.opcode_end);
+	dataFits = (pc->buffer.data_current + num_data <= pc->buffer.data_end);
+
+	if (pc->IsConnectionClosedByForce)
+	{
+		if (dataFits == 0)
+		{
+			pc->buffer.data_current = pc->buffer.data_start;
+		}
+
+		if (opcodesFit == 0)
+		{
+			pc->buffer.opcode_current = pc->buffer.opcode_start;
+		}
+	}
 
   return fitsInMTU && opcodesFit && dataFits;
 }
@@ -187,15 +201,15 @@ crPackCanHoldOpcode(const CRPackContext *pc, int num_opcode, int num_data)
  * Only flush if buffer is full.
  */
 #define GET_BUFFERED_POINTER_NO_BEGINEND_FLUSH( pc, len )	\
-  do {								\
-    THREADASSERT( pc );						\
-    CRASSERT( pc->currentBuffer );				\
-    if ( !crPackCanHoldOpcode( pc, 1, (len) ) ) {		\
-      pc->Flush( pc->flush_arg );				\
+  do {														\
+    THREADASSERT( pc );										\
+    CRASSERT( pc->currentBuffer );							\
+    if ( !crPackCanHoldOpcode( pc, 1, (len) ) ) {			\
+      pc->Flush( pc->flush_arg );							\
       CRASSERT(crPackCanHoldOpcode( pc, 1, (len) ) );		\
-    }								\
-    data_ptr = pc->buffer.data_current;				\
-    pc->buffer.data_current += (len);				\
+    }														\
+    data_ptr = pc->buffer.data_current;						\
+    pc->buffer.data_current += (len);						\
   } while (0)
 
 
