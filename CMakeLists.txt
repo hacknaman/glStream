@@ -3,6 +3,7 @@ project(TransViz)
 
 SET(EXTERNAL_LIBRARY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary")
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ExternalLibrary;${CMAKE_MODULE_PATH}")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/build")
 
 find_package(PythonInterp REQUIRED)
 find_package(Threads)

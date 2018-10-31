@@ -5,13 +5,13 @@
 # Created by Naman
 
 FIND_PATH(JPEG_INCLUDE_DIR jpeglib.h   
-		${EXTERNAL_LIBRARY_PATH}/libjpeg-turbo64/include
+		${OSSROOT}/libjpeg-turbo64/include
 		NO_DEFAULT_PATH    
 	)	
 	
 FIND_LIBRARY(JPEG_LIBRARY 
 		NAMES turbojpeg
-		PATHS ${EXTERNAL_LIBRARY_PATH}/libjpeg-turbo64/lib
+		PATHS ${OSSROOT}/libjpeg-turbo64/lib
 		NO_DEFAULT_PATH    
     )
 
