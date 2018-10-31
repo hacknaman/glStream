@@ -10,7 +10,7 @@
 
 FIND_PATH(FLEXERA_INCLUDE_DIR lmclient.h
     
-    ${OSSROOT}/flexera/11.12/include
+    ${FLEXERA_DIR}/include
     NO_DEFAULT_PATH
 )
 
@@ -19,7 +19,7 @@ MACRO(FIND_FLEXERA_LIBRARY MYLIBRARY MYLIBRARYNAME)
 	FIND_LIBRARY(     ${MYLIBRARY}
           NAMES       ${MYLIBRARYNAME}
           PATHS
-          ${OSSROOT}/flexera/11.12/lib
+          ${FLEXERA_DIR}/lib
       NO_DEFAULT_PATH
       )
 
@@ -60,7 +60,7 @@ ELSE(FLEXERA_LMGR_LIBRARY AND FLEXERA_INCLUDE_DIR )
 	MESSAGE(STATUS "Cannot find FLEXERA!!!!!!!!!!!!!!!!")
 ENDIF(FLEXERA_LMGR_LIBRARY AND FLEXERA_INCLUDE_DIR )
 
-install(FILES 	${OSSROOT}/flexera/11.12/bin/libsimplifier.dll
-				${OSSROOT}/flexera/11.12/bin/lmcrypt.exe
-				${OSSROOT}/flexera/11.12/bin/lmnewgen.exe
+install(FILES 	${FLEXERA_DIR}/bin/libsimplifier.dll
+				${FLEXERA_DIR}/bin/lmcrypt.exe
+				${FLEXERA_DIR}/bin/lmnewgen.exe
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )

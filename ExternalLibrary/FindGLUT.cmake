@@ -5,13 +5,13 @@
 # Created by Naman
 
 FIND_PATH(GLUT_INCLUDE_DIR GL/glut.h   
-		${OSSROOT}/glut/include
+		${GLUT_DIR}/include
 		NO_DEFAULT_PATH    
 	)	
 	
 FIND_LIBRARY(GLUT_glut_LIBRARY 
 			NAMES freeglut
-			PATHS ${OSSROOT}/glut/lib/x64
+			PATHS ${GLUT_DIR}/lib/x64
 			NO_DEFAULT_PATH    
     )
 
