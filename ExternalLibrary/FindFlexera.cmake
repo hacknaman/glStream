@@ -62,7 +62,7 @@ ELSE(FLEXERA_LMGR_LIBRARY AND FLEXERA_INCLUDE_DIR )
 	MESSAGE(STATUS "Cannot find FLEXERA!!!!!!!!!!!!!!!!")
 ENDIF(FLEXERA_LMGR_LIBRARY AND FLEXERA_INCLUDE_DIR )
 
-install(FILES 	${FLEXERA_DIR}/bin/libsimplifier.dll
-				${FLEXERA_DIR}/bin/lmcrypt.exe
-				${FLEXERA_DIR}/bin/lmnewgen.exe
+install(FILES 	$ENV{FLEXERA_DIR}/bin/libsimplifier.dll
+				$ENV{FLEXERA_DIR}/bin/lmcrypt.exe
+				$ENV{FLEXERA_DIR}/bin/lmnewgen.exe
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
