@@ -29,7 +29,7 @@ namespace TransVizUtil{
 
             if ((GetKeyState('Y') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
             {
-                osgDB::writeNodeFile(*(_util->getLastGeneratedNode().get()), "saved.ive");
+                osgDB::writeNodeFile(*(_util->getLastGeneratedNode().get()), "aveva.ive");
             }
 
             if ((GetKeyState('T') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
@@ -39,12 +39,12 @@ namespace TransVizUtil{
 
             if ((GetKeyState('S') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
             {
-                osgDB::writeNodeFile(*(_util->getLastGeneratedNode().get()), "saved.osgt");
+                osgDB::writeNodeFile(*(_util->getLastGeneratedNode().get()), "aveva.osgt");
             }
 
             if ((GetKeyState('L') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
             {
-                _util->updateNode(osgDB::readRefNodeFile("saved.osgt")->asGroup());
+                _util->updateNode(osgDB::readRefNodeFile("aveva.osgt")->asGroup());
             }
 
             traverse(node, nv);

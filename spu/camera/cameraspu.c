@@ -9,12 +9,18 @@
 #include "cr_spu.h"
 #include "cameraspu.h"
 
+#define IS_TEST false;
+
 
 static void CAMERASPU_APIENTRY cameraColor3f(GLfloat red,
     GLfloat green,
     GLfloat blue)
 {
+#ifdef IS_TEST
     camera_spu.super.Color3f(1 - red, 1 - green, 1 - blue);
+#else
+	camera_spu.super.Color3f(red, green, blue);
+#endif
 }
 
 static void CAMERASPU_APIENTRY cameraClearColor(GLfloat red,

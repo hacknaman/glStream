@@ -133,7 +133,7 @@ typedef HGLRC (WGL_APIENTRY *wglCreateContextFunc_t)(HDC);
 typedef void (WGL_APIENTRY *wglDeleteContextFunc_t)(HGLRC);
 typedef BOOL (WGL_APIENTRY *wglMakeCurrentFunc_t)(HDC,HGLRC);
 typedef BOOL (WGL_APIENTRY *wglSwapBuffersFunc_t)(HDC);
-typedef BOOL(WGL_APIENTRY *wglSwapLayerBuffersFunc_t)(HGLRC, HGLRC);
+typedef BOOL(WGL_APIENTRY *wglSwapLayerBuffersFunc_t)(HDC, UINT);
 typedef int (WGL_APIENTRY *wglChoosePixelFormatFunc_t)(HDC, CONST PIXELFORMATDESCRIPTOR *);
 typedef int (WGL_APIENTRY *wglDescribePixelFormatFunc_t)(HDC, int, UINT, CONST PIXELFORMATDESCRIPTOR *);
 typedef int (WGL_APIENTRY *wglSetPixelFormatFunc_t)(HDC, int, CONST PIXELFORMATDESCRIPTOR *);

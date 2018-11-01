@@ -29,7 +29,6 @@
 #endif
 
 #if defined(WINDOWS)
-#define WIN32_LEAN_AND_MEAN
 #define WGL_APIENTRY __stdcall
 #include <windows.h>
 #elif defined(DARWIN)

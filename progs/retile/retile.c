@@ -218,20 +218,20 @@ DrawMolecule(void)
 
 	for (angle = 0; angle < 720; angle += 5) {
 		glPushMatrix();
-			glTranslatef(0, 0, angle * 0.01 - 3.6);
-			glRotatef(angle, 0, 0, 1);
-			glTranslatef(radius, 0, 0);  /* position around ring */
+			glTranslatef(0.0f, 0.0f, angle * 0.01f - 3.6f);
+			glRotatef(angle, 0.0f, 0.0f, 1.0f);
+			glTranslatef(radius, 0.0f, 0.0f);  /* position around ring */
 			glPushMatrix();
-				glRotatef(-9.0 * angle, 0, 1, 0);
+			glRotatef(-9.0f * angle, 0.0f, 1.0f, 0.0f);
 				glPushMatrix();
-					glTranslatef(-0.7f, 0, 0);
+					glTranslatef(-0.7f, 0.0f, 0.0f);
 					glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, red);
 					glutSolidSphere(sphereRad, 20, 10);
 				glPopMatrix();
 				glPushMatrix();
-					glTranslatef(0.7f, 0, 0);
+					glTranslatef(0.7f, 0.0f, 0.0f);
 					glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, blue);
-					glutSolidSphere(sphereRad, 20, 10);
+					glutSolidSphere(sphereRad, 20.0f, 10.0f);
 				glPopMatrix();
 			glPopMatrix();
 		glPopMatrix();
