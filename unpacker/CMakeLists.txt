@@ -46,6 +46,14 @@ install(TARGETS crserver_crunpacker_copy
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
 	RUNTIME DESTINATION bin COMPONENT runtime)
+
+add_library(archsplitspu_crunpacker_copy SHARED ${SOURCES})
+target_link_libraries(archsplitspu_crunpacker_copy crutil spuload crpacker)
+target_link_libraries(archsplitspu_crunpacker_copy ${EXTRA_LIBS})
+install(TARGETS archsplitspu_crunpacker_copy
+	LIBRARY DESTINATION lib COMPONENT runtime
+	ARCHIVE DESTINATION lib COMPONENT dev
+	RUNTIME DESTINATION bin COMPONENT runtime)
 add_library(hiddenlinespu_crunpacker_copy SHARED ${SOURCES})
 target_link_libraries(hiddenlinespu_crunpacker_copy crutil spuload crpacker)
 target_link_libraries(hiddenlinespu_crunpacker_copy ${EXTRA_LIBS})
@@ -57,13 +65,6 @@ add_library(injectorspu_crunpacker_copy SHARED ${SOURCES})
 target_link_libraries(injectorspu_crunpacker_copy crutil spuload crpacker)
 target_link_libraries(injectorspu_crunpacker_copy ${EXTRA_LIBS})
 install(TARGETS injectorspu_crunpacker_copy
-	LIBRARY DESTINATION lib COMPONENT runtime
-	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
-add_library(archsplitspu_crunpacker_copy SHARED ${SOURCES})
-target_link_libraries(archsplitspu_crunpacker_copy crutil spuload crpacker)
-target_link_libraries(archsplitspu_crunpacker_copy ${EXTRA_LIBS})
-install(TARGETS archsplitspu_crunpacker_copy
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
 	RUNTIME DESTINATION bin COMPONENT runtime)
