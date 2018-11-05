@@ -6,4 +6,4 @@ cd x64
 
 If exist CMakeCache.txt del CMakeCache.txt
 
-cmake -G "Visual Studio 12 2013 Win64" ..
+cmake -G "Visual Studio 12 2013 Win64" ../build ..
