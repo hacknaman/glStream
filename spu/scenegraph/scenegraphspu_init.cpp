@@ -131,7 +131,8 @@ static void printspu_signal_handler(int signum)
 static SPUFunctions *
 printSPUInit( int id, SPU *child, SPU *self,
 							unsigned int context_id,
-							unsigned int num_contexts )
+							unsigned int num_contexts,
+							int* ImpThreadID)
 {
 	(void) context_id;
 	(void) num_contexts;

@@ -50,7 +50,7 @@ static char *__findDLL( char *name, char *dir )
  *  Load a single SPU from disk and initialize it.  Is there any reason 
  * to export this from the SPU loader library? */
 
-SPU * crSPULoad( SPU *child, int id, char *name, char *dir, void *server )
+SPU * crSPULoad(SPU *child, int id, char *name, char *dir, void *server, int *ImpThreadID )
 {
 	SPU *the_spu;
 	char *path;
@@ -86,14 +86,14 @@ SPU * crSPULoad( SPU *child, int id, char *name, char *dir, void *server )
 		{
 			the_spu->super_name = "error";
 		}
-		the_spu->superSPU = crSPULoad( child, id, the_spu->super_name, dir, server );
+		the_spu->superSPU = crSPULoad(child, id, the_spu->super_name, dir, server, ImpThreadID);
 	}
 	else
 	{
 		the_spu->superSPU = NULL;
 	}
 	crDebug("Initializing %s SPU", name);
-	the_spu->function_table = the_spu->init( id, child, the_spu, 0, 1 );
+	the_spu->function_table = the_spu->init( id, child, the_spu, 0, 1, ImpThreadID );
 	__buildDispatch( the_spu );
 	/*crDebug( "initializing dispatch table %p (for SPU %s)", (void*)&(the_spu->dispatch_table), name );*/
 	crSPUInitDispatchTable( &(the_spu->dispatch_table) );
@@ -111,7 +111,7 @@ SPU * crSPULoad( SPU *child, int id, char *name, char *dir, void *server )
  * This function returns the first one in the chain.
  */
 SPU *
-crSPULoadChain( int count, int *ids, char **names, char *dir, void *server )
+crSPULoadChain( int count, int *ids, char **names, char *dir, void *server, int* ImpThreadID )
 {
 	int i;
 	SPU *child_spu = NULL;
@@ -126,7 +126,7 @@ crSPULoadChain( int count, int *ids, char **names, char *dir, void *server )
 		/* This call passes the previous version of spu, which is the SPU's 
 		 * "child" in this chain. */
 
-		the_spu = crSPULoad( child_spu, spu_id, spu_name, dir, server );
+		the_spu = crSPULoad( child_spu, spu_id, spu_name, dir, server, ImpThreadID );
 		if (child_spu != NULL)
 		{
 			/* keep track of this so that people can pass functions through but 

@@ -54,5 +54,6 @@ for func_name in keys:
 print "\tNULL,  /* copyList */"
 print "\tNULL,  /* copy_of */"
 print "\t0,     /* mark */"
-print "\tNULL   /* server */"
+print "\tNULL,   /* server */"
+print "\t-1   /* ImpThreadID */"
 print "};"

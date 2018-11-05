@@ -330,7 +330,7 @@ crServerGatherConfiguration(char *mothership)
 	 * Load the SPUs
 	 */
 	cr_server.head_spu =
-		crSPULoadChain(num_spus, spu_ids, spu_names, spu_dir, &cr_server);
+		crSPULoadChain(num_spus, spu_ids, spu_names, spu_dir, &cr_server, NULL);
 
 	/* Need to do this as early as possible */
 

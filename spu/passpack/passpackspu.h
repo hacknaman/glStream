@@ -61,6 +61,8 @@ typedef struct {
 	int numContexts;
 	ContextInfo context[CR_MAX_CONTEXTS];
 	SPUDispatchTable super;
+
+	int *ImpThreadID;
 } PackSPU;
 
 extern PackSPU pack_spu;
