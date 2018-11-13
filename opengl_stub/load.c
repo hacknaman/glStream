@@ -802,7 +802,7 @@ stubInit(void)
 		getConfigurationOptions(stub.mothershipConn);
 	}
 
-	stub.spu = crSPULoadChain( num_spus, spu_ids, spu_names, stub.spu_dir, NULL );
+	stub.spu = crSPULoadChain( num_spus, spu_ids, spu_names, stub.spu_dir, NULL, &glim.ImpThreadID );
 
 	crFree( spuchain );
 	crFree( spu_ids );

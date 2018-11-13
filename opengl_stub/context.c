@@ -412,12 +412,14 @@ stubGetWindowGeometry( const WindowInfo *window, int *x, int *y,
 static void
 GetWindowTitle( const WindowInfo *window, char *title )
 {
-	HWND hwnd;
+
+//  This hangs in Review
+//	HWND hwnd;
 	/* XXX - we don't handle recurseUp */
-	hwnd = WindowFromDC( window->drawable );
-	if (hwnd)
-		GetWindowText(hwnd, title, 100);
-	else
+//	hwnd = WindowFromDC( window->drawable );
+//	if (hwnd)
+//		GetWindowText(hwnd, title, 100);
+//	else
 		title[0] = 0;
 }
 

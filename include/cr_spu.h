@@ -76,7 +76,7 @@ typedef struct {
 
 /** Init spu */
 typedef SPUFunctions *(*SPUInitFuncPtr)(int id, SPU *child,
-		SPU *super, unsigned int, unsigned int );
+		SPU *super, unsigned int, unsigned int, int * );
 typedef void (*SPUSelfDispatchFuncPtr)(SPUDispatchTable *);
 /** Cleanup spu */
 typedef int (*SPUCleanupFuncPtr)(void);
@@ -425,8 +425,8 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUSelfDispatchFuncPtr *self, SPUCleanupFuncPtr *cleanup,
 	     SPUOptionsPtr *options, int *flags );
 
-SPU *crSPULoad( SPU *child, int id, char *name, char *dir, void *server);
-SPU *crSPULoadChain( int count, int *ids, char **names, char *dir, void *server );
+SPU *crSPULoad(SPU *child, int id, char *name, char *dir, void *server, int *ImpThreadID);
+SPU *crSPULoadChain(int count, int *ids, char **names, char *dir, void *server, int *ImpThreadID);
 void crSPUUnloadChain(SPU *headSPU);
 
 void crSPUInitDispatchTable( SPUDispatchTable *table );

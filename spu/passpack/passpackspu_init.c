@@ -29,7 +29,8 @@ CRmutex _PackMutex;
 static SPUFunctions *
 packSPUInit( int id, SPU *child, SPU *self,
 						 unsigned int context_id,
-						 unsigned int num_contexts )
+						 unsigned int num_contexts,
+						 int *ImpThreadID)
 {
 	ThreadInfo *thread;
 
@@ -44,6 +45,8 @@ packSPUInit( int id, SPU *child, SPU *self,
 #endif
 
 	pack_spu.id = id;
+
+	pack_spu.ImpThreadID = ImpThreadID;
 
 	packspuGatherConfiguration( child );
 

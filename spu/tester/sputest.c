@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	(void) argc;
 	(void) argv;
 
-	spu = crSPULoadChain( sizeof(spunames)/sizeof(spunames[0]), ids, spunames, NULL, NULL );
+	spu = crSPULoadChain( sizeof(spunames)/sizeof(spunames[0]), ids, spunames, NULL, NULL, NULL );
 
 	ctx = spu->dispatch_table.CreateContext( NULL, CR_RGB_BIT | CR_DOUBLE_BIT, 0);
 	if (!ctx) {

@@ -60,6 +60,7 @@ print """
 	struct _spu_dispatch_table *copy_of;
 	int mark;
 	void *server;		
+	int ImpThreadID;
 } SPUDispatchTable;
 
 struct _copy_list_node {
