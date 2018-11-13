@@ -7,6 +7,7 @@
 #include "cr_error.h"
 #include "cr_spu.h"
 #include "cr_environment.h"
+#include "cr_threads.h"
 #include "stub.h"
 
 /* I *know* most of the parameters are unused, dammit. */
@@ -170,7 +171,10 @@ BOOL WINAPI wglMakeCurrent_prox( HDC hdc, HGLRC hglrc )
 	context = (ContextInfo *) crHashtableSearch(stub.contextTable, (unsigned long) hglrc);
 	window = stubGetWindowInfo(hdc);
 
+	// this code lets to block make current call for any thread other then impthreadid if set +int
+	//if (glim.ImpThreadID == crThreadID() || glim.ImpThreadID == -1)
 	stubMakeCurrent( window, context );
+
 	return stub.wsInterface.wglMakeCurrent( hdc, hglrc);
 }
 
@@ -269,7 +273,7 @@ HGLRC WINAPI wglCreateContext_prox( HDC hdc )
 
 	CRASSERT(stub.contextTable);
 
-	sprintf(dpyName, "%d", hdc);
+	sprintf(dpyName, "%d", (int)hdc);
 	if (stub.haveNativeOpenGL)
 		desiredVisual |= ComputeVisBits( hdc );
 
@@ -379,9 +383,14 @@ BOOL WINAPI wglUseFontOutlinesW_prox( HDC hdc, DWORD first, DWORD count, DWORD l
 
 BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
 {
+	// This is aveva specific. We'll get the thread id that's calling wglSwapLayerBuffer 
+	// and pass gl cmd that only for that thread id.
+	glim.ImpThreadID = crThreadID();
+	
 	// force wglswapbuffer since swaplayerbuffer isn't implemented
 	const WindowInfo *window = stubGetWindowInfo(hdc);
-	stubSwapBuffers(window, 0);
+	stubSwapBuffers(window, 0); 
+
 	return stub.wsInterface.wglSwapLayerBuffers(hdc, planes);
 	crWarning( "wglSwapLayerBuffers: unsupported" );
 	return 0;
