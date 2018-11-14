@@ -385,11 +385,15 @@ BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
 {
 	// This is aveva specific. We'll get the thread id that's calling wglSwapLayerBuffer 
 	// and pass gl cmd that only for that thread id.
-	glim.ImpThreadID = crThreadID();
+
+	if (glim.ImpThreadID == -1)
+		glim.ImpThreadID = crThreadID();
 	
 	// force wglswapbuffer since swaplayerbuffer isn't implemented
 	const WindowInfo *window = stubGetWindowInfo(hdc);
-	stubSwapBuffers(window, 0); 
+
+	if (glim.ImpThreadID == crThreadID() || glim.ImpThreadID == -1)
+		stubSwapBuffers(window, 0); 
 
 	return stub.wsInterface.wglSwapLayerBuffers(hdc, planes);
 	crWarning( "wglSwapLayerBuffers: unsupported" );
