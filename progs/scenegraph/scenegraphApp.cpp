@@ -58,6 +58,9 @@ int main(int argc, char* argv[]) {
 
 	viewer->setCameraManipulator(manipulator.get());
 	viewer->setUpViewInWindow(100, 100, 1024, 786);
+
+	// Every threading model works with transviz
+	//viewer->setThreadingModel(osgViewer::ViewerBase::ThreadingModel::AutomaticSelection);
 	
 	// OSG window settings
 	osgViewer::Viewer::Windows ViewerWindow;
