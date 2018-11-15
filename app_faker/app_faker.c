@@ -86,6 +86,66 @@ static const char *libgl_names[] = {
 	"opengl32.dll"
 };
 
+// All of these may not be relavent
+static const char *supporting_lib_names[] = {
+	"windowtrackerspu.dll",
+	"TransVizUtil.dll",
+	"trackerspu.dll",
+	"tilesortspu_crpacker_copy.dll",
+	"tilesortspu.dll",
+	"templatespu.dll",
+	"spuload.dll",
+	"simplequeryspu.dll",
+	"scenegraphspu.dll",
+	"saveframespu.dll",
+	"replicatespu_crpacker_copy.dll",
+	"renderspu.dll",
+	"readbackspu.dll",
+	"replicatespu_crpacker_copy.dll",
+	"printspu.dll",
+	"passthroughspu.dll",
+	"passpackspu.dll",
+	"packspu_crpacker_copy.dll",
+	"packspu.dll",
+	"nopspu.dll",
+	"packspu.dll",
+	"motionblurspu.dll",
+	"mattespu.dll",
+	"libsimplifier.dll",
+	"injectorspu_crunpacker_copy.dll",
+	"injectorspu.dll",
+	"hiddenlinespu_crunpacker_copy.dll",
+	"hiddenlinespu_crpacker_copy.dll",
+	"hiddenlinespu_crunpacker_copy.dll",
+	"hiddenlinespu.dll",
+	"grabberspu.dll",
+	"fpsspu.dll",
+	"feedbackspu.dll",
+	"expandospu.dll",
+	"dist_texturespu.dll",
+	"crutil.dll",
+	"crutclientapi.dll",
+	"crutapi.dll",
+	"crutapi.dll",
+	"crunpacker.dll",
+	"crutapi.dll",
+	"crserver_crunpacker_copy.dll",
+	"crpacker.dll",
+	"crextensionscommon.dll",
+	"crdlm.dll",
+	"crextensionscommon.dll",
+	"commspu.dll",
+	"clientrenderspu.dll",
+	"cameraspu.dll",
+	"binaryswapspu.dll",
+	"avevascenegraphspu.dll",
+	"arrayspu.dll",
+	"archsplitspu_crunpacker_copy.dll",
+	"archsplitspu_crpacker_copy.dll",
+	"apihistogramspu.dll"
+
+};
+
 #else /* _WIN32 */
 
 #define DEFAULT_TMP_DIR "/tmp"
@@ -305,6 +365,26 @@ static void copy_file( const char *dst_filename, const char *src_filename )
 		crError( "copy \"%s\" -> \"%s\"", src_filename, dst_filename );
 }
 
+static void CopySupportingLibraries(char *path) {
+	for (int i = 0; i < sizeof(supporting_lib_names) / sizeof(supporting_lib_names[0]); i++) {
+		char fullpath[1024];
+		crStrcpy(fullpath, path);
+		crStrcat(fullpath, "\\");
+		crStrcat(fullpath, supporting_lib_names[i]);
+		copy_file(fullpath, find_file_on_path(supporting_lib_names[i]));
+	}
+}
+
+static void DeleteSupportingLibraries(char *path) {
+	for (int i = 0; i < sizeof(supporting_lib_names) / sizeof(supporting_lib_names[0]); i++) {
+		char fullpath[1024];
+		crStrcpy(fullpath, path);
+		crStrcat(fullpath, "\\");
+		crStrcat(fullpath, supporting_lib_names[i]);
+		DeleteFile(fullpath);
+	}
+}
+
 static void do_it( char *argv[] )
 {
 	char tmpdir[1024], argv0[1024], *tail;
@@ -313,7 +393,9 @@ static void do_it( char *argv[] )
 
 	if (crMothershipGetFakerParam(mothership_conn, applicationPath, "applicationPath")){
 		crDebug(applicationPath);
-		char appToExecuteWithFullPath[100000];
+		char appToExecuteWithFullPath[2048];
+		char originalAppPath[1024];
+		crStrcpy(originalAppPath, applicationPath);
 
 		crStrcpy(appToExecuteWithFullPath, applicationPath);
 		crStrcat(appToExecuteWithFullPath, "\\");
@@ -333,8 +415,9 @@ static void do_it( char *argv[] )
 			}
 		}
 
-		// copy cr_lib to applicationPath\\opengl32.dll
+		CopySupportingLibraries(originalAppPath);
 
+		// copy cr_lib to applicationPath\\opengl32.dll
 		crStrcat(applicationPath, "\\opengl32.dll");
 		copy_file(applicationPath, cr_lib);
 
@@ -348,6 +431,9 @@ static void do_it( char *argv[] )
         if (!DeleteFile(applicationPath)){
             printf("file not deleted");
         }
+
+		DeleteSupportingLibraries(originalAppPath);
+
 		exit(status ? 1 : 0);
 	}
 	else{
@@ -413,8 +499,6 @@ static void do_it( char *argv[] )
 
 		exit(status ? 1 : 0);
 	}
-
-	
 }
 
 #else /* _WIN32 */
