@@ -1,2 +1,2 @@
-cd C:\Project\TransViz\build\bin
+cd %TrasVizPath%bin
 crappfaker -mothership DESKTOP-PDG0UKJ
