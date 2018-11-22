@@ -1,5 +1,6 @@
 :: SET OSS ROOT PATH
-set OSSROOT=C:\Project\TransViz\ExternalLibrary
+set OSSROOT=C:/Project/TransViz/ExternalLibrary
+
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4
@@ -7,8 +8,8 @@ set OSG_BIN=%OSG_DIR%\bin
 set OSG_PLUGIN_DIR=%OSG_BIN%\osgPlugins-3.4.2
 
 :: set flexera libraries
-set FLEXERA_DIR=%OSSROOT%\flexera\11.12
-set FLEXERA_BIN=%FLEXERA_DIR%\bin
+set FLEXERA_DIR=%OSSROOT%/flexera/11.12
+set FLEXERA_BIN=%FLEXERA_DIR%/bin
 
 ::set GLUT Libraries
 set GLUT_DIR=%OSSROOT%\glut
@@ -29,8 +30,8 @@ set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVI
 :: set development mode
 :: This is used for licensing
 set Development=false
-unset DBG
-unset RLS
+set 'DBG='
+set 'RLS='
 
 call GenerateSolution.bat
 cd ..
