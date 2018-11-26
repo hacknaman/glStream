@@ -50,7 +50,7 @@ setDefaults(void)
 	cr_server.currentEye = -1;
 }
 
-void
+int
 crServerGatherConfiguration(char *mothership)
 {
 	CRMuralInfo *defaultMural;
@@ -86,7 +86,8 @@ crServerGatherConfiguration(char *mothership)
 	conn = crMothershipConnect();
 	if (!conn)
 	{
-		crError("Couldn't connect to the mothership, I have no idea what to do!");
+		crWarning("Couldn't connect to the mothership, I have no idea what to do!");
+		return 0;
 	}
 
 	/*
@@ -415,5 +416,7 @@ crServerGatherConfiguration(char *mothership)
 	}
 
 	crMothershipDisconnect(conn);
+
+	return 1;
 }
 

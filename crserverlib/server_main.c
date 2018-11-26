@@ -277,7 +277,8 @@ crServerInit(int argc, char *argv[])
 	crNetInit(crServerRecv, crServerConnCloseCallback);
 	crStateInit();
 
-	crServerGatherConfiguration(mothership);
+	if (!crServerGatherConfiguration(mothership))
+		return;
 
 	crStateLimitsInit( &(cr_server.limits) );
 

@@ -46,7 +46,7 @@ typedef struct {
                         /* glProgramLocalParameterARB, glProgramParameterNV */
 } CRServerProgram;
 
-void crServerGatherConfiguration(char *mothership);
+int crServerGatherConfiguration(char *mothership);
 void crServerGetTileInfoFromMothership( CRConnection *conn, CRMuralInfo *mural );
 void crServerInitializeTiling(CRMuralInfo *mural);
 void crServerInitDispatch(void);
