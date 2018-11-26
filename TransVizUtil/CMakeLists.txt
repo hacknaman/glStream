@@ -25,6 +25,13 @@ target_link_libraries(TransVizUtil ${EXTRA_LIBS})
 SET_TARGET_PROPERTIES(TransVizUtil
                     PROPERTIES DEFINE_SYMBOL TRANSVIZ_UTIL_LIBRARY
                     )
+
+install(DIRECTORY  ./  ${PROJECT_BINARY_DIR}/include/
+		DESTINATION include
+		COMPONENT dev
+		PATTERN *.cpp EXCLUDE
+		PATTERN *.txt EXCLUDE)
+
 install(TARGETS TransVizUtil
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
