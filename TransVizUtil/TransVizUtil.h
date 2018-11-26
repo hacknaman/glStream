@@ -59,6 +59,10 @@ namespace TransVizUtil{
         void updateNode(osg::ref_ptr<osg::Group> node);
         void update();
 
+		bool isConnected(){ return _isconnected; }
+
+		bool _isconnected;
+
         // start crServer and attach node callback to the root group
         void run(int argc, char* argv[]);
 

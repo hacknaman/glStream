@@ -56,12 +56,13 @@ namespace TransVizUtil{
         static_cast<TransVizUtil*>(context)->updateNode(node);
     }
 
-    TransVizUtil::TransVizUtil() :
-        _rootNode(NULL),
-        _thread(NULL),
-        _oldNode(NULL),
-        _newNode(NULL),
-        _bIsNodeDirty(false)
+	TransVizUtil::TransVizUtil() :
+		_rootNode(NULL),
+		_thread(NULL),
+		_oldNode(NULL),
+		_newNode(NULL),
+		_bIsNodeDirty(false),
+		_isconnected(false)
     {
     }
 
@@ -133,6 +134,13 @@ namespace TransVizUtil{
         crServerInit(_argc, _argv);
 
         SPU* spu = crServerHeadSPU();
+
+		if (spu == NULL)
+		{
+			return;
+		}
+
+		_util->_isconnected = true;
         _util->iSPU = (ISpufunc*)spu->privatePtr;
 
         // This function is in scenegraph SPU
