@@ -203,6 +203,9 @@ int WINAPI wglGetPixelFormat_prox( HDC hdc )
 int WINAPI wglDescribePixelFormat_prox( HDC hdc, int pixelFormat, UINT nBytes,
 		LPPIXELFORMATDESCRIPTOR pfd )
 {
+	// wglDescribeFixelFormat is the first GL function that CATIA calls.
+	// without stubInit() stub isn't initialized resulting in application closure.
+	stubInit();
 	return stub.wsInterface.wglDescribePixelFormat( hdc, pixelFormat, nBytes, pfd  );
 
 /*	if ( pixelFormat != 1 ) { 

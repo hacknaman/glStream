@@ -11,11 +11,13 @@ Run
 ```
 FetchExternalDeps.bat
 ```
-then to generate solution
+then open "initTransViz.bat" and set OSGRoot variable with path till sub directory "ExternalLibrary" 
 ```
-GenerateSolution.bat
+then run initTransViz.bat" which will generate  microsoft visual studio solution file "TransViz"
 ```
-Then Build the soluion
+Then double click on "TransViz" solution file then visual studio will load your project.
+
+And then build the project.
 
 ### Prerequisites [TODO]
 
