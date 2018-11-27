@@ -203,6 +203,7 @@ int WINAPI wglGetPixelFormat_prox( HDC hdc )
 int WINAPI wglDescribePixelFormat_prox( HDC hdc, int pixelFormat, UINT nBytes,
 		LPPIXELFORMATDESCRIPTOR pfd )
 {
+	stubInit();
 	return stub.wsInterface.wglDescribePixelFormat( hdc, pixelFormat, nBytes, pfd  );
 
 /*	if ( pixelFormat != 1 ) { 
