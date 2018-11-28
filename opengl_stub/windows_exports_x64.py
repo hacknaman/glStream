@@ -39,7 +39,7 @@ def GenerateEntrypoints():
 									  apiutil.MakeDeclarationString( params ))
 		print "{"
 		if return_type == "void":
-			print "\tif (glim.ImpThreadID == crThreadID() || glim.ImpThreadID == -1)"
+			print "\tif (glim.ImpThreadID == crThreadID() || glim.ImpThreadID == -1 || glim.ImpThreadID == NO_PASS_ID)"
 			print "\t\tglim.%s(%s);" % (func_name,apiutil.MakeCallString(params))
 		else:
 			print "\t return glim.%s(%s);" % (func_name,apiutil.MakeCallString(params))

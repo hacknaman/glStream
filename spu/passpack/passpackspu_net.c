@@ -232,6 +232,7 @@ packspuCloseCallback(CRConnection *conn)
 	if (thread && conn == thread->netServer.conn) {
 		crDebug("Pack SPU: Server connection closed - exiting.");
 		IsConnectionClosedByForce = 1;
+        *pack_spu.ImpThreadID = NO_PASS_ID;
 
 		//exit(0); // not exit the program if the connection is closed
 	}

@@ -527,6 +527,8 @@ extern void APIENTRY glGetChromiumParametervCR(GLenum target, GLuint index, GLen
 
 #endif /* GL_CR_window_position */
 
+#define NO_PASS_ID -999  /// no pass id
+
 
 #ifndef GL_CR_zpix
 #define GL_CR_zpix 1
