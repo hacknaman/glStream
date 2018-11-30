@@ -85,8 +85,26 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 	g_time = std::time(0);
 }
 
+std::string camerashakeapp;
+
 extern OSGEXPORT void getUpdatedSceneSC(){
+
 	g_calledreadFromApp = true;
+
+    if (camerashakeapp.empty())
+    {
+        std::ifstream myfile("CameraShakeConfig.txt");
+        if (myfile.is_open())
+        {
+            getline(myfile, camerashakeapp);
+            myfile.close();
+        }
+    }
+
+    if (!camerashakeapp.empty())
+    {
+        system(camerashakeapp.c_str());
+    }
 }
 
 void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
