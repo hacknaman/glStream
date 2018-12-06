@@ -967,7 +967,6 @@ static void appExit(void)
 
 int main( int argc, char **argv )
 {
-    system("pause");
 	int i;
 	char *mothership;
 	char **faked_argv = NULL;
