@@ -23,10 +23,18 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
+
+#include <osg/LightSource>
+#include <osg/LightModel>
+#include <osg/Light>
+
 #include <ctime>
 
 #define PRINT_UNUSED(x) ((void)x)
 static int g_ret_count = 2000;
+
+// disabled lighting and material for now
+//#define ENABLE_LIGHT_MATERIAL
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -44,6 +52,11 @@ std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArray;
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
 
 osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet();
+
+#ifdef ENABLE_LIGHT_MATERIAL
+osg::ref_ptr<osg::Material> g_material = new osg::Material();
+osg::ref_ptr<osg::LightSource> g_light = new osg::LightSource;
+#endif
 
 static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
 
@@ -605,7 +618,7 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
 	if (g_isReading && cap == GL_POLYGON_STIPPLE) {
-		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple();
+		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
 		g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
 	}
 }
@@ -631,11 +644,16 @@ static void PRINT_APIENTRY printEnd(void)
 			g_geom->setVertexArray(g_vertexArray);
 			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
 			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
+
 			if (g_state != NULL)
 			{
-				g_geom->setStateSet(new osg::StateSet(*g_state));
+				g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
 			}
 			g_geode->addDrawable(g_geom);
+
+#ifdef ENABLE_LIGHT_MATERIAL
+             g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()),osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+#endif
 		}
 
 		if (g_geode){
@@ -879,6 +897,61 @@ static void PRINT_APIENTRY printGetFinalCombinerInputParameterfvNV(GLenum variab
 
 static void PRINT_APIENTRY printGetFinalCombinerInputParameterivNV(GLenum variable, GLenum pname, GLint * params)
 {
+}
+
+static void PRINT_APIENTRY printLightiv(GLenum light, GLenum pname, const GLint *params)
+{
+}
+
+static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloat *params)
+{
+    if (!g_isReading)
+    {
+        return;
+    }
+
+#ifdef ENABLE_LIGHT_MATERIAL
+
+    if (light == GL_LIGHT1)
+    {
+        switch (pname)
+        {
+
+        case GL_AMBIENT:
+        {
+            g_light->getLight()->setAmbient(osg::Vec4(params[0], params[1], params[2], params[3]));
+            break;
+        }
+        case GL_DIFFUSE:
+        {
+            g_light->getLight()->setDiffuse(osg::Vec4(params[0], params[1], params[2], params[3]));
+            break;
+        }
+        case GL_SPECULAR:
+        {
+            g_light->getLight()->setSpecular(osg::Vec4(params[0], params[1], params[2], params[3]));
+            break;
+        }
+        case GL_POSITION:
+        {
+            g_light->getLight()->setPosition(osg::Vec4(params[0], params[1], params[2], params[3]));
+            break;
+        }
+        case GL_SPOT_EXPONENT:
+        {
+            g_light->getLight()->setSpotExponent(params[0]);
+            break;
+        }
+        case GL_SPOT_CUTOFF:
+        {
+            g_light->getLight()->setSpotCutoff(params[0]);
+            break;
+        }
+
+        }
+
+    }
+#endif
 }
 
 static void PRINT_APIENTRY printGetLightfv(GLenum light, GLenum pname, GLfloat * params)
@@ -2016,6 +2089,13 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	if (g_startReading)
 	{
 		g_spuRootGroup = new osg::Group;
+
+#ifdef ENABLE_LIGHT_MATERIAL
+        g_light = new osg::LightSource();
+        g_material = new osg::Material();
+        g_spuRootGroup->addChild(g_light.get());
+#endif
+
 		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
 
 		g_PatArray.push_back(pat);
@@ -2692,9 +2772,38 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 // material function copied here for color
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
+
+    if (!g_isReading)
+    {
+        return;
+    }
+
 	if (face == GL_FRONT && mode == GL_AMBIENT_AND_DIFFUSE) {
 		g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
 	}
+
+#ifdef ENABLE_LIGHT_MATERIAL
+
+    g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
+
+    switch (mode)
+    {
+    case GL_AMBIENT:
+        g_material->setAmbient(osg::Material::Face::FRONT, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_DIFFUSE:
+        g_material->setDiffuse(osg::Material::Face::FRONT, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_SPECULAR:
+        g_material->setSpecular(osg::Material::Face::FRONT, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_SHININESS:
+        g_material->setShininess(osg::Material::Face::FRONT, params[0]);
+        break;
+    }
+
+#endif
+
 }
 
 SPUNamedFunctionTable _cr_print_table[] = {
