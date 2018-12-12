@@ -384,13 +384,33 @@ BOOL WINAPI wglUseFontOutlinesW_prox( HDC hdc, DWORD first, DWORD count, DWORD l
 	return 0;
 }
 
+
+int old_Thread_id = -1;
+int thread_id_counter = 0;
+
 BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
 {
 	// This is aveva specific. We'll get the thread id that's calling wglSwapLayerBuffer 
-	// and pass gl cmd that only for that thread id.
+	// and pass gl cmd that only for that thread id that if it calls swaplayerbuffer more
+	// than 10 times
 
-	if (glim.ImpThreadID == -1)
-		glim.ImpThreadID = crThreadID();
+    if (old_Thread_id == -1)
+        glim.ImpThreadID = -2;
+		
+    if (old_Thread_id == crThreadID())
+    {
+        thread_id_counter++;
+    }
+    else
+    {
+        old_Thread_id = crThreadID();
+        thread_id_counter = 0;
+    }
+
+    if (thread_id_counter > 10)
+    {
+        glim.ImpThreadID = crThreadID();
+    }
 	
 	// force wglswapbuffer since swaplayerbuffer isn't implemented
 	const WindowInfo *window = stubGetWindowInfo(hdc);
