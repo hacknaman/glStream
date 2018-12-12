@@ -34,7 +34,7 @@ See the file LICENSE.txt for information on redistributing this software. */
 static int g_ret_count = 2000;
 
 // disabled lighting and material for now
-//#define ENABLE_LIGHT_MATERIAL
+#define ENABLE_LIGHT_MATERIAL
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -937,16 +937,6 @@ static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloa
             g_light->getLight()->setPosition(osg::Vec4(params[0], params[1], params[2], params[3]));
             break;
         }
-        case GL_SPOT_EXPONENT:
-        {
-            g_light->getLight()->setSpotExponent(params[0]);
-            break;
-        }
-        case GL_SPOT_CUTOFF:
-        {
-            g_light->getLight()->setSpotCutoff(params[0]);
-            break;
-        }
 
         }
 
@@ -1256,6 +1246,32 @@ static void PRINT_APIENTRY printLightModeliv(GLenum pname, const GLint * params)
 
 static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param)
 {
+    if (!g_isReading)
+    {
+        return;
+    }
+
+#ifdef ENABLE_LIGHT_MATERIAL
+
+    if (light == GL_LIGHT1)
+    {
+        switch (pname)
+        {
+        case GL_SPOT_EXPONENT:
+        {
+            g_light->getLight()->setSpotExponent(param);
+            break;
+        }
+        case GL_SPOT_CUTOFF:
+        {
+            g_light->getLight()->setSpotCutoff(param);
+            break;
+        }
+
+        }
+
+    }
+#endif
 }
 
 static void PRINT_APIENTRY printLighti(GLenum light, GLenum pname, GLint param)
@@ -1352,6 +1368,24 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
+    if (!g_isReading)
+    {
+        return;
+    }
+
+#ifdef ENABLE_LIGHT_MATERIAL
+
+    g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
+
+    switch (pname)
+    {
+    case GL_SHININESS:
+        g_material->setShininess(osg::Material::Face::FRONT_AND_BACK, param);
+        break;
+    }
+
+#endif
+
 }
 
 static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param)
@@ -2789,16 +2823,13 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
     switch (mode)
     {
     case GL_AMBIENT:
-        g_material->setAmbient(osg::Material::Face::FRONT, osg::Vec4(params[0], params[1], params[2], params[3]));
+        g_material->setAmbient(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_DIFFUSE:
-        g_material->setDiffuse(osg::Material::Face::FRONT, osg::Vec4(params[0], params[1], params[2], params[3]));
+        g_material->setDiffuse(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_SPECULAR:
-        g_material->setSpecular(osg::Material::Face::FRONT, osg::Vec4(params[0], params[1], params[2], params[3]));
-        break;
-    case GL_SHININESS:
-        g_material->setShininess(osg::Material::Face::FRONT, params[0]);
+        g_material->setSpecular(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     }
 
