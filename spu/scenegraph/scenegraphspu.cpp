@@ -51,10 +51,10 @@ osg::ref_ptr<osg::Geode> g_geode;
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArray;
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
 
-osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet();
+osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet;
 
 #ifdef ENABLE_LIGHT_MATERIAL
-osg::ref_ptr<osg::Material> g_material = new osg::Material();
+osg::ref_ptr<osg::Material> g_material;
 osg::ref_ptr<osg::LightSource> g_light = new osg::LightSource;
 #endif
 
@@ -652,7 +652,10 @@ static void PRINT_APIENTRY printEnd(void)
 			g_geode->addDrawable(g_geom);
 
 #ifdef ENABLE_LIGHT_MATERIAL
-             g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()),osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+            if (g_material != NULL)
+            {
+                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+            }
 #endif
 		}
 
@@ -673,9 +676,16 @@ static void PRINT_APIENTRY printEnd(void)
 			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
 			if (g_state != NULL)
 			{
-				g_geom->setStateSet(new osg::StateSet(*g_state));
+                g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
 			}
 			g_geode->addDrawable(g_geom);
+
+            #ifdef ENABLE_LIGHT_MATERIAL
+            if (g_material != NULL)
+            {
+                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+            }
+#endif
 		}
 
 		if (g_geode) {
@@ -905,11 +915,7 @@ static void PRINT_APIENTRY printLightiv(GLenum light, GLenum pname, const GLint 
 
 static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloat *params)
 {
-    if (!g_isReading)
-    {
-        return;
-    }
-
+   
 #ifdef ENABLE_LIGHT_MATERIAL
 
     if (light == GL_LIGHT1)
@@ -1368,12 +1374,13 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
-    if (!g_isReading)
-    {
-        return;
-    }
 
 #ifdef ENABLE_LIGHT_MATERIAL
+
+    if (g_material == NULL)
+    {
+        g_material = new osg::Material();
+    }
 
     g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
 
@@ -2807,16 +2814,17 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 
-    if (!g_isReading)
-    {
-        return;
-    }
-
 	if (face == GL_FRONT && mode == GL_AMBIENT_AND_DIFFUSE) {
 		g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
+        return;
 	}
 
 #ifdef ENABLE_LIGHT_MATERIAL
+
+    if (g_material == NULL)
+    {
+        g_material = new osg::Material();
+    }
 
     g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
 
