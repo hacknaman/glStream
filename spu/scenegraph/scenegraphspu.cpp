@@ -1189,122 +1189,39 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
     
-    //const char *mode = Strings[g_currentMatrixMode];
-    //if (!crStrcmp(mode, "GL_MODELVIEW_MATRIX"))
-    //{
+    
         g_CurrentMatrix = osg::Matrix();
-    //}
-    /*else if (!crStrcmp(mode, "GL_PROJECTION_MATRIX"))
-    {
-        g_CurrentprojectionMatrix = osg::Matrix();
-    }*/
+   
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-    //const char *mode = Strings[g_currentMatrixMode];
-    //if (!crStrcmp(mode, "GL_MODELVIEW_MATRIX"))
-    //{
-    /*GLfloat m1[16];
-    m1[0] = m[0];
-    m1[1] = m[4];
-    m1[2] = m[8];
-    m1[3] = m[12];
-
-    m1[4] = m[1];
-    m1[5] = m[5];
-    m1[6] = m[9];
-    m1[7] = m[13];
-
-    m1[8] = m[2];
-    m1[9] = m[6];
-    m1[10] = m[10];
-    m1[11] = m[14];
-
-    m1[12] = m[3];
-    m1[13] = m[7];
-    m1[14] = m[11];
-    m1[15] = m[15];*/
+    
     g_CurrentMatrix.set(m);
-    //}
-    /*else if (!crStrcmp(mode, "GL_PROJECTION_MATRIX"))
-    {
-        g_CurrentprojectionMatrix.set(m);
-    }*/
     
-    
-    //printLoadMatrixd((GLdouble*)m);
     
     
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
-    /*if (!g_TransArray.size())
-    {
-        osg::Transform* pat = new osg::PositionAttitudeTransform;
-
-        g_TransArray.push_back(pat);
-
-    }*/
+   
     if (g_isReading)
     {
-        // create a matrix node
-        /*osg::ref_ptr<osg::Transform> transMat = new osg::MatrixTransform();
-        g_TransArray.back()->addChild(transMat);
-        g_TransArray.push_back(transMat);*/
+        
         // create a pat node
 		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
 		g_PatArray.back()->addChild(pat);
         g_PatArray.push_back(pat);
     }
-    //pushing current matrix 
+    //pushing current matrix in stack
     g_matrix_stack.push_back(g_CurrentMatrix);
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
 
-    //const char *mode = Strings[g_currentMatrixMode];
-    //if (!crStrcmp(mode, "GL_MODELVIEW_MATRIX"))
-    //{
-        
-    
-    
-    
-    /*GLfloat m1[16];
-    m1[0] = m[0];
-    m1[1] = m[4];
-    m1[2] = m[8];
-    m1[3] = m[12];
-
-    m1[4] = m[1];
-    m1[5] = m[5];
-    m1[6] = m[9];
-    m1[7] = m[13];
-
-    m1[8] = m[2];
-    m1[9] = m[6];
-    m1[10] = m[10];
-    m1[11] = m[14];
-
-    m1[12] = m[3];
-    m1[13] = m[7];
-    m1[14] = m[11];
-    m1[15] = m[15];*/
-    g_CurrentMatrix.set(m);
-    //}
-    /*else if (!crStrcmp(mode, "GL_PROJECTION_MATRIX"))
-    {
-        g_CurrentprojectionMatrix.set(m);
-    }*/
-
-    /*printPushMatrix();
-    osg::Matrix mat = osg::Matrix();
-    mat.set(m);
-    osg::Transform* curr_mat_on_stack = g_TransArray.back();
-    curr_mat_on_stack->asMatrixTransform()->setMatrix(mat);*/
-   
+    g_CurrentMatrix.set(m);    
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
