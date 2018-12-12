@@ -49,6 +49,8 @@ osg::ref_ptr<osg::Geometry> g_geom;
 osg::ref_ptr<osg::Geode> g_geode;
 
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArray;
+std::vector<osg::Matrix> g_matrix_stack;
+
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
 
 osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet;
@@ -61,6 +63,7 @@ osg::ref_ptr<osg::LightSource> g_light = new osg::LightSource;
 static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
 
 int g_geometryMode = -1;
+int g_currentMatrixMode = -1;
 
 int g_startReading = false;
 int g_isReading = false;
@@ -1298,17 +1301,40 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-	g_CurrentMatrix = osg::Matrix();
+    
+    
+        g_CurrentMatrix = osg::Matrix();
+   
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-	g_CurrentMatrix.set(m);
+    
+    g_CurrentMatrix.set(m);
+    
+    
+    
+}
+
+static void PRINT_APIENTRY printPushMatrix(void)
+{
+   
+    if (g_isReading)
+    {
+        
+        // create a pat node
+		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
+		g_PatArray.back()->addChild(pat);
+        g_PatArray.push_back(pat);
+    }
+    //pushing current matrix in stack
+    g_matrix_stack.push_back(g_CurrentMatrix);
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-	g_CurrentMatrix.set(m);
+
+    g_CurrentMatrix.set(m);    
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1401,10 +1427,25 @@ static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param
 
 static void PRINT_APIENTRY printMatrixMode(GLenum mode)
 {
+    g_currentMatrixMode = mode;
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 {
+}
+static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
+{
+    
+    osg::Matrix mat = osg::Matrix();
+    mat.set(m);
+    g_CurrentMatrix = mat * g_CurrentMatrix;
+}
+
+static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
+{
+    osg::Matrix mat = osg::Matrix();
+    mat.set(m);
+    g_CurrentMatrix = mat * g_CurrentMatrix;
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -1610,6 +1651,7 @@ static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const
 
 static void PRINT_APIENTRY printOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
+    //g_CurrentprojectionMatrix.makeOrtho(left,right,bottom,top,zNear,zFar);
 }
 
 static void PRINT_APIENTRY printPassThrough(GLfloat token)
@@ -1690,10 +1732,16 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 
 static void PRINT_APIENTRY printPopMatrix(void)
 {
-	if (g_isReading)
-	{		
-		g_PatArray.pop_back();
-	}
+    if (g_isReading)
+    {
+        g_PatArray.pop_back();
+    }
+        
+    osg::Matrix top_mat = g_matrix_stack.back();
+    g_matrix_stack.pop_back();
+    g_CurrentMatrix = top_mat;
+
+	
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -1788,16 +1836,7 @@ static void PRINT_APIENTRY printPushClientAttrib(GLbitfield mask)
 {
 }
 
-static void PRINT_APIENTRY printPushMatrix(void)
-{
-	if (g_isReading)
-	{
-		// create a pat node
-		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-		g_PatArray.back()->addChild(pat);
-		g_PatArray.push_back(pat);
-	}
-}
+
 
 static void PRINT_APIENTRY printPushName(GLuint name)
 {
