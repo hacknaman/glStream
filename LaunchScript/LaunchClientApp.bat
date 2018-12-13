@@ -1,5 +1,6 @@
 SET OSSROOT=C:/Project/TransViz/ExternalLibrary
 SET TrasVizPath=C:/Project/TransViz/build/
+SET SERVER_HOSTNAME=localhost
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4
@@ -11,4 +12,4 @@ set OSG_PLUGIN_DIR=%OSG_BIN%\osgPlugins-3.4.2
 set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%PATH%
 
 cd %TrasVizPath%bin
-ScenegraphApp -mothership DESKTOP-PDG0UKJ
+ScenegraphApp -mothership %SERVER_HOSTNAME%
