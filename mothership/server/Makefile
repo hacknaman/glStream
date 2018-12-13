@@ -20,5 +20,12 @@ ifdef WINDOWS
 else
 	@echo "crdir = \"$(shell dirname $(shell dirname $(shell pwd)))\"" >> crconfig.py
 endif
-	@echo "crbindir = os.path.join(crdir,'bin',arch)" >> crconfig.py
-	@echo "crlibdir = os.path.join(crdir,'lib',arch)" >> crconfig.py
+
+@echo "try:" > crconfig.py
+@echo "\tos.environ[\"TransVizInstalledPath\"]" > crconfig.py
+@echo "\tcrdir = os.environ[\"TransVizInstalledPath\"]" > crconfig.py
+@echo "except KeyError:" > crconfig.py
+@echo "\tprint "\"TransVizInstalledPath not set as. Defaulting it to \"" > crconfig.py
+   
+@echo "crbindir = os.path.join(crdir,'bin',arch)" >> crconfig.py
+@echo "crlibdir = os.path.join(crdir,'lib',arch)" >> crconfig.py
