@@ -1,2 +1,2 @@
-cd %TrasVizPath%bin
-crappfaker -mothership DESKTOP-PDG0UKJ
+cd %TransVizInstalledPath%bin
+crappfaker -mothership %CLIENT_HOSTNAME%

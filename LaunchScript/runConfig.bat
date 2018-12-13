@@ -1,2 +1,2 @@
-cd %TrasVizPath%mothership\configs
-python %pyConfig% %ApplcaitonName%
+cd %TransVizInstalledPath%mothership\configs
+python crRelease.conf %ApplcaitonName% %ApplcaitonPath% %CLIENT_HOSTNAME%
