@@ -407,16 +407,17 @@ BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
         thread_id_counter = 0;
     }
 
-    if (thread_id_counter > 10)
+    if (thread_id_counter == 20)
     {
         glim.ImpThreadID = crThreadID();
+        thread_id_counter = 0;
     }
-	
-	// force wglswapbuffer since swaplayerbuffer isn't implemented
-	const WindowInfo *window = stubGetWindowInfo(hdc);
 
-	if (glim.ImpThreadID == crThreadID() || glim.ImpThreadID == -1)
-		stubSwapBuffers(window, 0); 
+    // force wglswapbuffer since swaplayerbuffer isn't implemented
+    const WindowInfo *window = stubGetWindowInfo(hdc);
+
+    if (glim.ImpThreadID == crThreadID())
+        stubSwapBuffers(window, 0);
 
 	return stub.wsInterface.wglSwapLayerBuffers(hdc, planes);
 	crWarning( "wglSwapLayerBuffers: unsupported" );
