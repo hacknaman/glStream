@@ -33,8 +33,9 @@ See the file LICENSE.txt for information on redistributing this software. */
 #define PRINT_UNUSED(x) ((void)x)
 static int g_ret_count = 2000;
 
-// disabled lighting and material for now
-#define ENABLE_LIGHT_MATERIAL
+// comment out this code to disable material / lights
+#define ENABLE_MATERIAL
+#define ENABLE_LIGHTS
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -55,8 +56,11 @@ std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayLis
 
 osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet;
 
-#ifdef ENABLE_LIGHT_MATERIAL
+#ifdef ENABLE_MATERIAL
 osg::ref_ptr<osg::Material> g_material;
+#endif
+
+#ifdef ENABLE_LIGHTS
 osg::ref_ptr<osg::LightSource> g_light = new osg::LightSource;
 #endif
 
@@ -654,7 +658,7 @@ static void PRINT_APIENTRY printEnd(void)
 			}
 			g_geode->addDrawable(g_geom);
 
-#ifdef ENABLE_LIGHT_MATERIAL
+#ifdef ENABLE_MATERIAL
             if (g_material != NULL)
             {
                 g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
@@ -683,7 +687,7 @@ static void PRINT_APIENTRY printEnd(void)
 			}
 			g_geode->addDrawable(g_geom);
 
-            #ifdef ENABLE_LIGHT_MATERIAL
+#ifdef ENABLE_MATERIAL
             if (g_material != NULL)
             {
                 g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
@@ -919,8 +923,7 @@ static void PRINT_APIENTRY printLightiv(GLenum light, GLenum pname, const GLint 
 static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloat *params)
 {
    
-#ifdef ENABLE_LIGHT_MATERIAL
-
+#ifdef ENABLE_LIGHTS
     if (light == GL_LIGHT1)
     {
         switch (pname)
@@ -948,7 +951,6 @@ static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloa
         }
 
         }
-
     }
 #endif
 }
@@ -1260,7 +1262,7 @@ static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param
         return;
     }
 
-#ifdef ENABLE_LIGHT_MATERIAL
+#ifdef ENABLE_LIGHTS
 
     if (light == GL_LIGHT1)
     {
@@ -1301,27 +1303,18 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-    
-    
-        g_CurrentMatrix = osg::Matrix();
-   
+    g_CurrentMatrix = osg::Matrix();
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-    
     g_CurrentMatrix.set(m);
-    
-    
-    
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
-   
     if (g_isReading)
     {
-        
         // create a pat node
 		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
 		g_PatArray.back()->addChild(pat);
@@ -1333,7 +1326,6 @@ static void PRINT_APIENTRY printPushMatrix(void)
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-
     g_CurrentMatrix.set(m);    
 }
 
@@ -1401,7 +1393,7 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
 
-#ifdef ENABLE_LIGHT_MATERIAL
+#ifdef ENABLE_MATERIAL
 
     if (g_material == NULL)
     {
@@ -1435,7 +1427,6 @@ static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 }
 static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
 {
-    
     osg::Matrix mat = osg::Matrix();
     mat.set(m);
     g_CurrentMatrix = mat * g_CurrentMatrix;
@@ -2170,10 +2161,13 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	{
 		g_spuRootGroup = new osg::Group;
 
-#ifdef ENABLE_LIGHT_MATERIAL
+#ifdef ENABLE_LIGHTS
         g_light = new osg::LightSource();
-        g_material = new osg::Material();
         g_spuRootGroup->addChild(g_light.get());
+#endif
+
+#ifdef ENABLE_MATERIAL
+        g_material = new osg::Material();
 #endif
 
 		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
@@ -2858,7 +2852,7 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         return;
 	}
 
-#ifdef ENABLE_LIGHT_MATERIAL
+#ifdef ENABLE_MATERIAL
 
     if (g_material == NULL)
     {
