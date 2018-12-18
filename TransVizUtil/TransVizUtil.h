@@ -18,6 +18,7 @@
 #include <export.h>
 #include <OpenThreads/Thread>
 #include <osg/Group>
+#include <osg/PositionAttitudeTransform>
 
 
 class ISpufunc
@@ -61,6 +62,11 @@ namespace TransVizUtil{
 
 		bool isConnected(){ return _isconnected; }
 
+        void setBasePosition(osg::Vec3d pos);
+        void setBaseRotation(osg::Vec3d orientation); // Angle in Degrees
+        void setBaseScale(osg::Vec3d scale);
+        void resetBasePat();
+
 		bool _isconnected;
 
         // start crServer and attach node callback to the root group
@@ -78,6 +84,8 @@ namespace TransVizUtil{
         osg::ref_ptr<osg::Group> _rootNode;
         osg::ref_ptr<osg::Group> _oldNode;
         osg::ref_ptr<osg::Group> _newNode;
+
+        osg::ref_ptr<osg::PositionAttitudeTransform> _basePat;
 
         bool _bIsNodeDirty;
 

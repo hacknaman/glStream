@@ -62,7 +62,8 @@ namespace TransVizUtil{
 		_oldNode(NULL),
 		_newNode(NULL),
 		_bIsNodeDirty(false),
-		_isconnected(false)
+		_isconnected(false),
+        _basePat(new osg::PositionAttitudeTransform)
     {
     }
 
@@ -95,14 +96,17 @@ namespace TransVizUtil{
 
         osg::Group* newGroup = _newNode->asGroup();
         if (newGroup != NULL && _rootNode != NULL){
+
             if (_oldNode != NULL && _oldNode != newGroup) {
-                _rootNode->removeChild(_oldNode);
-                _rootNode->addChild(newGroup);
+                _rootNode->removeChild(_basePat);
+                _basePat->removeChild(_oldNode);
             }
-            else {
-                _rootNode->addChild(newGroup);
-            }
+            
+            _basePat->addChild(newGroup);
+            _rootNode->addChild(_basePat);
+
             _oldNode = newGroup;
+            _oldNode->setName("TransVizGroup");
         }
 
         _bIsNodeDirty = false;
@@ -129,10 +133,44 @@ namespace TransVizUtil{
 
     }
 
+    void TransVizUtil::setBasePosition(osg::Vec3d pos)
+    {
+        _basePat->setPosition(pos);
+    }
+
+    void TransVizUtil::setBaseRotation(osg::Vec3d orientation)
+    {
+        // This is code is stolen from wikipedia
+        // just look for euler to quaternion 
+
+        double cy = cos(orientation[0] * 0.5);
+        double sy = sin(orientation[0] * 0.5);
+        double cp = cos(orientation[1] * 0.5);
+        double sp = sin(orientation[1] * 0.5);
+        double cr = cos(orientation[2] * 0.5);
+        double sr = sin(orientation[2] * 0.5);
+
+        osg::Quat q;
+        q.w() = cy * cp * cr + sy * sp * sr;
+        q.x() = cy * cp * sr - sy * sp * cr;
+        q.y() = sy * cp * sr + cy * sp * cr;
+        q.z() = sy * cp * cr - cy * sp * sr;
+        _basePat->setAttitude(q);
+    }
+
+    void TransVizUtil::setBaseScale(osg::Vec3d scale)
+    {
+        _basePat->setScale(scale);
+    }
+
+    void TransVizUtil::resetBasePat()
+    {
+        _basePat = new osg::PositionAttitudeTransform;
+    }
+
     void TransVizServerThread::run()
     {
         crServerInit(_argc, _argv);
-
         SPU* spu = crServerHeadSPU();
 
 		if (spu == NULL)
