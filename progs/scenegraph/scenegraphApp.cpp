@@ -164,6 +164,19 @@ int main(int argc, char* argv[]) {
     SceneGraphGenerator->setBaseRotation( osg::Vec3d(0.0, 45.0, 0) );
     SceneGraphGenerator->setBasePosition( osg::Vec3d(0.0, 45.0, 0) );
 
+    std::string mothership = "localhost";
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (!strcmp(argv[i], "-mothership"))
+        {
+            mothership = argv[i + 1];
+            i++;
+        }
+    }
+
+    SceneGraphGenerator->setMothership(mothership);
+
 	//viewer->realize();
 	while (!viewer->done()){
 		SceneGraphGenerator->update();
