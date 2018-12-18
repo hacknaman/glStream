@@ -37,10 +37,8 @@ namespace TransVizUtil{
     class TransVizServerThread : public OpenThreads::Thread
     {
         TransVizUtil* _util;
-        int _argc;
-        char** _argv;
     public:
-        TransVizServerThread(int argc, char* argv[], TransVizUtil* util);
+        TransVizServerThread( TransVizUtil* util );
         void run();
         int cancel();
     protected:
@@ -67,10 +65,16 @@ namespace TransVizUtil{
         void setBaseScale(osg::Vec3d scale);
         void resetBasePat();
 
+        void setMothership(std::string hostname){ _hostname = hostname; }
+        std::string getMothership(){ return _hostname; }
+
+        void setPort(std::string port){ _port = port; }
+        std::string getPort(){ return _port; }
+
 		bool _isconnected;
 
         // start crServer and attach node callback to the root group
-        void run(int argc, char* argv[]);
+        void run();
 
         ISpufunc* iSPU;
 
@@ -90,6 +94,9 @@ namespace TransVizUtil{
         bool _bIsNodeDirty;
 
         TransVizServerThread* _thread;
+
+        std::string _hostname;
+        std::string _port;
 
     };// class TransVizUtil
 } // nameSpace TransVizUtil

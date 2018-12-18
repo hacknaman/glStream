@@ -194,6 +194,89 @@ GLboolean checkLicense(){
 }
 
 /**
+* Do CRServer initializations.  After this, we can begin servicing clients.
+*/
+void
+crServerInitNew(const char* hostname, const char *port)
+{
+    // check for the license
+    if (!DEVELOPMENT_MDOE){
+        if (!checkLicense()){
+            crError("LICENSE FILE IS NOT VALID");
+            exit(0);
+        }
+    }
+
+    int i;
+    char *mothership = NULL;
+    CRMuralInfo *defaultMural;
+
+    windowIDreset();
+    contextIDreset();
+
+    if (hostname != NULL)
+    {
+        mothership = hostname;
+    }
+     
+    if (port != NULL)
+        cr_server.tcpip_port = crStrToInt(port);
+          
+    signal(SIGTERM, crServerCleanup);
+    signal(SIGINT, crServerCleanup);
+#ifndef WINDOWS
+    signal(SIGPIPE, SIG_IGN);
+#endif
+
+#if DEBUG_FP_EXCEPTIONS
+    {
+        fpu_control_t mask;
+        _FPU_GETCW(mask);
+        mask &= ~(_FPU_MASK_IM | _FPU_MASK_DM | _FPU_MASK_ZM
+            | _FPU_MASK_OM | _FPU_MASK_UM);
+        _FPU_SETCW(mask);
+    }
+#endif
+
+    cr_server.firstCallCreateContext = GL_TRUE;
+    cr_server.firstCallMakeCurrent = GL_TRUE;
+
+    /*
+    * Create default mural info and hash table.
+    */
+    cr_server.muralTable = crAllocHashtable();
+    defaultMural = (CRMuralInfo *)crCalloc(sizeof(CRMuralInfo));
+    crHashtableAdd(cr_server.muralTable, 0, defaultMural);
+
+    cr_server.programTable = crAllocHashtable();
+
+    crNetInit(crServerRecv, crServerConnCloseCallback);
+    crStateInit();
+
+    if (!crServerGatherConfiguration(mothership))
+        return;
+
+    crStateLimitsInit(&(cr_server.limits));
+
+    /*
+    * Default context
+    */
+    cr_server.contextTable = crAllocHashtable();
+    cr_server.DummyContext = crStateCreateContext(&cr_server.limits, CR_RGB_BIT | CR_DEPTH_BIT, NULL);
+    cr_server.curClient->currentCtx = cr_server.DummyContext;
+
+    crServerInitDispatch();
+    crStateDiffAPI(&(cr_server.head_spu->dispatch_table));
+
+    crUnpackSetReturnPointer(&(cr_server.return_ptr));
+    crUnpackSetWritebackPointer(&(cr_server.writeback_ptr));
+
+    cr_server.barriers = crAllocHashtable();
+    cr_server.semaphores = crAllocHashtable();
+}
+
+
+/**
  * Do CRServer initializations.  After this, we can begin servicing clients.
  */
 void

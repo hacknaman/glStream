@@ -140,7 +140,8 @@ int main(int argc, char* argv[]) {
 	viewer->setThreadingModel(osgViewer::ViewerBase::ThreadingModel::AutomaticSelection);
 
     // This is used to disable osg default lighting
-    /*viewer->getCamera()->getView()->setLightingMode(osg::View::SKY_LIGHT);
+    /*
+    viewer->getCamera()->getView()->setLightingMode(osg::View::SKY_LIGHT);
     osg::Light* light = viewer->getCamera()->getView()->getLight();
     if (light != NULL)
     {
@@ -157,7 +158,11 @@ int main(int argc, char* argv[]) {
 		ViewerWindow.front()->setWindowName("TransViz Client");
 	}
 
-	SceneGraphGenerator->run(argc, argv);
+	SceneGraphGenerator->run();
+
+    SceneGraphGenerator->setBaseScale( osg::Vec3d(2.0, 2.0, 2.0) );
+    SceneGraphGenerator->setBaseRotation( osg::Vec3d(0.0, 45.0, 0) );
+    SceneGraphGenerator->setBasePosition( osg::Vec3d(0.0, 45.0, 0) );
 
 	//viewer->realize();
 	while (!viewer->done()){

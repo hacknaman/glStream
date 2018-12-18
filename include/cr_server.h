@@ -186,6 +186,8 @@ typedef struct {
 
 
 extern void crServerInit( int argc, char *argv[] );
+extern void crServerInitNew( const char* hostname, const char* port);
+
 extern int CRServerMain( int argc, char *argv[] );
 extern void crServerServiceClients(void);
 extern void crServerAddNewClient(void);

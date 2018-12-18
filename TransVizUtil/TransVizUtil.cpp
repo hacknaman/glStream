@@ -65,6 +65,8 @@ namespace TransVizUtil{
 		_isconnected(false),
         _basePat(new osg::PositionAttitudeTransform)
     {
+        _hostname = "localhost";
+        _port = "7000";
     }
 
     TransVizUtil::~TransVizUtil(){}
@@ -118,16 +120,14 @@ namespace TransVizUtil{
         _bIsNodeDirty = true;
     }
 
-    void TransVizUtil::run(int argc, char* argv[]) {
+    void TransVizUtil::run() {
 
         // start crserver in separate thread
-        _thread = new TransVizServerThread(argc, argv, this);
+        _thread = new TransVizServerThread(this);
         _thread->start();
     }
 
-    TransVizServerThread::TransVizServerThread(int argc, char* argv[], TransVizUtil* util) :
-        _argc(argc),
-        _argv(argv),
+    TransVizServerThread::TransVizServerThread( TransVizUtil* util) :
         _util(util)
     {
 
@@ -170,7 +170,7 @@ namespace TransVizUtil{
 
     void TransVizServerThread::run()
     {
-        crServerInit(_argc, _argv);
+        crServerInitNew(_util->getMothership().c_str(), _util->getPort().c_str());
         SPU* spu = crServerHeadSPU();
 
 		if (spu == NULL)
