@@ -64,6 +64,7 @@ namespace TransVizUtil{
         void setBaseRotation(osg::Vec3d orientation); // Angle in Degrees
         void setBaseScale(osg::Vec3d scale);
         void resetBasePat();
+        osg::ref_ptr<osg::Group> getBasePat(){ return _basePat; }
 
         void setMothership(std::string hostname){ _hostname = hostname; }
         std::string getMothership(){ return _hostname; }
