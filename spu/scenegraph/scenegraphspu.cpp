@@ -61,7 +61,7 @@ osg::ref_ptr<osg::Material> g_material;
 #endif
 
 #ifdef ENABLE_LIGHTS
-osg::ref_ptr<osg::LightSource> g_light = new osg::LightSource;
+osg::ref_ptr<osg::LightSource> g_light[8];
 #endif
 
 static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
@@ -85,6 +85,11 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 
 	g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
 	g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+
+    for (auto light : g_light)
+    {
+        light = NULL;
+    }
 
 	g_PatArray.clear();
 	g_PatArrayDisplayList.clear();
@@ -577,7 +582,7 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
-	if (GL_POLYGON_STIPPLE){
+    if (cap == GL_POLYGON_STIPPLE){
 		g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
 	}
 }
@@ -628,6 +633,17 @@ static void PRINT_APIENTRY printEnable(GLenum cap)
 		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
 		g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
 	}
+
+#ifdef ENABLE_LIGHTS
+    if (cap >= GL_LIGHT0 && cap <= GL_LIGHT7)
+    {
+        if (g_light[cap - GL_LIGHT0] == NULL)
+        {
+            g_light[cap - GL_LIGHT0] = new osg::LightSource();
+        }
+    }
+#endif
+    
 }
 
 static void PRINT_APIENTRY printEnableClientState(GLenum array)
@@ -922,36 +938,43 @@ static void PRINT_APIENTRY printLightiv(GLenum light, GLenum pname, const GLint 
 
 static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloat *params)
 {
-   
 #ifdef ENABLE_LIGHTS
-    if (light == GL_LIGHT1)
+
+    if (g_light[light - GL_LIGHT0] == NULL)
     {
-        switch (pname)
-        {
-
-        case GL_AMBIENT:
-        {
-            g_light->getLight()->setAmbient(osg::Vec4(params[0], params[1], params[2], params[3]));
-            break;
-        }
-        case GL_DIFFUSE:
-        {
-            g_light->getLight()->setDiffuse(osg::Vec4(params[0], params[1], params[2], params[3]));
-            break;
-        }
-        case GL_SPECULAR:
-        {
-            g_light->getLight()->setSpecular(osg::Vec4(params[0], params[1], params[2], params[3]));
-            break;
-        }
-        case GL_POSITION:
-        {
-            g_light->getLight()->setPosition(osg::Vec4(params[0], params[1], params[2], params[3]));
-            break;
-        }
-
-        }
+        g_light[light - GL_LIGHT0] = new osg::LightSource();
     }
+   
+    switch (pname)
+    {
+
+    case GL_AMBIENT:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setAmbient(osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    }
+    case GL_DIFFUSE:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setDiffuse(osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    }
+    case GL_SPECULAR:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setSpecular(osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    }
+    case GL_POSITION:
+    {
+        osg::Matrix mat = osg::Matrix::translate(osg::Vec3(params[0], params[1], params[2]));
+        osg::Matrix matFinal = mat * g_CurrentMatrix;
+        osg::Vec3 vertexPoint = matFinal.getTrans();
+
+        g_light[light - GL_LIGHT0]->getLight()->setPosition(osg::Vec4(vertexPoint[0], vertexPoint[1], vertexPoint[2], params[3]));
+        break;
+    }
+
+    }
+    
 #endif
 }
 
@@ -1241,10 +1264,27 @@ static GLboolean PRINT_APIENTRY printIsTexture(GLuint texture)
 
 static void PRINT_APIENTRY printLightModelf(GLenum pname, GLfloat param)
 {
+
 }
 
 static void PRINT_APIENTRY printLightModelfv(GLenum pname, const GLfloat * params)
 {
+#ifdef ENABLE_LIGHTS
+    {
+        switch (pname)
+        {
+
+        case GL_LIGHT_MODEL_AMBIENT:
+        {
+            osg::ref_ptr<osg::LightModel> lm = new osg::LightModel();
+            lm->setAmbientIntensity(osg::Vec4d(params[0], params[0], params[0], params[0]));
+            g_state->setAttribute(lm);
+            break;
+        }
+
+        }
+    }
+#endif
 }
 
 static void PRINT_APIENTRY printLightModeli(GLenum pname, GLint param)
@@ -1262,26 +1302,27 @@ static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param
         return;
     }
 
+    if (g_light[light - GL_LIGHT0] == NULL){
+        g_light[light - GL_LIGHT0] = new osg::LightSource();
+    }
+
 #ifdef ENABLE_LIGHTS
 
-    if (light == GL_LIGHT1)
+    switch (pname)
     {
-        switch (pname)
-        {
-        case GL_SPOT_EXPONENT:
-        {
-            g_light->getLight()->setSpotExponent(param);
-            break;
-        }
-        case GL_SPOT_CUTOFF:
-        {
-            g_light->getLight()->setSpotCutoff(param);
-            break;
-        }
-
-        }
+    case GL_SPOT_EXPONENT:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setSpotExponent(param);
+        break;
+    }
+    case GL_SPOT_CUTOFF:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setSpotCutoff(param);
+        break;
+    }
 
     }
+
 #endif
 }
 
@@ -1393,6 +1434,15 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
 
+    osg::Material::Face osgface = osg::Material::Face::FRONT;
+
+    switch (face){
+    case GL_BACK:
+        osgface = osg::Material::Face::BACK;
+    case GL_FRONT_AND_BACK:
+        osgface = osg::Material::Face::FRONT_AND_BACK;
+    }
+
 #ifdef ENABLE_MATERIAL
 
     if (g_material == NULL)
@@ -1400,12 +1450,10 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
         g_material = new osg::Material();
     }
 
-    g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
-
     switch (pname)
     {
     case GL_SHININESS:
-        g_material->setShininess(osg::Material::Face::FRONT_AND_BACK, param);
+        g_material->setShininess(osgface, param);
         break;
     }
 
@@ -2146,6 +2194,16 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 		}
 
 		g_isReading = false;
+
+#ifdef ENABLE_LIGHTS
+        for (int i = GL_LIGHT0; i <= GL_LIGHT7; ++i)
+        {
+            if (g_light[i - GL_LIGHT0] != NULL){
+                g_spuRootGroup->addChild(g_light[i - GL_LIGHT0]);
+            }
+        }
+#endif
+
 		g_pt2Func(g_context, g_spuRootGroup.get());
 	}
 
@@ -2160,11 +2218,6 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	if (g_startReading)
 	{
 		g_spuRootGroup = new osg::Group;
-
-#ifdef ENABLE_LIGHTS
-        g_light = new osg::LightSource();
-        g_spuRootGroup->addChild(g_light.get());
-#endif
 
 #ifdef ENABLE_MATERIAL
         g_material = new osg::Material();
@@ -2847,10 +2900,14 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 
-	if (face == GL_FRONT && mode == GL_AMBIENT_AND_DIFFUSE) {
-		g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
-        return;
-	}
+    osg::Material::Face osgface = osg::Material::Face::FRONT;
+
+    switch (face){
+    case GL_BACK:
+        osgface = osg::Material::Face::BACK;
+    case GL_FRONT_AND_BACK:
+        osgface = osg::Material::Face::FRONT_AND_BACK;
+    }
 
 #ifdef ENABLE_MATERIAL
 
@@ -2859,18 +2916,20 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         g_material = new osg::Material();
     }
 
-    g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
-
     switch (mode)
     {
     case GL_AMBIENT:
-        g_material->setAmbient(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
+        g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_DIFFUSE:
-        g_material->setDiffuse(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
+        g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_SPECULAR:
-        g_material->setSpecular(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
+        g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_AMBIENT_AND_DIFFUSE:
+    	g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
+        g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
         break;
     }
 
