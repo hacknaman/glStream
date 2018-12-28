@@ -395,8 +395,8 @@ BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
 	// than 10 times
 
     if (old_Thread_id == -1)
-        glim.ImpThreadID = -2;
-		
+        glim.ImpThreadID = -2; // i.e. no imp(render) thread is set
+
     if (old_Thread_id == crThreadID())
     {
         thread_id_counter++;
@@ -410,13 +410,12 @@ BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
     if (thread_id_counter == 20)
     {
         glim.ImpThreadID = crThreadID();
-        thread_id_counter = 0;
     }
 
     // force wglswapbuffer since swaplayerbuffer isn't implemented
     const WindowInfo *window = stubGetWindowInfo(hdc);
 
-    if (glim.ImpThreadID == crThreadID())
+    if (glim.ImpThreadID == crThreadID() && glim.ImpThreadID != -2)
         stubSwapBuffers(window, 0);
 
 	return stub.wsInterface.wglSwapLayerBuffers(hdc, planes);
