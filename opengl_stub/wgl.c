@@ -19,6 +19,15 @@
 
 static GLuint desiredVisual = CR_RGB_BIT;
 
+struct threadidmap {
+    int threadid;
+    int winddowid;
+    int contextid;
+};
+
+#define ThreadIDMAP_LEN 64
+static struct threadidmap g_threadidmap[ThreadIDMAP_LEN];
+
 
 /**
  * Compute a mask of CR_*_BIT flags which reflects the attributes of
@@ -174,6 +183,22 @@ BOOL WINAPI wglMakeCurrent_prox( HDC hdc, HGLRC hglrc )
 	// this code lets to block make current call for any thread other then impthreadid if set +int
 	//if (glim.ImpThreadID == crThreadID() || glim.ImpThreadID == -1)
 	stubMakeCurrent( window, context );
+
+    for (int i = 0; i < ThreadIDMAP_LEN; ++i)
+    {
+        if (g_threadidmap[i].threadid == crThreadID()){
+            g_threadidmap[i].winddowid = (int)hdc;
+            g_threadidmap[i].contextid = (int)hglrc;
+            break;
+        }
+        else if (g_threadidmap[i].threadid == 0)
+        {
+            g_threadidmap[i].threadid = crThreadID();
+            g_threadidmap[i].winddowid = (int)hdc;
+            g_threadidmap[i].contextid = (int)hglrc;
+            break;
+        }
+    }
 
 	return stub.wsInterface.wglMakeCurrent( hdc, hglrc);
 }
@@ -392,7 +417,7 @@ BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
 {
 	// This is aveva specific. We'll get the thread id that's calling wglSwapLayerBuffer 
 	// and pass gl cmd that only for that thread id that if it calls swaplayerbuffer more
-	// than 10 times
+	// than 20 times
 
     if (old_Thread_id == -1)
         glim.ImpThreadID = -2; // i.e. no imp(render) thread is set
@@ -410,6 +435,21 @@ BOOL WINAPI wglSwapLayerBuffers_prox( HDC hdc, UINT planes )
     if (thread_id_counter == 20)
     {
         glim.ImpThreadID = crThreadID();
+
+        for (int i = 0; i < ThreadIDMAP_LEN; ++i)
+        {
+            if (g_threadidmap[i].threadid == crThreadID()){
+                ContextInfo *context;
+                WindowInfo *window;
+
+                context = (ContextInfo *)crHashtableSearch(stub.contextTable, g_threadidmap[i].contextid);
+                window = stubGetWindowInfo(g_threadidmap[i].winddowid);
+
+                stubMakeCurrent(window, context);
+                break;
+            }
+        }
+
     }
 
     // force wglswapbuffer since swaplayerbuffer isn't implemented
