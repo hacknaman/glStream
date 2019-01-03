@@ -51,7 +51,7 @@ for index in range(len(keys)):
 	if func_name in pack_specials:
 		print 'void PACKSPU_APIENTRY crPassPack%s( %s )' % ( func_name, apiutil.MakeDeclarationString(params) )
 		print '{'
-		print '\tif ( *pack_spu.ImpThreadID == -1 || *pack_spu.ImpThreadID == crThreadID() || *pack_spu.ImpThreadID != NO_PASS_ID)'
+		print '\tif ( *pack_spu.ImpThreadID == -1 || *pack_spu.ImpThreadID == crThreadID() || ( *pack_spu.ImpThreadID != NO_PASS_ID && *pack_spu.ImpThreadID != -2) )'
 		print '\tpackspu_%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
 		print '\tpack_spu.super.%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
 		print '}'
@@ -61,12 +61,12 @@ for index in range(len(keys)):
 		print '{'
 		print '\tif (pack_spu.swap)'
 		print '\t{'
-		print '\tif (*pack_spu.ImpThreadID == -1 || *pack_spu.ImpThreadID == crThreadID() || *pack_spu.ImpThreadID != NO_PASS_ID)'
+		print '\tif ( *pack_spu.ImpThreadID == -1 || *pack_spu.ImpThreadID == crThreadID() || ( *pack_spu.ImpThreadID != NO_PASS_ID && *pack_spu.ImpThreadID != -2) )'
 		print '\t\tcrPack%sSWAP( %s );' % ( func_name, apiutil.MakeCallString( params ) )
 		print '\t}'
 		print '\telse'
 		print '\t{'
-		print '\tif (*pack_spu.ImpThreadID == -1 || *pack_spu.ImpThreadID == crThreadID() || *pack_spu.ImpThreadID != NO_PASS_ID)'
+		print '\tif ( *pack_spu.ImpThreadID == -1 || *pack_spu.ImpThreadID == crThreadID() || ( *pack_spu.ImpThreadID != NO_PASS_ID && *pack_spu.ImpThreadID != -2) )'
 		print '\t\tcrPack%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
 		print '\t}'
 		print '\tpack_spu.super.%s( %s );' % ( func_name, apiutil.MakeCallString( params ) )
