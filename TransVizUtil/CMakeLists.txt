@@ -1,6 +1,5 @@
 include_directories(.)
 include_directories(${OSG_INCLUDE_DIR})
-include_directories(${CatiaCppApi_INCLUDE_DIR})
 
 SET(LIB_HEADERS
 	TransVizUtil.h
@@ -22,7 +21,6 @@ target_link_libraries(TransVizUtil
 
 target_link_libraries(TransVizUtil crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)
 target_link_libraries(TransVizUtil ${EXTRA_LIBS})
-target_link_libraries(TransVizUtil debug ${CatiaCppApi_LIBRARY_DEBUG_DIR} optimized ${CatiaCppApi_LIBRARY_DIR})
 SET_TARGET_PROPERTIES(TransVizUtil
                     PROPERTIES DEFINE_SYMBOL TRANSVIZ_UTIL_LIBRARY
                     )

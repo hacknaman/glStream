@@ -44,6 +44,10 @@ public:
 	{
 		funcNodeUpdateSC(pt2Func, context);
 	}
+    void preProcessClient()
+    {
+        preProcessCatia();
+    }
 };
 
 #ifndef WINDOWS
