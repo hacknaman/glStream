@@ -21,7 +21,6 @@ target_link_libraries(TransVizUtil
 
 target_link_libraries(TransVizUtil crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)
 target_link_libraries(TransVizUtil ${EXTRA_LIBS})
-
 SET_TARGET_PROPERTIES(TransVizUtil
                     PROPERTIES DEFINE_SYMBOL TRANSVIZ_UTIL_LIBRARY
                     )

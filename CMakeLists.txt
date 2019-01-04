@@ -12,6 +12,7 @@ find_package(GLUT REQUIRED)
 find_package(OSG REQUIRED)
 find_package(Flexera REQUIRED)
 find_package(ReviewAPI)
+find_package(CatiaCppApi)
 
 set(EXTRA_LIBS)
 if(CMAKE_THREAD_LIBS_INIT)

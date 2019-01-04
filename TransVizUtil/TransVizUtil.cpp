@@ -5,7 +5,6 @@
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
-
 namespace TransVizUtil{
 
     class TransVizUtilCallback : public osg::NodeCallback {
@@ -17,6 +16,7 @@ namespace TransVizUtil{
         TransVizUtilCallback(TransVizUtil* util)
         {
             _util = util;
+            
         }
 
         void operator()(osg::Node* node, osg::NodeVisitor* nv)
@@ -46,7 +46,10 @@ namespace TransVizUtil{
             {
                 _util->updateNode(osgDB::readRefNodeFile("aveva.osgt")->asGroup());
             }
-
+            if ((GetKeyState('M') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
+            {
+                _util->iSPU->preProcessClient();
+            }
             traverse(node, nv);
         }
 
