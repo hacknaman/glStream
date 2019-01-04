@@ -81,6 +81,12 @@ int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
 std::time_t g_time = std::time(0);
+/*here client may be catia,aveva or any other gl application which is going to send gl streams to this spu.*/
+extern void OSGEXPORT preProcessCatia()
+{
+    adapter.modifyCatiaColors();
+
+}
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
 	g_ret_count = 2000;
@@ -685,7 +691,7 @@ static void PRINT_APIENTRY printEnd(void)
 			g_PatArray.back()->addChild(g_geode);
             if (!geode_name.empty())
             {
-                //std::cout << "curr catia geo name:" << curr_catia_geom_detail->name << std::endl;
+               
                 g_geode->setName(geode_name);
                 geode_name.clear();
             }
@@ -720,7 +726,7 @@ static void PRINT_APIENTRY printEnd(void)
 			g_PatArrayDisplayList.back()->addChild(g_geode);
             if (!geode_name.empty())
             {
-                //std::cout << "curr catia geo name:" << curr_catia_geom_detail->name << std::endl;
+               
                 g_geode->setName(geode_name);
                 geode_name.clear();
               
@@ -2494,7 +2500,6 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
             double red = curr_catia_geom_detail->r / 255.0;
             double green = curr_catia_geom_detail->g / 255.0;
             double blue = curr_catia_geom_detail->b / 255.0;
-            //g_CurrentColor = osg::Vec3(red, green, blue);
             g_colorArray->push_back(osg::Vec3(red, green, blue));
             if (geode_name.empty())
             {

@@ -5,7 +5,6 @@
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
-#include "CatiaLibCPPAdapter.h"
 namespace TransVizUtil{
 
     class TransVizUtilCallback : public osg::NodeCallback {
@@ -26,8 +25,6 @@ namespace TransVizUtil{
             if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
             {
                 _util->iSPU->getUpdatedScene();
-                /*CatiaMetaDataApi::CatiaLibCPPAdapter adapter;
-                adapter.revertToCatiaOriginalColor();*/
             }
 
             if ((GetKeyState('Y') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
@@ -51,14 +48,8 @@ namespace TransVizUtil{
             }
             if ((GetKeyState('M') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
             {
-                CatiaMetaDataApi::CatiaLibCPPAdapter adapter;
-                adapter.modifyCatiaColors();
+                _util->iSPU->preProcessClient();
             }
-            /*if ((GetKeyState('R') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
-            {
-                CatiaMetaDataApi::CatiaLibCPPAdapter adapter;
-                adapter.revertToCatiaOriginalColor();
-            }*/
             traverse(node, nv);
         }
 
