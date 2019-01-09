@@ -22,12 +22,14 @@ set LIBJPEG_BIN=%LIBJPEG_DIR%\bin
 :: set Review API libraries
 set REVIEW_DIR=%OSSROOT%\ReviewApi
 set REVIEW_BIN=%REVIEW_DIR%\bin
+
 :: set Catia API libraries
-set CATIACPPAPI_DIR=%OSSROOT%\CatiaCppApi
-set CATIACPPAPI_BIN=%CATIACPPAPI_DIR%\bin
+set CatiaCppApi_DIR=%OSSROOT%\CatiaCppApi
+set CatiaCppApi_BIN=%CATIACPPAPI_DIR%\bin
+
 :: add external DLLs to the PATH
 :: dynamic libs paths
-set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CATIACPPAPI_BIN%;%PATH%
+set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CatiaCppApi_BIN%;%PATH%
 
 :: set development mode
 :: This is used for licensing
