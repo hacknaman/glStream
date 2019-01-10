@@ -18,16 +18,16 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include <osg/Material>
 #include <osg/PositionAttitudeTransform>
 #include <osg/PolygonStipple>
-
-#include <osg/ArgumentParser>
-#include <osg/UserDataContainer>
-#include <osg/ValueObject>
-
 #include <OpenThreads/Mutex>
 #include <osgDB/Export>
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
+
+#include <osg/LightSource>
+#include <osg/LightModel>
+#include <osg/Light>
+
 #include <ctime>
 
 #include <ReviewCpp.h>
@@ -35,11 +35,13 @@ See the file LICENSE.txt for information on redistributing this software. */
 #define PRINT_UNUSED(x) ((void)x)
 static int g_ret_count = 2000;
 
+// comment out this code to disable material / lights
+#define ENABLE_MATERIAL
+#define ENABLE_LIGHTS
+
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
 osg::ref_ptr<osg::Vec3Array> g_colorArray;
-
-static std::vector<osg::ref_ptr<osg::Group>> g_spuRootGroupChair;
 
 osg::Vec3 g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
 osg::Vec3 g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
@@ -50,144 +52,157 @@ osg::ref_ptr<osg::Geometry> g_geom;
 osg::ref_ptr<osg::Geode> g_geode;
 
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArray;
+std::vector<osg::Matrix> g_matrix_stack;
+
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
 
-osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet();
+osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet;
+
+#ifdef ENABLE_MATERIAL
+osg::ref_ptr<osg::Material> g_material;
+#endif
+
+#ifdef ENABLE_LIGHTS
+osg::ref_ptr<osg::LightSource> g_light[8];
+#endif
 
 static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
-static std::vector<osg::ref_ptr<osg::Group>> g_spuRootGroupVector;
-
-// New group
-std::vector< osg::ref_ptr<osg::Group> > g_spuRootGroupTree;
-std::vector< std::vector<osg::ref_ptr<osg::Group>>> g_spuRootGroupMap;
-// New group
-
-//Test code
-static std::vector<int> g_spuRootGroupWindowNumber;
-static std::vector<std::vector<int>> g_spuRootGroupMakeCurrent;
-static std::vector<int> g_spuRootGroupGeom;
-// Test Code
 
 int g_geometryMode = -1;
+int g_currentMatrixMode = -1;
 
 int g_startReading = false;
 int g_isReading = false;
 int g_canAdd = false;
 
 int g_calledreadFromApp = false;
+int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
 std::time_t g_time = std::time(0);
 
-ReviewCppWrapper::ReviewCppAPI rapi;
-ReviewCppWrapper::Element avevaRootNode;
-ReviewCppWrapper::Element avevaFakeRootNode;
-
-
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
-	g_ret_count = 2000;
+    g_ret_count = 2000;
 
-	g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-	g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+    g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
+    g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
-	g_PatArray.clear();
-	g_PatArrayDisplayList.clear();
+    for (auto light : g_light)
+    {
+        light = NULL;
+    }
 
-	g_spuRootGroup = new osg::Group;
+    g_PatArray.clear();
+    g_PatArrayDisplayList.clear();
 
-	g_geometryMode = -1;
+    g_spuRootGroup = new osg::Group;
 
-	g_startReading = false;
-	g_isReading = false;
-	g_canAdd = false;
+    g_geometryMode = -1;
 
-	g_calledreadFromApp = false;
-	g_time = std::time(0);
+    g_startReading = false;
+    g_isReading = false;
+    g_canAdd = false;
+
+    g_calledreadFromApp = false;
+    g_hasTouchedBegin = false;
+
+    g_isDisplayList = false;
+
+    g_time = std::time(0);
 }
 
+ReviewCppWrapper::ReviewCppAPI rapi;
+std::string camerashakeapp;
 
-void createGroupTree(ReviewCppWrapper::Element& node, osg::ref_ptr<osg::Group> RootGroup)
-{
-	if (g_spuRootGroupMap.back().size() < node.id + 3)
-	{
-		g_spuRootGroupMap.back().resize(node.id + 1, nullptr);
-	}
+#define DRAW_APPCAM
+//#define DRAW_APPCAM_BEAM
 
-	g_spuRootGroupMap.back()[node.id] = RootGroup;
-	RootGroup->setUserValue("Name", node.name);
-	RootGroup->setUserValue("id", node.id);
+#ifdef DRAW_APPCAM_BEAM
+osg::Geode* mybeamGeode;
+#endif  
 
-	if (node.id == avevaFakeRootNode.id){
-		g_spuRootGroupChair.push_back(RootGroup);
-	}
+osg::Matrix g_matcam; // default identity matrix
 
-	for (int i = 0; i < node.Children.size(); ++i)
-	{
-		osg::ref_ptr<osg::Group> newRootGroup = new osg::Group();
-		RootGroup->addChild(newRootGroup);
-		createGroupTree(node.Children[i], newRootGroup);
-	}
+
+
+extern OSGEXPORT void changeSceneASC() {
+
 }
 
-extern void getUpdatedSceneASC(){
+extern OSGEXPORT void getUpdatedSceneASC(){
 
-	std::string hostname = "localhost";
+#ifdef DRAW_APPCAM
+    std::string hostname = "localhost";
 
-	if (!rapi.IsConnected())
-		rapi.Connect(hostname);
+    if (!rapi.IsConnected())
+        rapi.Connect(hostname);
 
-	//rapi.MakeInvisible();
-	rapi.GetElementList(avevaRootNode);
+    double cameraPosition[3];
+    double cameraLookat[3];
 
-	// this is to get the chair element of bridge model
-	// TODO:- this should be for entire model
-	// this is done due to performance issue.
-	avevaFakeRootNode = avevaRootNode.Children[3].Children[0].Children[442];
+    rapi.getCamera(cameraPosition, cameraLookat);
 
-	rapi.SetMaterialOnTree(avevaFakeRootNode);
-	
-	//rapi.SetMaterialOnTree(avevaRootNode);
-	g_spuRootGroupVector.clear();
-	g_spuRootGroupWindowNumber.clear();
-	g_spuRootGroupMakeCurrent.clear();
-	g_spuRootGroupGeom.clear();
+    osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+    osg::Vec3d endPoint_x = osg::Vec3d(cameraLookat[0], cameraLookat[1], cameraLookat[2]);
 
-	g_spuRootGroupTree.clear();
-	g_spuRootGroupMap.clear();
+#ifdef DRAW_APPCAM_BEAM
+    osg::Geode* beamGeode = new osg::Geode;
+    osg::Geometry* beam_x = new osg::Geometry;
+    osg::Vec3Array* linePoints_x = new osg::Vec3Array;
+    linePoints_x->push_back(startPoint);
+    linePoints_x->push_back(endPoint_x);
+    osg::Vec4Array* color_x = new osg::Vec4Array;
+    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+    color_x->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+    beam_x->setVertexArray(linePoints_x);
+    beam_x->setColorArray(color_x);
+    beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    osg::StateSet* state = beam_x->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::LineWidth* linewidth_x = new osg::LineWidth();
+    linewidth_x->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
+    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    state->setMode(GL_BLEND, osg::StateAttribute::ON);
+    state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
+    beamGeode->addChild(beam_x);
+    mybeamGeode = beamGeode;
+#endif
+    osg::Camera* cam = new osg::Camera();
+    cam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
+    g_matcam = cam->getInverseViewMatrix();
 
-	g_calledreadFromApp = true;
+    Sleep(100);
+#endif
 
-	rapi.MakeInvisible();
-	rapi.MakeVisible();
-	Sleep(1000);
-	rapi.MakeInvisible();
-	rapi.MakeVisible();
+    g_calledreadFromApp = true;
+
+    // Camera Shake code
+    if (camerashakeapp.empty())
+    {
+        std::ifstream myfile("CameraShakeConfig.txt");
+        if (myfile.is_open())
+        {
+            getline(myfile, camerashakeapp);
+            myfile.close();
+        }
+    }
+
+    if (!camerashakeapp.empty())
+    {
+        system(camerashakeapp.c_str());
+    }
 }
 
 void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
 void *g_context = NULL;
 
-static int counterNode = 0;
+extern OSGEXPORT void funcNodeUpdateASC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
 
-extern void changeSceneASC() {
-	g_isReading = false;
-	if (counterNode >= g_spuRootGroupVector.size())
-	{
-		counterNode = 0;
-	}
-
-	// g_pt2Func(g_context, g_spuRootGroupVector[counterNode++].get());
-	// g_pt2Func(g_context, g_spuRootGroupTree[counterNode++].get());
-	g_pt2Func(g_context, g_spuRootGroupChair[counterNode++].get());
-	g_spuRootGroupTree;
-	Sleep(500);
-}
-
-extern void funcNodeUpdateASC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
-
-	g_pt2Func = pt2Func;
-	g_context = context;
+    g_pt2Func = pt2Func;
+    g_context = context;
 }
 
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
@@ -206,12 +221,12 @@ static void PRINT_APIENTRY printAlphaFunc(GLenum func, GLclampf ref)
 
 static GLboolean PRINT_APIENTRY printAreProgramsResidentNV(GLsizei n, const GLuint * ids, GLboolean * residences)
 {
-	return false;
+    return false;
 }
 
 static GLboolean PRINT_APIENTRY printAreTexturesResident(GLsizei n, const GLuint * textures, GLboolean * residences)
 {
-	return false;
+    return false;
 }
 
 static void PRINT_APIENTRY printArrayElement(GLint i)
@@ -232,24 +247,24 @@ static void PRINT_APIENTRY printBarrierExecCR(GLuint name)
 
 static void PRINT_APIENTRY printBegin(GLenum mode)
 {
-	if (g_isReading)
-	{
-		g_geometryMode = mode;
-		g_geode = new osg::Geode();
-		g_vertexArray = new osg::Vec3Array();
-		g_normalArray = new osg::Vec3Array();	
-		g_colorArray = new osg::Vec3Array();
-		++g_spuRootGroupGeom.back();
-	}
+    if (g_isReading)
+    {
+        g_hasTouchedBegin = true;
+        g_geometryMode = mode;
+        g_geode = new osg::Geode();
+        g_vertexArray = new osg::Vec3Array();
+        g_normalArray = new osg::Vec3Array();
+        g_colorArray = new osg::Vec3Array();
+    }
 
-	if (g_isDisplayList)
-	{
-		g_geometryMode = mode;
-		g_geode = new osg::Geode();
-		g_vertexArray = new osg::Vec3Array();
-		g_normalArray = new osg::Vec3Array();
-		g_colorArray = new osg::Vec3Array();
-	}
+    if (g_isDisplayList)
+    {
+        g_geometryMode = mode;
+        g_geode = new osg::Geode();
+        g_vertexArray = new osg::Vec3Array();
+        g_normalArray = new osg::Vec3Array();
+        g_colorArray = new osg::Vec3Array();
+    }
 }
 
 static void PRINT_APIENTRY printBeginQueryARB(GLenum target, GLuint id)
@@ -306,9 +321,10 @@ static void PRINT_APIENTRY printBufferSubDataARB(GLenum target, GLintptrARB offs
 
 static void PRINT_APIENTRY printCallList(GLuint list)
 {
-	if (g_isReading) {
-		g_PatArray.back()->addChild(g_PatArrayDisplayList[list-1].get());
-	}
+    if (g_isReading) {
+        g_hasTouchedBegin = true;
+        g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
+    }
 }
 
 static void PRINT_APIENTRY printChromiumParameterfCR(GLenum target, GLfloat value)
@@ -365,32 +381,32 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
-	g_CurrentColor = osg::Vec3(red, green, blue);
+    g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
-	printColor3f(v[0], v[1], v[2]);
+    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
-	printColor3f(red, green, blue);
+    g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-	printColor3f(v[0], v[1], v[2]);
+    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
-	printColor3f(red, green, blue);
+    g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
-	printColor3f(v[0], v[1], v[2]);
+    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -419,51 +435,52 @@ static void PRINT_APIENTRY printColor3usv(const GLushort * v)
 
 static void PRINT_APIENTRY printColor4b(GLbyte red, GLbyte green, GLbyte blue, GLbyte alpha)
 {
-	printColor3b(red, green, blue);
+    printColor3b(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4bv(const GLbyte * v)
 {
+    printColor3bv(v);
 }
 
 static void PRINT_APIENTRY printColor4d(GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha)
 {
-	printColor3d(red, green, blue);
+    printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4dv(const GLdouble * v)
 {
-	printColor3dv(v);
+    printColor3dv(v);
 }
 
 static void PRINT_APIENTRY printColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-	printColor3f(red, green, blue);
+    printColor3f(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4fv(const GLfloat * v)
 {
-	printColor3fv(v);
+    printColor3fv(v);
 }
 
 static void PRINT_APIENTRY printColor4i(GLint red, GLint green, GLint blue, GLint alpha)
 {
-	printColor3i(red, green, blue);
+    printColor3i(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4iv(const GLint * v)
 {
-	printColor3iv(v);
+    printColor3iv(v);
 }
 
 static void PRINT_APIENTRY printColor4s(GLshort red, GLshort green, GLshort blue, GLshort alpha)
 {
-	printColor3s(red, green, blue);
+    printColor3s(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4sv(const GLshort * v)
 {
-	printColor3sv(v);
+    printColor3sv(v);
 }
 
 static void PRINT_APIENTRY printColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
@@ -580,7 +597,7 @@ static void PRINT_APIENTRY printCopyTexSubImage3D(GLenum target, GLint level, GL
 
 static GLint PRINT_APIENTRY printCreateContext(const char * dpyName, GLint visual, GLint shareCtx)
 {
-	return g_ret_count++;
+    return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printCullFace(GLenum mode)
@@ -629,9 +646,9 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
-	if (GL_POLYGON_STIPPLE){
-		g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
-	}
+    if (cap == GL_POLYGON_STIPPLE){
+        g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
+    }
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -676,10 +693,21 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
-	if (g_isReading && cap == GL_POLYGON_STIPPLE) {
-		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple();
-		g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-	}
+    if (g_isReading && cap == GL_POLYGON_STIPPLE) {
+        osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
+        g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+    }
+
+#ifdef ENABLE_LIGHTS
+    if (cap >= GL_LIGHT0 && cap <= GL_LIGHT7)
+    {
+        if (g_light[cap - GL_LIGHT0] == NULL)
+        {
+            g_light[cap - GL_LIGHT0] = new osg::LightSource();
+        }
+    }
+#endif
+
 }
 
 static void PRINT_APIENTRY printEnableClientState(GLenum array)
@@ -693,66 +721,69 @@ static void PRINT_APIENTRY printEnableVertexAttribArrayARB(GLuint index)
 // 
 static void PRINT_APIENTRY printEnd(void)
 {
-	if (g_isReading)
-	{
-		g_geom = new osg::Geometry();
-		// create a g_geode and add it to the pat
-		if (g_vertexArray!=NULL)
-		{
-			g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
-			g_geom->setVertexArray(g_vertexArray);
-			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
-			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
-			if (g_state != NULL)
-			{
-				g_geom->setStateSet(new osg::StateSet(*g_state));
-			}
-			g_geode->addDrawable(g_geom);
-		}
+    if (g_isReading)
+    {
+        g_geom = new osg::Geometry();
+        // create a g_geode and add it to the pat
+        if (g_vertexArray->size() > 0)
+        {
+            g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
+            g_geom->setVertexArray(g_vertexArray);
+            g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
+            g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
 
-		if (g_geode){
+            if (g_state != NULL)
+            {
+                g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
+            }
+            g_geode->addDrawable(g_geom);
 
-			int r = (lround(int(g_CurrentColor.x() * 1000) / 10.0)) * 10000;
-			int g = (lround(int(g_CurrentColor.y() * 1000) / 10.0)) * 100;
-			int b = (lround(int(g_CurrentColor.z() * 1000) / 10.0)) ;
+#ifdef ENABLE_MATERIAL
+            if (g_material != NULL)
+            {
+                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+            }
+#endif
+        }
 
-			int index = r + g + b;
+        if (g_geode){
+            g_PatArray.back()->addChild(g_geode);
+        }
+    }
 
-			g_PatArray.back()->addChild(g_geode);
+    if (g_isDisplayList)
+    {
+        g_geom = new osg::Geometry();
+        // create a g_geode and add it to the pat
+        if (g_vertexArray->size() > 0)
+        {
+            g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
+            g_geom->setVertexArray(g_vertexArray);
+            g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
+            g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
+            if (g_state != NULL)
+            {
+                g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
+            }
+            g_geode->addDrawable(g_geom);
 
-			if (index < g_spuRootGroupMap.back().size())
-			{
-				g_spuRootGroupMap.back()[index]->addChild(g_PatArray.back());
-			}
-		}
-	}
+#ifdef ENABLE_MATERIAL
+            if (g_material != NULL)
+            {
+                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+            }
+#endif
+        }
 
-	if (g_isDisplayList)
-	{
-		g_geom = new osg::Geometry();
-		// create a g_geode and add it to the pat
-		if (g_vertexArray->size() > 0)
-		{
-			g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
-			g_geom->setVertexArray(g_vertexArray);
-			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
-			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
-			if (g_state != NULL)
-			{
-				g_geom->setStateSet(new osg::StateSet(*g_state));
-			}
-			g_geode->addDrawable(g_geom);
-		}
-
-		if (g_geode) {
-			g_PatArrayDisplayList.back()->addChild(g_geode);
-		}
-	}
+        if (g_geode) {
+            g_PatArrayDisplayList.back()->addChild(g_geode);
+        }
+    }
 }
 
 static void PRINT_APIENTRY printEndList(void)
 {
-	g_isDisplayList = false;
+    g_isDisplayList = false;
 }
 
 static void PRINT_APIENTRY printEndQueryARB(GLenum target)
@@ -889,7 +920,7 @@ static void PRINT_APIENTRY printGenFencesNV(GLsizei n, GLuint * fences)
 
 static GLuint PRINT_APIENTRY printGenLists(GLsizei range)
 {
-	return g_ret_count++;
+    return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printGenProgramsARB(GLsizei n, GLuint * programs)
@@ -950,7 +981,7 @@ static void PRINT_APIENTRY printGetCompressedTexImageARB(GLenum target, GLint le
 
 static GLenum PRINT_APIENTRY printGetError(void)
 {
-	return false;
+    return false;
 }
 
 static void PRINT_APIENTRY printGetFenceivNV(GLuint fence, GLenum pname, GLint * params)
@@ -963,6 +994,52 @@ static void PRINT_APIENTRY printGetFinalCombinerInputParameterfvNV(GLenum variab
 
 static void PRINT_APIENTRY printGetFinalCombinerInputParameterivNV(GLenum variable, GLenum pname, GLint * params)
 {
+}
+
+static void PRINT_APIENTRY printLightiv(GLenum light, GLenum pname, const GLint *params)
+{
+}
+
+static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloat *params)
+{
+#ifdef ENABLE_LIGHTS
+
+    if (g_light[light - GL_LIGHT0] == NULL)
+    {
+        g_light[light - GL_LIGHT0] = new osg::LightSource();
+    }
+
+    switch (pname)
+    {
+
+    case GL_AMBIENT:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setAmbient(osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    }
+    case GL_DIFFUSE:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setDiffuse(osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    }
+    case GL_SPECULAR:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setSpecular(osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    }
+    case GL_POSITION:
+    {
+        osg::Matrix mat = osg::Matrix::translate(osg::Vec3(params[0], params[1], params[2]));
+        osg::Matrix matFinal = mat * g_CurrentMatrix;
+        osg::Vec3 vertexPoint = matFinal.getTrans();
+
+        g_light[light - GL_LIGHT0]->getLight()->setPosition(osg::Vec4(vertexPoint[0], vertexPoint[1], vertexPoint[2], params[3]));
+        break;
+    }
+
+    }
+
+#endif
 }
 
 static void PRINT_APIENTRY printGetLightfv(GLenum light, GLenum pname, GLfloat * params)
@@ -1075,7 +1152,7 @@ static void PRINT_APIENTRY printGetQueryivARB(GLenum target, GLenum pname, GLint
 
 static const GLubyte * PRINT_APIENTRY printGetString(GLenum name)
 {
-	return NULL;
+    return NULL;
 }
 
 static void PRINT_APIENTRY printGetTexEnvfv(GLenum target, GLenum pname, GLfloat * params)
@@ -1216,45 +1293,62 @@ static void PRINT_APIENTRY printInterleavedArrays(GLenum format, GLsizei stride,
 
 static GLboolean PRINT_APIENTRY printIsBufferARB(GLuint buffer)
 {
-	return false;
+    return false;
 }
 
 static GLboolean PRINT_APIENTRY printIsEnabled(GLenum cap)
 {
-	return false;
+    return false;
 }
 
 static GLboolean PRINT_APIENTRY printIsFenceNV(GLuint fence)
 {
-	return false;
+    return false;
 }
 
 static GLboolean PRINT_APIENTRY printIsList(GLuint list)
 {
-	return false;
+    return false;
 }
 
 static GLboolean PRINT_APIENTRY printIsProgramARB(GLuint program)
 {
-	return false;
+    return false;
 }
 
 static GLboolean PRINT_APIENTRY printIsQueryARB(GLuint id)
 {
-	return false;
+    return false;
 }
 
 static GLboolean PRINT_APIENTRY printIsTexture(GLuint texture)
 {
-	return false;
+    return false;
 }
 
 static void PRINT_APIENTRY printLightModelf(GLenum pname, GLfloat param)
 {
+
 }
 
 static void PRINT_APIENTRY printLightModelfv(GLenum pname, const GLfloat * params)
 {
+#ifdef ENABLE_LIGHTS
+    {
+        switch (pname)
+        {
+
+        case GL_LIGHT_MODEL_AMBIENT:
+        {
+            osg::ref_ptr<osg::LightModel> lm = new osg::LightModel();
+            lm->setAmbientIntensity(osg::Vec4d(params[0], params[0], params[0], params[0]));
+            g_state->setAttribute(lm);
+            break;
+        }
+
+        }
+    }
+#endif
 }
 
 static void PRINT_APIENTRY printLightModeli(GLenum pname, GLint param)
@@ -1267,6 +1361,33 @@ static void PRINT_APIENTRY printLightModeliv(GLenum pname, const GLint * params)
 
 static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param)
 {
+    if (!g_isReading)
+    {
+        return;
+    }
+
+    if (g_light[light - GL_LIGHT0] == NULL){
+        g_light[light - GL_LIGHT0] = new osg::LightSource();
+    }
+
+#ifdef ENABLE_LIGHTS
+
+    switch (pname)
+    {
+    case GL_SPOT_EXPONENT:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setSpotExponent(param);
+        break;
+    }
+    case GL_SPOT_CUTOFF:
+    {
+        g_light[light - GL_LIGHT0]->getLight()->setSpotCutoff(param);
+        break;
+    }
+
+    }
+
+#endif
 }
 
 static void PRINT_APIENTRY printLighti(GLenum light, GLenum pname, GLint param)
@@ -1287,17 +1408,32 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-	g_CurrentMatrix = osg::Matrix();
+    g_CurrentMatrix = osg::Matrix() * g_matcam;
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-	g_CurrentMatrix.set(m);
+    g_CurrentMatrix.set(m);
+    g_CurrentMatrix *= g_matcam;
+}
+
+static void PRINT_APIENTRY printPushMatrix(void)
+{
+    if (g_isReading)
+    {
+        // create a pat node
+        osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
+        g_PatArray.back()->addChild(pat);
+        g_PatArray.push_back(pat);
+    }
+    //pushing current matrix in stack
+    g_matrix_stack.push_back(g_CurrentMatrix);
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-	g_CurrentMatrix.set(m);
+    g_CurrentMatrix.set(m);
+    g_CurrentMatrix *= g_matcam;
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1320,25 +1456,8 @@ static void PRINT_APIENTRY printLogicOp(GLenum opcode)
 {
 }
 
-
-static int windowToUse = 2001;
-
 static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
 {
-
-	if (ctx == 10) {
-		windowToUse = window;
-	}
-
-	if (g_isReading)
-	{
-		std::vector<int> asdf;
-		asdf.push_back(window);
-		asdf.push_back(nativeWindow);
-		asdf.push_back(ctx);
-
-		g_spuRootGroupMakeCurrent.push_back(asdf);
-	}
 }
 
 static void PRINT_APIENTRY printMap1d(GLenum target, GLdouble u1, GLdouble u2, GLint stride, GLint order, const GLdouble * points)
@@ -1359,7 +1478,7 @@ static void PRINT_APIENTRY printMap2f(GLenum target, GLfloat u1, GLfloat u2, GLi
 
 static void * PRINT_APIENTRY printMapBufferARB(GLenum target, GLenum access)
 {
-	return NULL;
+    return NULL;
 }
 
 static void PRINT_APIENTRY printMapGrid1d(GLint un, GLdouble u1, GLdouble u2)
@@ -1380,6 +1499,32 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
+
+    osg::Material::Face osgface = osg::Material::Face::FRONT;
+
+    switch (face){
+    case GL_BACK:
+        osgface = osg::Material::Face::BACK;
+    case GL_FRONT_AND_BACK:
+        osgface = osg::Material::Face::FRONT_AND_BACK;
+    }
+
+#ifdef ENABLE_MATERIAL
+
+    if (g_material == NULL)
+    {
+        g_material = new osg::Material();
+    }
+
+    switch (pname)
+    {
+    case GL_SHININESS:
+        g_material->setShininess(osgface, param);
+        break;
+    }
+
+#endif
+
 }
 
 static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param)
@@ -1388,10 +1533,26 @@ static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param
 
 static void PRINT_APIENTRY printMatrixMode(GLenum mode)
 {
+    g_currentMatrixMode = mode;
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 {
+}
+static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
+{
+    osg::Matrix mat = osg::Matrix();
+    mat.set(m);
+    g_CurrentMatrix = mat * g_CurrentMatrix;
+    g_CurrentMatrix *= g_matcam;
+}
+
+static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
+{
+    osg::Matrix mat = osg::Matrix();
+    mat.set(m);
+    g_CurrentMatrix = mat * g_CurrentMatrix;
+    g_CurrentMatrix *= g_matcam;
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -1536,59 +1697,59 @@ static void PRINT_APIENTRY printMultiTexCoord4svARB(GLenum texture, const GLshor
 
 static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 {
-	g_isDisplayList = true;
-	osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform();
-	g_PatArrayDisplayList.push_back(pat);
+    g_isDisplayList = true;
+    osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform();
+    g_PatArrayDisplayList.push_back(pat);
 }
 
 static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -1597,6 +1758,7 @@ static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const
 
 static void PRINT_APIENTRY printOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
+    //g_CurrentprojectionMatrix.makeOrtho(left,right,bottom,top,zNear,zFar);
 }
 
 static void PRINT_APIENTRY printPassThrough(GLfloat token)
@@ -1677,10 +1839,14 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 
 static void PRINT_APIENTRY printPopMatrix(void)
 {
-	if (g_isReading)
-	{		
-		g_PatArray.pop_back();
-	}
+    if (g_isReading)
+    {
+        g_PatArray.pop_back();
+    }
+
+    osg::Matrix top_mat = g_matrix_stack.back();
+    g_matrix_stack.pop_back();
+    g_CurrentMatrix = top_mat;
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -1775,16 +1941,7 @@ static void PRINT_APIENTRY printPushClientAttrib(GLbitfield mask)
 {
 }
 
-static void PRINT_APIENTRY printPushMatrix(void)
-{
-	if (g_isReading)
-	{
-		// create a pat node
-		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-		g_PatArray.back()->addChild(pat);
-		g_PatArray.push_back(pat);
-	}
-}
+
 
 static void PRINT_APIENTRY printPushName(GLuint name)
 {
@@ -1928,7 +2085,7 @@ static void PRINT_APIENTRY printRectsv(const GLshort * v1, const GLshort * v2)
 
 static GLint PRINT_APIENTRY printRenderMode(GLenum mode)
 {
-	return g_ret_count++;
+    return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuint * ids)
@@ -1937,18 +2094,18 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading)
-	{
-		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
-	}
+    if (g_isReading)
+    {
+        //g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
+    }
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading)
-	{
-		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
-	}
+    if (g_isReading)
+    {
+        //g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
+    }
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -1957,15 +2114,15 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading)
-	{
-		g_PatArray.back()->setScale(osg::Vec3( x, y, z));
-	}
+    if (g_isReading)
+    {
+        g_PatArray.back()->setScale(osg::Vec3(x, y, z));
+    }
 }
 
 static void PRINT_APIENTRY printScalef(GLfloat x, GLfloat y, GLfloat z)
 {
-	printScaled(x, y, z);
+    printScaled(x, y, z);
 }
 
 static void PRINT_APIENTRY printScissor(GLint x, GLint y, GLsizei width, GLsizei height)
@@ -2083,74 +2240,68 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
 
-	/*if (--swapbufferCounter > 0 && g_isReading)
-		return;*/
+    if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && g_calledreadFromApp == false)
+    {
+        if (g_isReading == false && std::difftime(std::time(0), g_time) > 1){
+            g_time = std::time(0);
+            g_calledreadFromApp = true;
+        }
+    }
 
+    if (g_isReading)
+    {
+        g_startReading = false;
+        g_spuRootGroup->addChild(g_PatArray.back());
+        g_PatArray.pop_back();
 
-	if (window != windowToUse)
-	{
-		//return;
-	}
+        if (g_hasTouchedBegin == false)
+        {
+            g_calledreadFromApp = true;
+        }
 
-	if (g_isReading)
-	{
-		g_spuRootGroupWindowNumber.push_back(window);
-	}
+        g_isReading = false;
 
+#ifdef ENABLE_LIGHTS
+        for (int i = GL_LIGHT0; i <= GL_LIGHT7; ++i)
+        {
+            if (g_light[i - GL_LIGHT0] != NULL){
+                g_spuRootGroup->addChild(g_light[i - GL_LIGHT0]);
+            }
+        }
+#endif
 
-	if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && g_calledreadFromApp == false)
-	{
-		if (g_isReading == false && std::difftime(std::time(0), g_time) > 1){
-			g_time = std::time(0);
-			g_calledreadFromApp = true;
-		}
-	}
+#ifdef DRAW_APPCAM_BEAM
+        g_spuRootGroup->addChild(mybeamGeode);
+#endif
+        g_pt2Func(g_context, g_spuRootGroup);
+    }
 
-	if (g_isReading)
-	{
-		g_startReading = false;
-		g_spuRootGroup->addChild(g_PatArray.back());
-		g_PatArray.pop_back();
+    if (g_calledreadFromApp)
+    {
+        g_calledreadFromApp = false;
+        g_startReading = true;
+        g_isReading = true;
+        g_hasTouchedBegin = false;
+        g_CurrentMatrix = osg::Matrix();
+    }
 
-		// to continue getting geometry
-		g_calledreadFromApp = true;
+    if (g_startReading)
+    {
+        g_spuRootGroup = new osg::Group;
 
-		g_isReading = false;
+#ifdef ENABLE_MATERIAL
+        g_material = new osg::Material();
+#endif
+        osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
 
-		if (!g_calledreadFromApp) {
-			g_pt2Func(g_context, g_spuRootGroup.get());
-		}
-	}
-
-
-	if (g_calledreadFromApp)
-	{
-		int i = 0;
-		g_spuRootGroupGeom.push_back(i);
-		g_calledreadFromApp = false;
-		g_startReading = true;
-		g_isReading = true;
-
-		g_spuRootGroupTree.push_back(new osg::Group());
-		g_spuRootGroupMap.resize(g_spuRootGroupMap.size() + 1);
-		createGroupTree(avevaRootNode, g_spuRootGroupTree.back());
-	}
-
-
-	if (g_startReading)
-	{
-		g_spuRootGroup = new osg::Group;
-		g_spuRootGroupVector.push_back(g_spuRootGroup);
-		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-		g_PatArray.clear();
-		g_PatArray.push_back(pat);
-		g_startReading = false;
-	}
+        g_PatArray.push_back(pat);
+        g_startReading = false;
+    }
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
 {
-	return false;
+    return false;
 }
 
 static void PRINT_APIENTRY printTexCoord1d(GLdouble s)
@@ -2359,23 +2510,23 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading && g_PatArray.size() > 1)
-	{
-		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-	}
+    if (g_isReading && g_PatArray.size() > 1)
+    {
+        g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
+    }
 }
 
 static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading && g_PatArray.size() > 1)
-	{
-		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-	}
+    if (g_isReading && g_PatArray.size() > 1)
+    {
+        g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
+    }
 }
 
 static GLboolean PRINT_APIENTRY printUnmapBufferARB(GLenum target)
 {
-	return false;
+    return false;
 }
 
 static void PRINT_APIENTRY printVertex2d(GLdouble x, GLdouble y)
@@ -2412,92 +2563,92 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
-	if ((g_isReading || g_isDisplayList) && g_vertexArray){
-		// Math to transfrom vertex and normal to matrix mode
-		osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
-		osg::Matrix matFinal = mat * g_CurrentMatrix;
-		osg::Vec3 vertexPoint = matFinal.getTrans();
+    if ((g_isReading || g_isDisplayList) && g_vertexArray){
+        // Math to transfrom vertex and normal to matrix mode
+        osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
+        osg::Matrix matFinal = mat * g_CurrentMatrix;
+        osg::Vec3 vertexPoint = matFinal.getTrans();
 
-		osg::Matrix Normalmat = osg::Matrix::translate(g_CurrentNormal);
-		osg::Matrix CurrentMatrixNew = g_CurrentMatrix;
-		CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
-		osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
-		osg::Vec3 normalPoint = NormalmatFinal.getTrans();
+        osg::Matrix Normalmat = osg::Matrix::translate(g_CurrentNormal);
+        osg::Matrix CurrentMatrixNew = g_CurrentMatrix;
+        CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
+        osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
+        osg::Vec3 normalPoint = NormalmatFinal.getTrans();
 
-		g_vertexArray->push_back(vertexPoint);
-		g_normalArray->push_back(normalPoint);
-		g_colorArray->push_back(g_CurrentColor);
-	}
+        g_vertexArray->push_back(vertexPoint);
+        g_normalArray->push_back(normalPoint);
+        g_colorArray->push_back(g_CurrentColor);
+    }
 }
 
 static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)
 {
-	printVertex3d(v[0], v[1], v[2]);
+    printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex3f(GLfloat x, GLfloat y, GLfloat z)
 {
-	printVertex3d(x,y,z);
+    printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex3fv(const GLfloat * v)
 {
-	printVertex3d(v[0], v[1], v[2]);
+    printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex3i(GLint x, GLint y, GLint z)
 {
-	printVertex3d(x, y, z);
+    printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex3iv(const GLint * v)
 {
-	printVertex3d(v[0], v[1], v[2]);
+    printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex3s(GLshort x, GLshort y, GLshort z)
 {
-	printVertex3d(x, y, z);
+    printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex3sv(const GLshort * v)
 {
-	printVertex3d(v[0], v[1], v[2]);
+    printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w)
 {
-	printVertex3d(x, y, z);
+    printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4dv(const GLdouble * v)
 {
-	printVertex3d(v[0], v[1], v[2]);
+    printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
-	printVertex3d(x, y, z);
+    printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4fv(const GLfloat * v)
 {
-	printVertex3d(v[0], v[1], v[2]);
+    printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4i(GLint x, GLint y, GLint z, GLint w)
 {
-	printVertex3d(x, y, z);
+    printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4iv(const GLint * v)
 {
-	printVertex3d(v[0], v[1], v[2]);
+    printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printVertex4s(GLshort x, GLshort y, GLshort z, GLshort w)
 {
-	printVertex3d(x, y, z);
+    printVertex3d(x, y, z);
 }
 
 static void PRINT_APIENTRY printVertex4sv(const GLshort * v)
@@ -2723,7 +2874,7 @@ static void PRINT_APIENTRY printViewport(GLint x, GLint y, GLsizei width, GLsize
 
 static GLint PRINT_APIENTRY printWindowCreate(const char * dpyName, GLint visBits)
 {
-	return g_ret_count++;
+    return g_ret_count++;
 }
 
 static void PRINT_APIENTRY printWindowDestroy(GLint window)
@@ -2817,615 +2968,648 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 // material function copied here for color
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
-	if (face == GL_FRONT && mode == GL_AMBIENT_AND_DIFFUSE) {
-		g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
-	}
+
+    osg::Material::Face osgface = osg::Material::Face::FRONT;
+
+    switch (face){
+    case GL_BACK:
+        osgface = osg::Material::Face::BACK;
+    case GL_FRONT_AND_BACK:
+        osgface = osg::Material::Face::FRONT_AND_BACK;
+    }
+
+#ifdef ENABLE_MATERIAL
+
+    if (g_material == NULL)
+    {
+        g_material = new osg::Material();
+    }
+
+    switch (mode)
+    {
+    case GL_AMBIENT:
+        g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_DIFFUSE:
+        g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_SPECULAR:
+        g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_AMBIENT_AND_DIFFUSE:
+        g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
+        g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
+        break;
+    }
+
+#endif
+
 }
 
 SPUNamedFunctionTable _cr_print_table[] = {
-	{ "Accum", (SPUGenericFunction)printAccum },
-	{ "ActiveTextureARB", (SPUGenericFunction)printActiveTextureARB },
-	{ "AlphaFunc", (SPUGenericFunction)printAlphaFunc },
-	{ "AreProgramsResidentNV", (SPUGenericFunction)printAreProgramsResidentNV },
-	{ "AreTexturesResident", (SPUGenericFunction)printAreTexturesResident },
-	{ "ArrayElement", (SPUGenericFunction)printArrayElement },
-	{ "BarrierCreateCR", (SPUGenericFunction)printBarrierCreateCR },
-	{ "BarrierDestroyCR", (SPUGenericFunction)printBarrierDestroyCR },
-	{ "BarrierExecCR", (SPUGenericFunction)printBarrierExecCR },
-	{ "Begin", (SPUGenericFunction)printBegin },
-	{ "BeginQueryARB", (SPUGenericFunction)printBeginQueryARB },
-	{ "BindBufferARB", (SPUGenericFunction)printBindBufferARB },
-	{ "BindProgramARB", (SPUGenericFunction)printBindProgramARB },
-	{ "BindProgramNV", (SPUGenericFunction)printBindProgramNV },
-	{ "BindTexture", (SPUGenericFunction)printBindTexture },
-	{ "Bitmap", (SPUGenericFunction)printBitmap },
-	{ "BlendColorEXT", (SPUGenericFunction)printBlendColorEXT },
-	{ "BlendEquationEXT", (SPUGenericFunction)printBlendEquationEXT },
-	{ "BlendFunc", (SPUGenericFunction)printBlendFunc },
-	{ "BlendFuncSeparateEXT", (SPUGenericFunction)printBlendFuncSeparateEXT },
-	{ "BoundsInfoCR", (SPUGenericFunction)printBoundsInfoCR },
-	{ "BufferDataARB", (SPUGenericFunction)printBufferDataARB },
-	{ "BufferSubDataARB", (SPUGenericFunction)printBufferSubDataARB },
-	{ "CallList", (SPUGenericFunction)printCallList },
-	{ "CallLists", (SPUGenericFunction)printCallLists },
-	{ "ChromiumParameterfCR", (SPUGenericFunction)printChromiumParameterfCR },
-	{ "ChromiumParameteriCR", (SPUGenericFunction)printChromiumParameteriCR },
-	{ "ChromiumParametervCR", (SPUGenericFunction)printChromiumParametervCR },
-	{ "Clear", (SPUGenericFunction)printClear },
-	{ "ClearAccum", (SPUGenericFunction)printClearAccum },
-	{ "ClearColor", (SPUGenericFunction)printClearColor },
-	{ "ClearDepth", (SPUGenericFunction)printClearDepth },
-	{ "ClearIndex", (SPUGenericFunction)printClearIndex },
-	{ "ClearStencil", (SPUGenericFunction)printClearStencil },
-	{ "ClientActiveTextureARB", (SPUGenericFunction)printClientActiveTextureARB },
-	{ "ClipPlane", (SPUGenericFunction)printClipPlane },
-	{ "Color3b", (SPUGenericFunction)printColor3b },
-	{ "Color3bv", (SPUGenericFunction)printColor3bv },
-	{ "Color3d", (SPUGenericFunction)printColor3d },
-	{ "Color3dv", (SPUGenericFunction)printColor3dv },
-	{ "Color3f", (SPUGenericFunction)printColor3f },
-	{ "Color3fv", (SPUGenericFunction)printColor3fv },
-	{ "Color3i", (SPUGenericFunction)printColor3i },
-	{ "Color3iv", (SPUGenericFunction)printColor3iv },
-	{ "Color3s", (SPUGenericFunction)printColor3s },
-	{ "Color3sv", (SPUGenericFunction)printColor3sv },
-	{ "Color3ub", (SPUGenericFunction)printColor3ub },
-	{ "Color3ubv", (SPUGenericFunction)printColor3ubv },
-	{ "Color3ui", (SPUGenericFunction)printColor3ui },
-	{ "Color3uiv", (SPUGenericFunction)printColor3uiv },
-	{ "Color3us", (SPUGenericFunction)printColor3us },
-	{ "Color3usv", (SPUGenericFunction)printColor3usv },
-	{ "Color4b", (SPUGenericFunction)printColor4b },
-	{ "Color4bv", (SPUGenericFunction)printColor4bv },
-	{ "Color4d", (SPUGenericFunction)printColor4d },
-	{ "Color4dv", (SPUGenericFunction)printColor4dv },
-	{ "Color4f", (SPUGenericFunction)printColor4f },
-	{ "Color4fv", (SPUGenericFunction)printColor4fv },
-	{ "Color4i", (SPUGenericFunction)printColor4i },
-	{ "Color4iv", (SPUGenericFunction)printColor4iv },
-	{ "Color4s", (SPUGenericFunction)printColor4s },
-	{ "Color4sv", (SPUGenericFunction)printColor4sv },
-	{ "Color4ub", (SPUGenericFunction)printColor4ub },
-	{ "Color4ubv", (SPUGenericFunction)printColor4ubv },
-	{ "Color4ui", (SPUGenericFunction)printColor4ui },
-	{ "Color4uiv", (SPUGenericFunction)printColor4uiv },
-	{ "Color4us", (SPUGenericFunction)printColor4us },
-	{ "Color4usv", (SPUGenericFunction)printColor4usv },
-	{ "ColorMask", (SPUGenericFunction)printColorMask },
-	{ "ColorMaterial", (SPUGenericFunction)printColorMaterial },
-	{ "ColorPointer", (SPUGenericFunction)printColorPointer },
-	{ "CombinerInputNV", (SPUGenericFunction)printCombinerInputNV },
-	{ "CombinerOutputNV", (SPUGenericFunction)printCombinerOutputNV },
-	{ "CombinerParameterfNV", (SPUGenericFunction)printCombinerParameterfNV },
-	{ "CombinerParameterfvNV", (SPUGenericFunction)printCombinerParameterfvNV },
-	{ "CombinerParameteriNV", (SPUGenericFunction)printCombinerParameteriNV },
-	{ "CombinerParameterivNV", (SPUGenericFunction)printCombinerParameterivNV },
-	{ "CombinerStageParameterfvNV", (SPUGenericFunction)printCombinerStageParameterfvNV },
-	{ "CompressedTexImage1DARB", (SPUGenericFunction)printCompressedTexImage1DARB },
-	{ "CompressedTexImage2DARB", (SPUGenericFunction)printCompressedTexImage2DARB },
-	{ "CompressedTexImage3DARB", (SPUGenericFunction)printCompressedTexImage3DARB },
-	{ "CompressedTexSubImage1DARB", (SPUGenericFunction)printCompressedTexSubImage1DARB },
-	{ "CompressedTexSubImage2DARB", (SPUGenericFunction)printCompressedTexSubImage2DARB },
-	{ "CompressedTexSubImage3DARB", (SPUGenericFunction)printCompressedTexSubImage3DARB },
-	{ "CopyPixels", (SPUGenericFunction)printCopyPixels },
-	{ "CopyTexImage1D", (SPUGenericFunction)printCopyTexImage1D },
-	{ "CopyTexImage2D", (SPUGenericFunction)printCopyTexImage2D },
-	{ "CopyTexSubImage1D", (SPUGenericFunction)printCopyTexSubImage1D },
-	{ "CopyTexSubImage2D", (SPUGenericFunction)printCopyTexSubImage2D },
-	{ "CopyTexSubImage3D", (SPUGenericFunction)printCopyTexSubImage3D },
-	{ "CreateContext", (SPUGenericFunction)printCreateContext },
-	{ "CullFace", (SPUGenericFunction)printCullFace },
-	{ "DeleteBuffersARB", (SPUGenericFunction)printDeleteBuffersARB },
-	{ "DeleteFencesNV", (SPUGenericFunction)printDeleteFencesNV },
-	{ "DeleteLists", (SPUGenericFunction)printDeleteLists },
-	{ "DeleteProgramsARB", (SPUGenericFunction)printDeleteProgramsARB },
-	{ "DeleteQueriesARB", (SPUGenericFunction)printDeleteQueriesARB },
-	{ "DeleteTextures", (SPUGenericFunction)printDeleteTextures },
-	{ "DepthFunc", (SPUGenericFunction)printDepthFunc },
-	{ "DepthMask", (SPUGenericFunction)printDepthMask },
-	{ "DepthRange", (SPUGenericFunction)printDepthRange },
-	{ "DestroyContext", (SPUGenericFunction)printDestroyContext },
-	{ "Disable", (SPUGenericFunction)printDisable },
-	{ "DisableClientState", (SPUGenericFunction)printDisableClientState },
-	{ "DisableVertexAttribArrayARB", (SPUGenericFunction)printDisableVertexAttribArrayARB },
-	{ "DrawArrays", (SPUGenericFunction)printDrawArrays },
-	{ "DrawBuffer", (SPUGenericFunction)printDrawBuffer },
-	{ "DrawElements", (SPUGenericFunction)printDrawElements },
-	{ "DrawPixels", (SPUGenericFunction)printDrawPixels },
-	{ "DrawRangeElements", (SPUGenericFunction)printDrawRangeElements },
-	{ "EdgeFlag", (SPUGenericFunction)printEdgeFlag },
-	{ "EdgeFlagPointer", (SPUGenericFunction)printEdgeFlagPointer },
-	{ "EdgeFlagv", (SPUGenericFunction)printEdgeFlagv },
-	{ "Enable", (SPUGenericFunction)printEnable },
-	{ "EnableClientState", (SPUGenericFunction)printEnableClientState },
-	{ "EnableVertexAttribArrayARB", (SPUGenericFunction)printEnableVertexAttribArrayARB },
-	{ "End", (SPUGenericFunction)printEnd },
-	{ "EndList", (SPUGenericFunction)printEndList },
-	{ "EndQueryARB", (SPUGenericFunction)printEndQueryARB },
-	{ "EvalCoord1d", (SPUGenericFunction)printEvalCoord1d },
-	{ "EvalCoord1dv", (SPUGenericFunction)printEvalCoord1dv },
-	{ "EvalCoord1f", (SPUGenericFunction)printEvalCoord1f },
-	{ "EvalCoord1fv", (SPUGenericFunction)printEvalCoord1fv },
-	{ "EvalCoord2d", (SPUGenericFunction)printEvalCoord2d },
-	{ "EvalCoord2dv", (SPUGenericFunction)printEvalCoord2dv },
-	{ "EvalCoord2f", (SPUGenericFunction)printEvalCoord2f },
-	{ "EvalCoord2fv", (SPUGenericFunction)printEvalCoord2fv },
-	{ "EvalMesh1", (SPUGenericFunction)printEvalMesh1 },
-	{ "EvalMesh2", (SPUGenericFunction)printEvalMesh2 },
-	{ "EvalPoint1", (SPUGenericFunction)printEvalPoint1 },
-	{ "EvalPoint2", (SPUGenericFunction)printEvalPoint2 },
-	{ "ExecuteProgramNV", (SPUGenericFunction)printExecuteProgramNV },
-	{ "FeedbackBuffer", (SPUGenericFunction)printFeedbackBuffer },
-	{ "FinalCombinerInputNV", (SPUGenericFunction)printFinalCombinerInputNV },
-	{ "Finish", (SPUGenericFunction)printFinish },
-	{ "FinishFenceNV", (SPUGenericFunction)printFinishFenceNV },
-	{ "Flush", (SPUGenericFunction)printFlush },
-	{ "Flushg_vertexArrayRangeNV", (SPUGenericFunction)printFlushg_vertexArrayRangeNV },
-	{ "FogCoordPointerEXT", (SPUGenericFunction)printFogCoordPointerEXT },
-	{ "FogCoorddEXT", (SPUGenericFunction)printFogCoorddEXT },
-	{ "FogCoorddvEXT", (SPUGenericFunction)printFogCoorddvEXT },
-	{ "FogCoordfEXT", (SPUGenericFunction)printFogCoordfEXT },
-	{ "FogCoordfvEXT", (SPUGenericFunction)printFogCoordfvEXT },
-	{ "Fogf", (SPUGenericFunction)printFogf },
-	{ "Fogfv", (SPUGenericFunction)printFogfv },
-	{ "Fogi", (SPUGenericFunction)printFogi },
-	{ "Fogiv", (SPUGenericFunction)printFogiv },
-	{ "FrontFace", (SPUGenericFunction)printFrontFace },
-	{ "Frustum", (SPUGenericFunction)printFrustum },
-	{ "GenBuffersARB", (SPUGenericFunction)printGenBuffersARB },
-	{ "GenFencesNV", (SPUGenericFunction)printGenFencesNV },
-	{ "GenLists", (SPUGenericFunction)printGenLists },
-	{ "GenProgramsARB", (SPUGenericFunction)printGenProgramsARB },
-	{ "GenProgramsNV", (SPUGenericFunction)printGenProgramsNV },
-	{ "GenQueriesARB", (SPUGenericFunction)printGenQueriesARB },
-	{ "GenTextures", (SPUGenericFunction)printGenTextures },
-	{ "GetBooleanv", (SPUGenericFunction)printGetBooleanv },
-	{ "GetBufferParameterivARB", (SPUGenericFunction)printGetBufferParameterivARB },
-	{ "GetBufferPointervARB", (SPUGenericFunction)printGetBufferPointervARB },
-	{ "GetBufferSubDataARB", (SPUGenericFunction)printGetBufferSubDataARB },
-	{ "GetChromiumParametervCR", (SPUGenericFunction)printGetChromiumParametervCR },
-	{ "GetClipPlane", (SPUGenericFunction)printGetClipPlane },
-	{ "GetCombinerInputParameterfvNV", (SPUGenericFunction)printGetCombinerInputParameterfvNV },
-	{ "GetCombinerInputParameterivNV", (SPUGenericFunction)printGetCombinerInputParameterivNV },
-	{ "GetCombinerOutputParameterfvNV", (SPUGenericFunction)printGetCombinerOutputParameterfvNV },
-	{ "GetCombinerOutputParameterivNV", (SPUGenericFunction)printGetCombinerOutputParameterivNV },
-	{ "GetCombinerStageParameterfvNV", (SPUGenericFunction)printGetCombinerStageParameterfvNV },
-	{ "GetCompressedTexImageARB", (SPUGenericFunction)printGetCompressedTexImageARB },
-	{ "GetDoublev", (SPUGenericFunction)printGetDoublev },
-	{ "GetError", (SPUGenericFunction)printGetError },
-	{ "GetFenceivNV", (SPUGenericFunction)printGetFenceivNV },
-	{ "GetFinalCombinerInputParameterfvNV", (SPUGenericFunction)printGetFinalCombinerInputParameterfvNV },
-	{ "GetFinalCombinerInputParameterivNV", (SPUGenericFunction)printGetFinalCombinerInputParameterivNV },
-	{ "GetFloatv", (SPUGenericFunction)printGetFloatv },
-	{ "GetIntegerv", (SPUGenericFunction)printGetIntegerv },
-	{ "GetLightfv", (SPUGenericFunction)printGetLightfv },
-	{ "GetLightiv", (SPUGenericFunction)printGetLightiv },
-	{ "GetMapdv", (SPUGenericFunction)printGetMapdv },
-	{ "GetMapfv", (SPUGenericFunction)printGetMapfv },
-	{ "GetMapiv", (SPUGenericFunction)printGetMapiv },
-	{ "GetMaterialfv", (SPUGenericFunction)printGetMaterialfv },
-	{ "GetMaterialiv", (SPUGenericFunction)printGetMaterialiv },
-	{ "GetPixelMapfv", (SPUGenericFunction)printGetPixelMapfv },
-	{ "GetPixelMapuiv", (SPUGenericFunction)printGetPixelMapuiv },
-	{ "GetPixelMapusv", (SPUGenericFunction)printGetPixelMapusv },
-	{ "GetPointerv", (SPUGenericFunction)printGetPointerv },
-	{ "GetPolygonStipple", (SPUGenericFunction)printGetPolygonStipple },
-	{ "GetProgramEnvParameterdvARB", (SPUGenericFunction)printGetProgramEnvParameterdvARB },
-	{ "GetProgramEnvParameterfvARB", (SPUGenericFunction)printGetProgramEnvParameterfvARB },
-	{ "GetProgramLocalParameterdvARB", (SPUGenericFunction)printGetProgramLocalParameterdvARB },
-	{ "GetProgramLocalParameterfvARB", (SPUGenericFunction)printGetProgramLocalParameterfvARB },
-	{ "GetProgramNamedParameterdvNV", (SPUGenericFunction)printGetProgramNamedParameterdvNV },
-	{ "GetProgramNamedParameterfvNV", (SPUGenericFunction)printGetProgramNamedParameterfvNV },
-	{ "GetProgramParameterdvNV", (SPUGenericFunction)printGetProgramParameterdvNV },
-	{ "GetProgramParameterfvNV", (SPUGenericFunction)printGetProgramParameterfvNV },
-	{ "GetProgramStringARB", (SPUGenericFunction)printGetProgramStringARB },
-	{ "GetProgramStringNV", (SPUGenericFunction)printGetProgramStringNV },
-	{ "GetProgramivARB", (SPUGenericFunction)printGetProgramivARB },
-	{ "GetProgramivNV", (SPUGenericFunction)printGetProgramivNV },
-	{ "GetQueryObjectivARB", (SPUGenericFunction)printGetQueryObjectivARB },
-	{ "GetQueryObjectuivARB", (SPUGenericFunction)printGetQueryObjectuivARB },
-	{ "GetQueryivARB", (SPUGenericFunction)printGetQueryivARB },
-	{ "GetString", (SPUGenericFunction)printGetString },
-	{ "GetTexEnvfv", (SPUGenericFunction)printGetTexEnvfv },
-	{ "GetTexEnviv", (SPUGenericFunction)printGetTexEnviv },
-	{ "GetTexGendv", (SPUGenericFunction)printGetTexGendv },
-	{ "GetTexGenfv", (SPUGenericFunction)printGetTexGenfv },
-	{ "GetTexGeniv", (SPUGenericFunction)printGetTexGeniv },
-	{ "GetTexImage", (SPUGenericFunction)printGetTexImage },
-	{ "GetTexLevelParameterfv", (SPUGenericFunction)printGetTexLevelParameterfv },
-	{ "GetTexLevelParameteriv", (SPUGenericFunction)printGetTexLevelParameteriv },
-	{ "GetTexParameterfv", (SPUGenericFunction)printGetTexParameterfv },
-	{ "GetTexParameteriv", (SPUGenericFunction)printGetTexParameteriv },
-	{ "GetTrackMatrixivNV", (SPUGenericFunction)printGetTrackMatrixivNV },
-	{ "GetVertexAttribPointervARB", (SPUGenericFunction)printGetVertexAttribPointervARB },
-	{ "GetVertexAttribPointervNV", (SPUGenericFunction)printGetVertexAttribPointervNV },
-	{ "GetVertexAttribdvARB", (SPUGenericFunction)printGetVertexAttribdvARB },
-	{ "GetVertexAttribdvNV", (SPUGenericFunction)printGetVertexAttribdvNV },
-	{ "GetVertexAttribfvARB", (SPUGenericFunction)printGetVertexAttribfvARB },
-	{ "GetVertexAttribfvNV", (SPUGenericFunction)printGetVertexAttribfvNV },
-	{ "GetVertexAttribivARB", (SPUGenericFunction)printGetVertexAttribivARB },
-	{ "GetVertexAttribivNV", (SPUGenericFunction)printGetVertexAttribivNV },
-	{ "Hint", (SPUGenericFunction)printHint },
-	{ "IndexMask", (SPUGenericFunction)printIndexMask },
-	{ "IndexPointer", (SPUGenericFunction)printIndexPointer },
-	{ "Indexd", (SPUGenericFunction)printIndexd },
-	{ "Indexdv", (SPUGenericFunction)printIndexdv },
-	{ "Indexf", (SPUGenericFunction)printIndexf },
-	{ "Indexfv", (SPUGenericFunction)printIndexfv },
-	{ "Indexi", (SPUGenericFunction)printIndexi },
-	{ "Indexiv", (SPUGenericFunction)printIndexiv },
-	{ "Indexs", (SPUGenericFunction)printIndexs },
-	{ "Indexsv", (SPUGenericFunction)printIndexsv },
-	{ "Indexub", (SPUGenericFunction)printIndexub },
-	{ "Indexubv", (SPUGenericFunction)printIndexubv },
-	{ "InitNames", (SPUGenericFunction)printInitNames },
-	{ "InterleavedArrays", (SPUGenericFunction)printInterleavedArrays },
-	{ "IsBufferARB", (SPUGenericFunction)printIsBufferARB },
-	{ "IsEnabled", (SPUGenericFunction)printIsEnabled },
-	{ "IsFenceNV", (SPUGenericFunction)printIsFenceNV },
-	{ "IsList", (SPUGenericFunction)printIsList },
-	{ "IsProgramARB", (SPUGenericFunction)printIsProgramARB },
-	{ "IsQueryARB", (SPUGenericFunction)printIsQueryARB },
-	{ "IsTexture", (SPUGenericFunction)printIsTexture },
-	{ "LightModelf", (SPUGenericFunction)printLightModelf },
-	{ "LightModelfv", (SPUGenericFunction)printLightModelfv },
-	{ "LightModeli", (SPUGenericFunction)printLightModeli },
-	{ "LightModeliv", (SPUGenericFunction)printLightModeliv },
-	{ "Lightf", (SPUGenericFunction)printLightf },
-	{ "Lightfv", (SPUGenericFunction)printLightfv },
-	{ "Lighti", (SPUGenericFunction)printLighti },
-	{ "Lightiv", (SPUGenericFunction)printLightiv },
-	{ "LineStipple", (SPUGenericFunction)printLineStipple },
-	{ "LineWidth", (SPUGenericFunction)printLineWidth },
-	{ "ListBase", (SPUGenericFunction)printListBase },
-	{ "LoadIdentity", (SPUGenericFunction)printLoadIdentity },
-	{ "LoadMatrixd", (SPUGenericFunction)printLoadMatrixd },
-	{ "LoadMatrixf", (SPUGenericFunction)printLoadMatrixf },
-	{ "LoadName", (SPUGenericFunction)printLoadName },
-	{ "LoadProgramNV", (SPUGenericFunction)printLoadProgramNV },
-	{ "LoadTransposeMatrixdARB", (SPUGenericFunction)printLoadTransposeMatrixdARB },
-	{ "LoadTransposeMatrixfARB", (SPUGenericFunction)printLoadTransposeMatrixfARB },
-	{ "LogicOp", (SPUGenericFunction)printLogicOp },
-	{ "MakeCurrent", (SPUGenericFunction)printMakeCurrent },
-	{ "Map1d", (SPUGenericFunction)printMap1d },
-	{ "Map1f", (SPUGenericFunction)printMap1f },
-	{ "Map2d", (SPUGenericFunction)printMap2d },
-	{ "Map2f", (SPUGenericFunction)printMap2f },
-	{ "MapBufferARB", (SPUGenericFunction)printMapBufferARB },
-	{ "MapGrid1d", (SPUGenericFunction)printMapGrid1d },
-	{ "MapGrid1f", (SPUGenericFunction)printMapGrid1f },
-	{ "MapGrid2d", (SPUGenericFunction)printMapGrid2d },
-	{ "MapGrid2f", (SPUGenericFunction)printMapGrid2f },
-	{ "Materialf", (SPUGenericFunction)printMaterialf },
-	{ "Materialfv", (SPUGenericFunction)printMaterialfv },
-	{ "Materiali", (SPUGenericFunction)printMateriali },
-	{ "Materialiv", (SPUGenericFunction)printMaterialiv },
-	{ "MatrixMode", (SPUGenericFunction)printMatrixMode },
-	{ "MultMatrixd", (SPUGenericFunction)printMultMatrixd },
-	{ "MultMatrixf", (SPUGenericFunction)printMultMatrixf },
-	{ "MultTransposeMatrixdARB", (SPUGenericFunction)printMultTransposeMatrixdARB },
-	{ "MultTransposeMatrixfARB", (SPUGenericFunction)printMultTransposeMatrixfARB },
-	{ "MultiDrawArraysEXT", (SPUGenericFunction)printMultiDrawArraysEXT },
-	{ "MultiDrawElementsEXT", (SPUGenericFunction)printMultiDrawElementsEXT },
-	{ "MultiTexCoord1dARB", (SPUGenericFunction)printMultiTexCoord1dARB },
-	{ "MultiTexCoord1dvARB", (SPUGenericFunction)printMultiTexCoord1dvARB },
-	{ "MultiTexCoord1fARB", (SPUGenericFunction)printMultiTexCoord1fARB },
-	{ "MultiTexCoord1fvARB", (SPUGenericFunction)printMultiTexCoord1fvARB },
-	{ "MultiTexCoord1iARB", (SPUGenericFunction)printMultiTexCoord1iARB },
-	{ "MultiTexCoord1ivARB", (SPUGenericFunction)printMultiTexCoord1ivARB },
-	{ "MultiTexCoord1sARB", (SPUGenericFunction)printMultiTexCoord1sARB },
-	{ "MultiTexCoord1svARB", (SPUGenericFunction)printMultiTexCoord1svARB },
-	{ "MultiTexCoord2dARB", (SPUGenericFunction)printMultiTexCoord2dARB },
-	{ "MultiTexCoord2dvARB", (SPUGenericFunction)printMultiTexCoord2dvARB },
-	{ "MultiTexCoord2fARB", (SPUGenericFunction)printMultiTexCoord2fARB },
-	{ "MultiTexCoord2fvARB", (SPUGenericFunction)printMultiTexCoord2fvARB },
-	{ "MultiTexCoord2iARB", (SPUGenericFunction)printMultiTexCoord2iARB },
-	{ "MultiTexCoord2ivARB", (SPUGenericFunction)printMultiTexCoord2ivARB },
-	{ "MultiTexCoord2sARB", (SPUGenericFunction)printMultiTexCoord2sARB },
-	{ "MultiTexCoord2svARB", (SPUGenericFunction)printMultiTexCoord2svARB },
-	{ "MultiTexCoord3dARB", (SPUGenericFunction)printMultiTexCoord3dARB },
-	{ "MultiTexCoord3dvARB", (SPUGenericFunction)printMultiTexCoord3dvARB },
-	{ "MultiTexCoord3fARB", (SPUGenericFunction)printMultiTexCoord3fARB },
-	{ "MultiTexCoord3fvARB", (SPUGenericFunction)printMultiTexCoord3fvARB },
-	{ "MultiTexCoord3iARB", (SPUGenericFunction)printMultiTexCoord3iARB },
-	{ "MultiTexCoord3ivARB", (SPUGenericFunction)printMultiTexCoord3ivARB },
-	{ "MultiTexCoord3sARB", (SPUGenericFunction)printMultiTexCoord3sARB },
-	{ "MultiTexCoord3svARB", (SPUGenericFunction)printMultiTexCoord3svARB },
-	{ "MultiTexCoord4dARB", (SPUGenericFunction)printMultiTexCoord4dARB },
-	{ "MultiTexCoord4dvARB", (SPUGenericFunction)printMultiTexCoord4dvARB },
-	{ "MultiTexCoord4fARB", (SPUGenericFunction)printMultiTexCoord4fARB },
-	{ "MultiTexCoord4fvARB", (SPUGenericFunction)printMultiTexCoord4fvARB },
-	{ "MultiTexCoord4iARB", (SPUGenericFunction)printMultiTexCoord4iARB },
-	{ "MultiTexCoord4ivARB", (SPUGenericFunction)printMultiTexCoord4ivARB },
-	{ "MultiTexCoord4sARB", (SPUGenericFunction)printMultiTexCoord4sARB },
-	{ "MultiTexCoord4svARB", (SPUGenericFunction)printMultiTexCoord4svARB },
-	{ "NewList", (SPUGenericFunction)printNewList },
-	{ "Normal3b", (SPUGenericFunction)printNormal3b },
-	{ "Normal3bv", (SPUGenericFunction)printNormal3bv },
-	{ "Normal3d", (SPUGenericFunction)printNormal3d },
-	{ "Normal3dv", (SPUGenericFunction)printNormal3dv },
-	{ "Normal3f", (SPUGenericFunction)printNormal3f },
-	{ "Normal3fv", (SPUGenericFunction)printNormal3fv },
-	{ "Normal3i", (SPUGenericFunction)printNormal3i },
-	{ "Normal3iv", (SPUGenericFunction)printNormal3iv },
-	{ "Normal3s", (SPUGenericFunction)printNormal3s },
-	{ "Normal3sv", (SPUGenericFunction)printNormal3sv },
-	{ "NormalPointer", (SPUGenericFunction)printNormalPointer },
-	{ "Ortho", (SPUGenericFunction)printOrtho },
-	{ "PassThrough", (SPUGenericFunction)printPassThrough },
-	{ "PixelMapfv", (SPUGenericFunction)printPixelMapfv },
-	{ "PixelMapuiv", (SPUGenericFunction)printPixelMapuiv },
-	{ "PixelMapusv", (SPUGenericFunction)printPixelMapusv },
-	{ "PixelStoref", (SPUGenericFunction)printPixelStoref },
-	{ "PixelStorei", (SPUGenericFunction)printPixelStorei },
-	{ "PixelTransferf", (SPUGenericFunction)printPixelTransferf },
-	{ "PixelTransferi", (SPUGenericFunction)printPixelTransferi },
-	{ "PixelZoom", (SPUGenericFunction)printPixelZoom },
-	{ "PointParameterfARB", (SPUGenericFunction)printPointParameterfARB },
-	{ "PointParameterfvARB", (SPUGenericFunction)printPointParameterfvARB },
-	{ "PointParameteri", (SPUGenericFunction)printPointParameteri },
-	{ "PointParameteriv", (SPUGenericFunction)printPointParameteriv },
-	{ "PointSize", (SPUGenericFunction)printPointSize },
-	{ "PolygonMode", (SPUGenericFunction)printPolygonMode },
-	{ "PolygonOffset", (SPUGenericFunction)printPolygonOffset },
-	{ "PolygonStipple", (SPUGenericFunction)printPolygonStipple },
-	{ "PopAttrib", (SPUGenericFunction)printPopAttrib },
-	{ "PopClientAttrib", (SPUGenericFunction)printPopClientAttrib },
-	{ "PopMatrix", (SPUGenericFunction)printPopMatrix },
-	{ "PopName", (SPUGenericFunction)printPopName },
-	{ "PrioritizeTextures", (SPUGenericFunction)printPrioritizeTextures },
-	{ "ProgramEnvParameter4dARB", (SPUGenericFunction)printProgramEnvParameter4dARB },
-	{ "ProgramEnvParameter4dvARB", (SPUGenericFunction)printProgramEnvParameter4dvARB },
-	{ "ProgramEnvParameter4fARB", (SPUGenericFunction)printProgramEnvParameter4fARB },
-	{ "ProgramEnvParameter4fvARB", (SPUGenericFunction)printProgramEnvParameter4fvARB },
-	{ "ProgramLocalParameter4dARB", (SPUGenericFunction)printProgramLocalParameter4dARB },
-	{ "ProgramLocalParameter4dvARB", (SPUGenericFunction)printProgramLocalParameter4dvARB },
-	{ "ProgramLocalParameter4fARB", (SPUGenericFunction)printProgramLocalParameter4fARB },
-	{ "ProgramLocalParameter4fvARB", (SPUGenericFunction)printProgramLocalParameter4fvARB },
-	{ "ProgramNamedParameter4dNV", (SPUGenericFunction)printProgramNamedParameter4dNV },
-	{ "ProgramNamedParameter4dvNV", (SPUGenericFunction)printProgramNamedParameter4dvNV },
-	{ "ProgramNamedParameter4fNV", (SPUGenericFunction)printProgramNamedParameter4fNV },
-	{ "ProgramNamedParameter4fvNV", (SPUGenericFunction)printProgramNamedParameter4fvNV },
-	{ "ProgramParameter4dNV", (SPUGenericFunction)printProgramParameter4dNV },
-	{ "ProgramParameter4dvNV", (SPUGenericFunction)printProgramParameter4dvNV },
-	{ "ProgramParameter4fNV", (SPUGenericFunction)printProgramParameter4fNV },
-	{ "ProgramParameter4fvNV", (SPUGenericFunction)printProgramParameter4fvNV },
-	{ "ProgramParameters4dvNV", (SPUGenericFunction)printProgramParameters4dvNV },
-	{ "ProgramParameters4fvNV", (SPUGenericFunction)printProgramParameters4fvNV },
-	{ "ProgramStringARB", (SPUGenericFunction)printProgramStringARB },
-	{ "PushAttrib", (SPUGenericFunction)printPushAttrib },
-	{ "PushClientAttrib", (SPUGenericFunction)printPushClientAttrib },
-	{ "PushMatrix", (SPUGenericFunction)printPushMatrix },
-	{ "PushName", (SPUGenericFunction)printPushName },
-	{ "RasterPos2d", (SPUGenericFunction)printRasterPos2d },
-	{ "RasterPos2dv", (SPUGenericFunction)printRasterPos2dv },
-	{ "RasterPos2f", (SPUGenericFunction)printRasterPos2f },
-	{ "RasterPos2fv", (SPUGenericFunction)printRasterPos2fv },
-	{ "RasterPos2i", (SPUGenericFunction)printRasterPos2i },
-	{ "RasterPos2iv", (SPUGenericFunction)printRasterPos2iv },
-	{ "RasterPos2s", (SPUGenericFunction)printRasterPos2s },
-	{ "RasterPos2sv", (SPUGenericFunction)printRasterPos2sv },
-	{ "RasterPos3d", (SPUGenericFunction)printRasterPos3d },
-	{ "RasterPos3dv", (SPUGenericFunction)printRasterPos3dv },
-	{ "RasterPos3f", (SPUGenericFunction)printRasterPos3f },
-	{ "RasterPos3fv", (SPUGenericFunction)printRasterPos3fv },
-	{ "RasterPos3i", (SPUGenericFunction)printRasterPos3i },
-	{ "RasterPos3iv", (SPUGenericFunction)printRasterPos3iv },
-	{ "RasterPos3s", (SPUGenericFunction)printRasterPos3s },
-	{ "RasterPos3sv", (SPUGenericFunction)printRasterPos3sv },
-	{ "RasterPos4d", (SPUGenericFunction)printRasterPos4d },
-	{ "RasterPos4dv", (SPUGenericFunction)printRasterPos4dv },
-	{ "RasterPos4f", (SPUGenericFunction)printRasterPos4f },
-	{ "RasterPos4fv", (SPUGenericFunction)printRasterPos4fv },
-	{ "RasterPos4i", (SPUGenericFunction)printRasterPos4i },
-	{ "RasterPos4iv", (SPUGenericFunction)printRasterPos4iv },
-	{ "RasterPos4s", (SPUGenericFunction)printRasterPos4s },
-	{ "RasterPos4sv", (SPUGenericFunction)printRasterPos4sv },
-	{ "ReadBuffer", (SPUGenericFunction)printReadBuffer },
-	{ "ReadPixels", (SPUGenericFunction)printReadPixels },
-	{ "Rectd", (SPUGenericFunction)printRectd },
-	{ "Rectdv", (SPUGenericFunction)printRectdv },
-	{ "Rectf", (SPUGenericFunction)printRectf },
-	{ "Rectfv", (SPUGenericFunction)printRectfv },
-	{ "Recti", (SPUGenericFunction)printRecti },
-	{ "Rectiv", (SPUGenericFunction)printRectiv },
-	{ "Rects", (SPUGenericFunction)printRects },
-	{ "Rectsv", (SPUGenericFunction)printRectsv },
-	{ "RenderMode", (SPUGenericFunction)printRenderMode },
-	{ "RequestResidentProgramsNV", (SPUGenericFunction)printRequestResidentProgramsNV },
-	{ "Rotated", (SPUGenericFunction)printRotated },
-	{ "Rotatef", (SPUGenericFunction)printRotatef },
-	{ "SampleCoverageARB", (SPUGenericFunction)printSampleCoverageARB },
-	{ "Scaled", (SPUGenericFunction)printScaled },
-	{ "Scalef", (SPUGenericFunction)printScalef },
-	{ "Scissor", (SPUGenericFunction)printScissor },
-	{ "SecondaryColor3bEXT", (SPUGenericFunction)printSecondaryColor3bEXT },
-	{ "SecondaryColor3bvEXT", (SPUGenericFunction)printSecondaryColor3bvEXT },
-	{ "SecondaryColor3dEXT", (SPUGenericFunction)printSecondaryColor3dEXT },
-	{ "SecondaryColor3dvEXT", (SPUGenericFunction)printSecondaryColor3dvEXT },
-	{ "SecondaryColor3fEXT", (SPUGenericFunction)printSecondaryColor3fEXT },
-	{ "SecondaryColor3fvEXT", (SPUGenericFunction)printSecondaryColor3fvEXT },
-	{ "SecondaryColor3iEXT", (SPUGenericFunction)printSecondaryColor3iEXT },
-	{ "SecondaryColor3ivEXT", (SPUGenericFunction)printSecondaryColor3ivEXT },
-	{ "SecondaryColor3sEXT", (SPUGenericFunction)printSecondaryColor3sEXT },
-	{ "SecondaryColor3svEXT", (SPUGenericFunction)printSecondaryColor3svEXT },
-	{ "SecondaryColor3ubEXT", (SPUGenericFunction)printSecondaryColor3ubEXT },
-	{ "SecondaryColor3ubvEXT", (SPUGenericFunction)printSecondaryColor3ubvEXT },
-	{ "SecondaryColor3uiEXT", (SPUGenericFunction)printSecondaryColor3uiEXT },
-	{ "SecondaryColor3uivEXT", (SPUGenericFunction)printSecondaryColor3uivEXT },
-	{ "SecondaryColor3usEXT", (SPUGenericFunction)printSecondaryColor3usEXT },
-	{ "SecondaryColor3usvEXT", (SPUGenericFunction)printSecondaryColor3usvEXT },
-	{ "SecondaryColorPointerEXT", (SPUGenericFunction)printSecondaryColorPointerEXT },
-	{ "SelectBuffer", (SPUGenericFunction)printSelectBuffer },
-	{ "SemaphoreCreateCR", (SPUGenericFunction)printSemaphoreCreateCR },
-	{ "SemaphoreDestroyCR", (SPUGenericFunction)printSemaphoreDestroyCR },
-	{ "SemaphorePCR", (SPUGenericFunction)printSemaphorePCR },
-	{ "SemaphoreVCR", (SPUGenericFunction)printSemaphoreVCR },
-	{ "SetFenceNV", (SPUGenericFunction)printSetFenceNV },
-	{ "ShadeModel", (SPUGenericFunction)printShadeModel },
-	{ "StencilFunc", (SPUGenericFunction)printStencilFunc },
-	{ "StencilMask", (SPUGenericFunction)printStencilMask },
-	{ "StencilOp", (SPUGenericFunction)printStencilOp },
-	{ "SwapBuffers", (SPUGenericFunction)printSwapBuffers },
-	{ "TestFenceNV", (SPUGenericFunction)printTestFenceNV },
-	{ "TexCoord1d", (SPUGenericFunction)printTexCoord1d },
-	{ "TexCoord1dv", (SPUGenericFunction)printTexCoord1dv },
-	{ "TexCoord1f", (SPUGenericFunction)printTexCoord1f },
-	{ "TexCoord1fv", (SPUGenericFunction)printTexCoord1fv },
-	{ "TexCoord1i", (SPUGenericFunction)printTexCoord1i },
-	{ "TexCoord1iv", (SPUGenericFunction)printTexCoord1iv },
-	{ "TexCoord1s", (SPUGenericFunction)printTexCoord1s },
-	{ "TexCoord1sv", (SPUGenericFunction)printTexCoord1sv },
-	{ "TexCoord2d", (SPUGenericFunction)printTexCoord2d },
-	{ "TexCoord2dv", (SPUGenericFunction)printTexCoord2dv },
-	{ "TexCoord2f", (SPUGenericFunction)printTexCoord2f },
-	{ "TexCoord2fv", (SPUGenericFunction)printTexCoord2fv },
-	{ "TexCoord2i", (SPUGenericFunction)printTexCoord2i },
-	{ "TexCoord2iv", (SPUGenericFunction)printTexCoord2iv },
-	{ "TexCoord2s", (SPUGenericFunction)printTexCoord2s },
-	{ "TexCoord2sv", (SPUGenericFunction)printTexCoord2sv },
-	{ "TexCoord3d", (SPUGenericFunction)printTexCoord3d },
-	{ "TexCoord3dv", (SPUGenericFunction)printTexCoord3dv },
-	{ "TexCoord3f", (SPUGenericFunction)printTexCoord3f },
-	{ "TexCoord3fv", (SPUGenericFunction)printTexCoord3fv },
-	{ "TexCoord3i", (SPUGenericFunction)printTexCoord3i },
-	{ "TexCoord3iv", (SPUGenericFunction)printTexCoord3iv },
-	{ "TexCoord3s", (SPUGenericFunction)printTexCoord3s },
-	{ "TexCoord3sv", (SPUGenericFunction)printTexCoord3sv },
-	{ "TexCoord4d", (SPUGenericFunction)printTexCoord4d },
-	{ "TexCoord4dv", (SPUGenericFunction)printTexCoord4dv },
-	{ "TexCoord4f", (SPUGenericFunction)printTexCoord4f },
-	{ "TexCoord4fv", (SPUGenericFunction)printTexCoord4fv },
-	{ "TexCoord4i", (SPUGenericFunction)printTexCoord4i },
-	{ "TexCoord4iv", (SPUGenericFunction)printTexCoord4iv },
-	{ "TexCoord4s", (SPUGenericFunction)printTexCoord4s },
-	{ "TexCoord4sv", (SPUGenericFunction)printTexCoord4sv },
-	{ "TexCoordPointer", (SPUGenericFunction)printTexCoordPointer },
-	{ "TexEnvf", (SPUGenericFunction)printTexEnvf },
-	{ "TexEnvfv", (SPUGenericFunction)printTexEnvfv },
-	{ "TexEnvi", (SPUGenericFunction)printTexEnvi },
-	{ "TexEnviv", (SPUGenericFunction)printTexEnviv },
-	{ "TexGend", (SPUGenericFunction)printTexGend },
-	{ "TexGendv", (SPUGenericFunction)printTexGendv },
-	{ "TexGenf", (SPUGenericFunction)printTexGenf },
-	{ "TexGenfv", (SPUGenericFunction)printTexGenfv },
-	{ "TexGeni", (SPUGenericFunction)printTexGeni },
-	{ "TexGeniv", (SPUGenericFunction)printTexGeniv },
-	{ "TexImage1D", (SPUGenericFunction)printTexImage1D },
-	{ "TexImage2D", (SPUGenericFunction)printTexImage2D },
-	{ "TexImage3D", (SPUGenericFunction)printTexImage3D },
-	{ "TexImage3DEXT", (SPUGenericFunction)printTexImage3DEXT },
-	{ "TexParameterf", (SPUGenericFunction)printTexParameterf },
-	{ "TexParameterfv", (SPUGenericFunction)printTexParameterfv },
-	{ "TexParameteri", (SPUGenericFunction)printTexParameteri },
-	{ "TexParameteriv", (SPUGenericFunction)printTexParameteriv },
-	{ "TexSubImage1D", (SPUGenericFunction)printTexSubImage1D },
-	{ "TexSubImage2D", (SPUGenericFunction)printTexSubImage2D },
-	{ "TexSubImage3D", (SPUGenericFunction)printTexSubImage3D },
-	{ "TrackMatrixNV", (SPUGenericFunction)printTrackMatrixNV },
-	{ "Translated", (SPUGenericFunction)printTranslated },
-	{ "Translatef", (SPUGenericFunction)printTranslatef },
-	{ "UnmapBufferARB", (SPUGenericFunction)printUnmapBufferARB },
-	{ "Vertex2d", (SPUGenericFunction)printVertex2d },
-	{ "Vertex2dv", (SPUGenericFunction)printVertex2dv },
-	{ "Vertex2f", (SPUGenericFunction)printVertex2f },
-	{ "Vertex2fv", (SPUGenericFunction)printVertex2fv },
-	{ "Vertex2i", (SPUGenericFunction)printVertex2i },
-	{ "Vertex2iv", (SPUGenericFunction)printVertex2iv },
-	{ "Vertex2s", (SPUGenericFunction)printVertex2s },
-	{ "Vertex2sv", (SPUGenericFunction)printVertex2sv },
-	{ "Vertex3d", (SPUGenericFunction)printVertex3d },
-	{ "Vertex3dv", (SPUGenericFunction)printVertex3dv },
-	{ "Vertex3f", (SPUGenericFunction)printVertex3f },
-	{ "Vertex3fv", (SPUGenericFunction)printVertex3fv },
-	{ "Vertex3i", (SPUGenericFunction)printVertex3i },
-	{ "Vertex3iv", (SPUGenericFunction)printVertex3iv },
-	{ "Vertex3s", (SPUGenericFunction)printVertex3s },
-	{ "Vertex3sv", (SPUGenericFunction)printVertex3sv },
-	{ "Vertex4d", (SPUGenericFunction)printVertex4d },
-	{ "Vertex4dv", (SPUGenericFunction)printVertex4dv },
-	{ "Vertex4f", (SPUGenericFunction)printVertex4f },
-	{ "Vertex4fv", (SPUGenericFunction)printVertex4fv },
-	{ "Vertex4i", (SPUGenericFunction)printVertex4i },
-	{ "Vertex4iv", (SPUGenericFunction)printVertex4iv },
-	{ "Vertex4s", (SPUGenericFunction)printVertex4s },
-	{ "Vertex4sv", (SPUGenericFunction)printVertex4sv },
-	{ "g_vertexArrayRangeNV", (SPUGenericFunction)printg_vertexArrayRangeNV },
-	{ "VertexAttrib1dARB", (SPUGenericFunction)printVertexAttrib1dARB },
-	{ "VertexAttrib1dvARB", (SPUGenericFunction)printVertexAttrib1dvARB },
-	{ "VertexAttrib1fARB", (SPUGenericFunction)printVertexAttrib1fARB },
-	{ "VertexAttrib1fvARB", (SPUGenericFunction)printVertexAttrib1fvARB },
-	{ "VertexAttrib1sARB", (SPUGenericFunction)printVertexAttrib1sARB },
-	{ "VertexAttrib1svARB", (SPUGenericFunction)printVertexAttrib1svARB },
-	{ "VertexAttrib2dARB", (SPUGenericFunction)printVertexAttrib2dARB },
-	{ "VertexAttrib2dvARB", (SPUGenericFunction)printVertexAttrib2dvARB },
-	{ "VertexAttrib2fARB", (SPUGenericFunction)printVertexAttrib2fARB },
-	{ "VertexAttrib2fvARB", (SPUGenericFunction)printVertexAttrib2fvARB },
-	{ "VertexAttrib2sARB", (SPUGenericFunction)printVertexAttrib2sARB },
-	{ "VertexAttrib2svARB", (SPUGenericFunction)printVertexAttrib2svARB },
-	{ "VertexAttrib3dARB", (SPUGenericFunction)printVertexAttrib3dARB },
-	{ "VertexAttrib3dvARB", (SPUGenericFunction)printVertexAttrib3dvARB },
-	{ "VertexAttrib3fARB", (SPUGenericFunction)printVertexAttrib3fARB },
-	{ "VertexAttrib3fvARB", (SPUGenericFunction)printVertexAttrib3fvARB },
-	{ "VertexAttrib3sARB", (SPUGenericFunction)printVertexAttrib3sARB },
-	{ "VertexAttrib3svARB", (SPUGenericFunction)printVertexAttrib3svARB },
-	{ "VertexAttrib4NbvARB", (SPUGenericFunction)printVertexAttrib4NbvARB },
-	{ "VertexAttrib4NivARB", (SPUGenericFunction)printVertexAttrib4NivARB },
-	{ "VertexAttrib4NsvARB", (SPUGenericFunction)printVertexAttrib4NsvARB },
-	{ "VertexAttrib4NubARB", (SPUGenericFunction)printVertexAttrib4NubARB },
-	{ "VertexAttrib4NubvARB", (SPUGenericFunction)printVertexAttrib4NubvARB },
-	{ "VertexAttrib4NuivARB", (SPUGenericFunction)printVertexAttrib4NuivARB },
-	{ "VertexAttrib4NusvARB", (SPUGenericFunction)printVertexAttrib4NusvARB },
-	{ "VertexAttrib4bvARB", (SPUGenericFunction)printVertexAttrib4bvARB },
-	{ "VertexAttrib4dARB", (SPUGenericFunction)printVertexAttrib4dARB },
-	{ "VertexAttrib4dvARB", (SPUGenericFunction)printVertexAttrib4dvARB },
-	{ "VertexAttrib4fARB", (SPUGenericFunction)printVertexAttrib4fARB },
-	{ "VertexAttrib4fvARB", (SPUGenericFunction)printVertexAttrib4fvARB },
-	{ "VertexAttrib4ivARB", (SPUGenericFunction)printVertexAttrib4ivARB },
-	{ "VertexAttrib4sARB", (SPUGenericFunction)printVertexAttrib4sARB },
-	{ "VertexAttrib4svARB", (SPUGenericFunction)printVertexAttrib4svARB },
-	{ "VertexAttrib4ubvARB", (SPUGenericFunction)printVertexAttrib4ubvARB },
-	{ "VertexAttrib4uivARB", (SPUGenericFunction)printVertexAttrib4uivARB },
-	{ "VertexAttrib4usvARB", (SPUGenericFunction)printVertexAttrib4usvARB },
-	{ "VertexAttribPointerARB", (SPUGenericFunction)printVertexAttribPointerARB },
-	{ "VertexAttribPointerNV", (SPUGenericFunction)printVertexAttribPointerNV },
-	{ "VertexAttribs1dvNV", (SPUGenericFunction)printVertexAttribs1dvNV },
-	{ "VertexAttribs1fvNV", (SPUGenericFunction)printVertexAttribs1fvNV },
-	{ "VertexAttribs1svNV", (SPUGenericFunction)printVertexAttribs1svNV },
-	{ "VertexAttribs2dvNV", (SPUGenericFunction)printVertexAttribs2dvNV },
-	{ "VertexAttribs2fvNV", (SPUGenericFunction)printVertexAttribs2fvNV },
-	{ "VertexAttribs2svNV", (SPUGenericFunction)printVertexAttribs2svNV },
-	{ "VertexAttribs3dvNV", (SPUGenericFunction)printVertexAttribs3dvNV },
-	{ "VertexAttribs3fvNV", (SPUGenericFunction)printVertexAttribs3fvNV },
-	{ "VertexAttribs3svNV", (SPUGenericFunction)printVertexAttribs3svNV },
-	{ "VertexAttribs4dvNV", (SPUGenericFunction)printVertexAttribs4dvNV },
-	{ "VertexAttribs4fvNV", (SPUGenericFunction)printVertexAttribs4fvNV },
-	{ "VertexAttribs4svNV", (SPUGenericFunction)printVertexAttribs4svNV },
-	{ "VertexAttribs4ubvNV", (SPUGenericFunction)printVertexAttribs4ubvNV },
-	{ "VertexPointer", (SPUGenericFunction)printVertexPointer },
-	{ "Viewport", (SPUGenericFunction)printViewport },
-	{ "WindowCreate", (SPUGenericFunction)printWindowCreate },
-	{ "WindowDestroy", (SPUGenericFunction)printWindowDestroy },
-	{ "WindowPos2dARB", (SPUGenericFunction)printWindowPos2dARB },
-	{ "WindowPos2dvARB", (SPUGenericFunction)printWindowPos2dvARB },
-	{ "WindowPos2fARB", (SPUGenericFunction)printWindowPos2fARB },
-	{ "WindowPos2fvARB", (SPUGenericFunction)printWindowPos2fvARB },
-	{ "WindowPos2iARB", (SPUGenericFunction)printWindowPos2iARB },
-	{ "WindowPos2ivARB", (SPUGenericFunction)printWindowPos2ivARB },
-	{ "WindowPos2sARB", (SPUGenericFunction)printWindowPos2sARB },
-	{ "WindowPos2svARB", (SPUGenericFunction)printWindowPos2svARB },
-	{ "WindowPos3dARB", (SPUGenericFunction)printWindowPos3dARB },
-	{ "WindowPos3dvARB", (SPUGenericFunction)printWindowPos3dvARB },
-	{ "WindowPos3fARB", (SPUGenericFunction)printWindowPos3fARB },
-	{ "WindowPos3fvARB", (SPUGenericFunction)printWindowPos3fvARB },
-	{ "WindowPos3iARB", (SPUGenericFunction)printWindowPos3iARB },
-	{ "WindowPos3ivARB", (SPUGenericFunction)printWindowPos3ivARB },
-	{ "WindowPos3sARB", (SPUGenericFunction)printWindowPos3sARB },
-	{ "WindowPos3svARB", (SPUGenericFunction)printWindowPos3svARB },
-	{ "WindowPosition", (SPUGenericFunction)printWindowPosition },
-	{ "WindowShow", (SPUGenericFunction)printWindowShow },
-	{ "WindowSize", (SPUGenericFunction)printWindowSize },
-	{ "Writeback", (SPUGenericFunction)printWriteback },
-	{ "ZPixCR", (SPUGenericFunction)printZPixCR },
-	{ NULL, NULL }
+    { "Accum", (SPUGenericFunction)printAccum },
+    { "ActiveTextureARB", (SPUGenericFunction)printActiveTextureARB },
+    { "AlphaFunc", (SPUGenericFunction)printAlphaFunc },
+    { "AreProgramsResidentNV", (SPUGenericFunction)printAreProgramsResidentNV },
+    { "AreTexturesResident", (SPUGenericFunction)printAreTexturesResident },
+    { "ArrayElement", (SPUGenericFunction)printArrayElement },
+    { "BarrierCreateCR", (SPUGenericFunction)printBarrierCreateCR },
+    { "BarrierDestroyCR", (SPUGenericFunction)printBarrierDestroyCR },
+    { "BarrierExecCR", (SPUGenericFunction)printBarrierExecCR },
+    { "Begin", (SPUGenericFunction)printBegin },
+    { "BeginQueryARB", (SPUGenericFunction)printBeginQueryARB },
+    { "BindBufferARB", (SPUGenericFunction)printBindBufferARB },
+    { "BindProgramARB", (SPUGenericFunction)printBindProgramARB },
+    { "BindProgramNV", (SPUGenericFunction)printBindProgramNV },
+    { "BindTexture", (SPUGenericFunction)printBindTexture },
+    { "Bitmap", (SPUGenericFunction)printBitmap },
+    { "BlendColorEXT", (SPUGenericFunction)printBlendColorEXT },
+    { "BlendEquationEXT", (SPUGenericFunction)printBlendEquationEXT },
+    { "BlendFunc", (SPUGenericFunction)printBlendFunc },
+    { "BlendFuncSeparateEXT", (SPUGenericFunction)printBlendFuncSeparateEXT },
+    { "BoundsInfoCR", (SPUGenericFunction)printBoundsInfoCR },
+    { "BufferDataARB", (SPUGenericFunction)printBufferDataARB },
+    { "BufferSubDataARB", (SPUGenericFunction)printBufferSubDataARB },
+    { "CallList", (SPUGenericFunction)printCallList },
+    { "CallLists", (SPUGenericFunction)printCallLists },
+    { "ChromiumParameterfCR", (SPUGenericFunction)printChromiumParameterfCR },
+    { "ChromiumParameteriCR", (SPUGenericFunction)printChromiumParameteriCR },
+    { "ChromiumParametervCR", (SPUGenericFunction)printChromiumParametervCR },
+    { "Clear", (SPUGenericFunction)printClear },
+    { "ClearAccum", (SPUGenericFunction)printClearAccum },
+    { "ClearColor", (SPUGenericFunction)printClearColor },
+    { "ClearDepth", (SPUGenericFunction)printClearDepth },
+    { "ClearIndex", (SPUGenericFunction)printClearIndex },
+    { "ClearStencil", (SPUGenericFunction)printClearStencil },
+    { "ClientActiveTextureARB", (SPUGenericFunction)printClientActiveTextureARB },
+    { "ClipPlane", (SPUGenericFunction)printClipPlane },
+    { "Color3b", (SPUGenericFunction)printColor3b },
+    { "Color3bv", (SPUGenericFunction)printColor3bv },
+    { "Color3d", (SPUGenericFunction)printColor3d },
+    { "Color3dv", (SPUGenericFunction)printColor3dv },
+    { "Color3f", (SPUGenericFunction)printColor3f },
+    { "Color3fv", (SPUGenericFunction)printColor3fv },
+    { "Color3i", (SPUGenericFunction)printColor3i },
+    { "Color3iv", (SPUGenericFunction)printColor3iv },
+    { "Color3s", (SPUGenericFunction)printColor3s },
+    { "Color3sv", (SPUGenericFunction)printColor3sv },
+    { "Color3ub", (SPUGenericFunction)printColor3ub },
+    { "Color3ubv", (SPUGenericFunction)printColor3ubv },
+    { "Color3ui", (SPUGenericFunction)printColor3ui },
+    { "Color3uiv", (SPUGenericFunction)printColor3uiv },
+    { "Color3us", (SPUGenericFunction)printColor3us },
+    { "Color3usv", (SPUGenericFunction)printColor3usv },
+    { "Color4b", (SPUGenericFunction)printColor4b },
+    { "Color4bv", (SPUGenericFunction)printColor4bv },
+    { "Color4d", (SPUGenericFunction)printColor4d },
+    { "Color4dv", (SPUGenericFunction)printColor4dv },
+    { "Color4f", (SPUGenericFunction)printColor4f },
+    { "Color4fv", (SPUGenericFunction)printColor4fv },
+    { "Color4i", (SPUGenericFunction)printColor4i },
+    { "Color4iv", (SPUGenericFunction)printColor4iv },
+    { "Color4s", (SPUGenericFunction)printColor4s },
+    { "Color4sv", (SPUGenericFunction)printColor4sv },
+    { "Color4ub", (SPUGenericFunction)printColor4ub },
+    { "Color4ubv", (SPUGenericFunction)printColor4ubv },
+    { "Color4ui", (SPUGenericFunction)printColor4ui },
+    { "Color4uiv", (SPUGenericFunction)printColor4uiv },
+    { "Color4us", (SPUGenericFunction)printColor4us },
+    { "Color4usv", (SPUGenericFunction)printColor4usv },
+    { "ColorMask", (SPUGenericFunction)printColorMask },
+    { "ColorMaterial", (SPUGenericFunction)printColorMaterial },
+    { "ColorPointer", (SPUGenericFunction)printColorPointer },
+    { "CombinerInputNV", (SPUGenericFunction)printCombinerInputNV },
+    { "CombinerOutputNV", (SPUGenericFunction)printCombinerOutputNV },
+    { "CombinerParameterfNV", (SPUGenericFunction)printCombinerParameterfNV },
+    { "CombinerParameterfvNV", (SPUGenericFunction)printCombinerParameterfvNV },
+    { "CombinerParameteriNV", (SPUGenericFunction)printCombinerParameteriNV },
+    { "CombinerParameterivNV", (SPUGenericFunction)printCombinerParameterivNV },
+    { "CombinerStageParameterfvNV", (SPUGenericFunction)printCombinerStageParameterfvNV },
+    { "CompressedTexImage1DARB", (SPUGenericFunction)printCompressedTexImage1DARB },
+    { "CompressedTexImage2DARB", (SPUGenericFunction)printCompressedTexImage2DARB },
+    { "CompressedTexImage3DARB", (SPUGenericFunction)printCompressedTexImage3DARB },
+    { "CompressedTexSubImage1DARB", (SPUGenericFunction)printCompressedTexSubImage1DARB },
+    { "CompressedTexSubImage2DARB", (SPUGenericFunction)printCompressedTexSubImage2DARB },
+    { "CompressedTexSubImage3DARB", (SPUGenericFunction)printCompressedTexSubImage3DARB },
+    { "CopyPixels", (SPUGenericFunction)printCopyPixels },
+    { "CopyTexImage1D", (SPUGenericFunction)printCopyTexImage1D },
+    { "CopyTexImage2D", (SPUGenericFunction)printCopyTexImage2D },
+    { "CopyTexSubImage1D", (SPUGenericFunction)printCopyTexSubImage1D },
+    { "CopyTexSubImage2D", (SPUGenericFunction)printCopyTexSubImage2D },
+    { "CopyTexSubImage3D", (SPUGenericFunction)printCopyTexSubImage3D },
+    { "CreateContext", (SPUGenericFunction)printCreateContext },
+    { "CullFace", (SPUGenericFunction)printCullFace },
+    { "DeleteBuffersARB", (SPUGenericFunction)printDeleteBuffersARB },
+    { "DeleteFencesNV", (SPUGenericFunction)printDeleteFencesNV },
+    { "DeleteLists", (SPUGenericFunction)printDeleteLists },
+    { "DeleteProgramsARB", (SPUGenericFunction)printDeleteProgramsARB },
+    { "DeleteQueriesARB", (SPUGenericFunction)printDeleteQueriesARB },
+    { "DeleteTextures", (SPUGenericFunction)printDeleteTextures },
+    { "DepthFunc", (SPUGenericFunction)printDepthFunc },
+    { "DepthMask", (SPUGenericFunction)printDepthMask },
+    { "DepthRange", (SPUGenericFunction)printDepthRange },
+    { "DestroyContext", (SPUGenericFunction)printDestroyContext },
+    { "Disable", (SPUGenericFunction)printDisable },
+    { "DisableClientState", (SPUGenericFunction)printDisableClientState },
+    { "DisableVertexAttribArrayARB", (SPUGenericFunction)printDisableVertexAttribArrayARB },
+    { "DrawArrays", (SPUGenericFunction)printDrawArrays },
+    { "DrawBuffer", (SPUGenericFunction)printDrawBuffer },
+    { "DrawElements", (SPUGenericFunction)printDrawElements },
+    { "DrawPixels", (SPUGenericFunction)printDrawPixels },
+    { "DrawRangeElements", (SPUGenericFunction)printDrawRangeElements },
+    { "EdgeFlag", (SPUGenericFunction)printEdgeFlag },
+    { "EdgeFlagPointer", (SPUGenericFunction)printEdgeFlagPointer },
+    { "EdgeFlagv", (SPUGenericFunction)printEdgeFlagv },
+    { "Enable", (SPUGenericFunction)printEnable },
+    { "EnableClientState", (SPUGenericFunction)printEnableClientState },
+    { "EnableVertexAttribArrayARB", (SPUGenericFunction)printEnableVertexAttribArrayARB },
+    { "End", (SPUGenericFunction)printEnd },
+    { "EndList", (SPUGenericFunction)printEndList },
+    { "EndQueryARB", (SPUGenericFunction)printEndQueryARB },
+    { "EvalCoord1d", (SPUGenericFunction)printEvalCoord1d },
+    { "EvalCoord1dv", (SPUGenericFunction)printEvalCoord1dv },
+    { "EvalCoord1f", (SPUGenericFunction)printEvalCoord1f },
+    { "EvalCoord1fv", (SPUGenericFunction)printEvalCoord1fv },
+    { "EvalCoord2d", (SPUGenericFunction)printEvalCoord2d },
+    { "EvalCoord2dv", (SPUGenericFunction)printEvalCoord2dv },
+    { "EvalCoord2f", (SPUGenericFunction)printEvalCoord2f },
+    { "EvalCoord2fv", (SPUGenericFunction)printEvalCoord2fv },
+    { "EvalMesh1", (SPUGenericFunction)printEvalMesh1 },
+    { "EvalMesh2", (SPUGenericFunction)printEvalMesh2 },
+    { "EvalPoint1", (SPUGenericFunction)printEvalPoint1 },
+    { "EvalPoint2", (SPUGenericFunction)printEvalPoint2 },
+    { "ExecuteProgramNV", (SPUGenericFunction)printExecuteProgramNV },
+    { "FeedbackBuffer", (SPUGenericFunction)printFeedbackBuffer },
+    { "FinalCombinerInputNV", (SPUGenericFunction)printFinalCombinerInputNV },
+    { "Finish", (SPUGenericFunction)printFinish },
+    { "FinishFenceNV", (SPUGenericFunction)printFinishFenceNV },
+    { "Flush", (SPUGenericFunction)printFlush },
+    { "Flushg_vertexArrayRangeNV", (SPUGenericFunction)printFlushg_vertexArrayRangeNV },
+    { "FogCoordPointerEXT", (SPUGenericFunction)printFogCoordPointerEXT },
+    { "FogCoorddEXT", (SPUGenericFunction)printFogCoorddEXT },
+    { "FogCoorddvEXT", (SPUGenericFunction)printFogCoorddvEXT },
+    { "FogCoordfEXT", (SPUGenericFunction)printFogCoordfEXT },
+    { "FogCoordfvEXT", (SPUGenericFunction)printFogCoordfvEXT },
+    { "Fogf", (SPUGenericFunction)printFogf },
+    { "Fogfv", (SPUGenericFunction)printFogfv },
+    { "Fogi", (SPUGenericFunction)printFogi },
+    { "Fogiv", (SPUGenericFunction)printFogiv },
+    { "FrontFace", (SPUGenericFunction)printFrontFace },
+    { "Frustum", (SPUGenericFunction)printFrustum },
+    { "GenBuffersARB", (SPUGenericFunction)printGenBuffersARB },
+    { "GenFencesNV", (SPUGenericFunction)printGenFencesNV },
+    { "GenLists", (SPUGenericFunction)printGenLists },
+    { "GenProgramsARB", (SPUGenericFunction)printGenProgramsARB },
+    { "GenProgramsNV", (SPUGenericFunction)printGenProgramsNV },
+    { "GenQueriesARB", (SPUGenericFunction)printGenQueriesARB },
+    { "GenTextures", (SPUGenericFunction)printGenTextures },
+    { "GetBooleanv", (SPUGenericFunction)printGetBooleanv },
+    { "GetBufferParameterivARB", (SPUGenericFunction)printGetBufferParameterivARB },
+    { "GetBufferPointervARB", (SPUGenericFunction)printGetBufferPointervARB },
+    { "GetBufferSubDataARB", (SPUGenericFunction)printGetBufferSubDataARB },
+    { "GetChromiumParametervCR", (SPUGenericFunction)printGetChromiumParametervCR },
+    { "GetClipPlane", (SPUGenericFunction)printGetClipPlane },
+    { "GetCombinerInputParameterfvNV", (SPUGenericFunction)printGetCombinerInputParameterfvNV },
+    { "GetCombinerInputParameterivNV", (SPUGenericFunction)printGetCombinerInputParameterivNV },
+    { "GetCombinerOutputParameterfvNV", (SPUGenericFunction)printGetCombinerOutputParameterfvNV },
+    { "GetCombinerOutputParameterivNV", (SPUGenericFunction)printGetCombinerOutputParameterivNV },
+    { "GetCombinerStageParameterfvNV", (SPUGenericFunction)printGetCombinerStageParameterfvNV },
+    { "GetCompressedTexImageARB", (SPUGenericFunction)printGetCompressedTexImageARB },
+    { "GetDoublev", (SPUGenericFunction)printGetDoublev },
+    { "GetError", (SPUGenericFunction)printGetError },
+    { "GetFenceivNV", (SPUGenericFunction)printGetFenceivNV },
+    { "GetFinalCombinerInputParameterfvNV", (SPUGenericFunction)printGetFinalCombinerInputParameterfvNV },
+    { "GetFinalCombinerInputParameterivNV", (SPUGenericFunction)printGetFinalCombinerInputParameterivNV },
+    { "GetFloatv", (SPUGenericFunction)printGetFloatv },
+    { "GetIntegerv", (SPUGenericFunction)printGetIntegerv },
+    { "GetLightfv", (SPUGenericFunction)printGetLightfv },
+    { "GetLightiv", (SPUGenericFunction)printGetLightiv },
+    { "GetMapdv", (SPUGenericFunction)printGetMapdv },
+    { "GetMapfv", (SPUGenericFunction)printGetMapfv },
+    { "GetMapiv", (SPUGenericFunction)printGetMapiv },
+    { "GetMaterialfv", (SPUGenericFunction)printGetMaterialfv },
+    { "GetMaterialiv", (SPUGenericFunction)printGetMaterialiv },
+    { "GetPixelMapfv", (SPUGenericFunction)printGetPixelMapfv },
+    { "GetPixelMapuiv", (SPUGenericFunction)printGetPixelMapuiv },
+    { "GetPixelMapusv", (SPUGenericFunction)printGetPixelMapusv },
+    { "GetPointerv", (SPUGenericFunction)printGetPointerv },
+    { "GetPolygonStipple", (SPUGenericFunction)printGetPolygonStipple },
+    { "GetProgramEnvParameterdvARB", (SPUGenericFunction)printGetProgramEnvParameterdvARB },
+    { "GetProgramEnvParameterfvARB", (SPUGenericFunction)printGetProgramEnvParameterfvARB },
+    { "GetProgramLocalParameterdvARB", (SPUGenericFunction)printGetProgramLocalParameterdvARB },
+    { "GetProgramLocalParameterfvARB", (SPUGenericFunction)printGetProgramLocalParameterfvARB },
+    { "GetProgramNamedParameterdvNV", (SPUGenericFunction)printGetProgramNamedParameterdvNV },
+    { "GetProgramNamedParameterfvNV", (SPUGenericFunction)printGetProgramNamedParameterfvNV },
+    { "GetProgramParameterdvNV", (SPUGenericFunction)printGetProgramParameterdvNV },
+    { "GetProgramParameterfvNV", (SPUGenericFunction)printGetProgramParameterfvNV },
+    { "GetProgramStringARB", (SPUGenericFunction)printGetProgramStringARB },
+    { "GetProgramStringNV", (SPUGenericFunction)printGetProgramStringNV },
+    { "GetProgramivARB", (SPUGenericFunction)printGetProgramivARB },
+    { "GetProgramivNV", (SPUGenericFunction)printGetProgramivNV },
+    { "GetQueryObjectivARB", (SPUGenericFunction)printGetQueryObjectivARB },
+    { "GetQueryObjectuivARB", (SPUGenericFunction)printGetQueryObjectuivARB },
+    { "GetQueryivARB", (SPUGenericFunction)printGetQueryivARB },
+    { "GetString", (SPUGenericFunction)printGetString },
+    { "GetTexEnvfv", (SPUGenericFunction)printGetTexEnvfv },
+    { "GetTexEnviv", (SPUGenericFunction)printGetTexEnviv },
+    { "GetTexGendv", (SPUGenericFunction)printGetTexGendv },
+    { "GetTexGenfv", (SPUGenericFunction)printGetTexGenfv },
+    { "GetTexGeniv", (SPUGenericFunction)printGetTexGeniv },
+    { "GetTexImage", (SPUGenericFunction)printGetTexImage },
+    { "GetTexLevelParameterfv", (SPUGenericFunction)printGetTexLevelParameterfv },
+    { "GetTexLevelParameteriv", (SPUGenericFunction)printGetTexLevelParameteriv },
+    { "GetTexParameterfv", (SPUGenericFunction)printGetTexParameterfv },
+    { "GetTexParameteriv", (SPUGenericFunction)printGetTexParameteriv },
+    { "GetTrackMatrixivNV", (SPUGenericFunction)printGetTrackMatrixivNV },
+    { "GetVertexAttribPointervARB", (SPUGenericFunction)printGetVertexAttribPointervARB },
+    { "GetVertexAttribPointervNV", (SPUGenericFunction)printGetVertexAttribPointervNV },
+    { "GetVertexAttribdvARB", (SPUGenericFunction)printGetVertexAttribdvARB },
+    { "GetVertexAttribdvNV", (SPUGenericFunction)printGetVertexAttribdvNV },
+    { "GetVertexAttribfvARB", (SPUGenericFunction)printGetVertexAttribfvARB },
+    { "GetVertexAttribfvNV", (SPUGenericFunction)printGetVertexAttribfvNV },
+    { "GetVertexAttribivARB", (SPUGenericFunction)printGetVertexAttribivARB },
+    { "GetVertexAttribivNV", (SPUGenericFunction)printGetVertexAttribivNV },
+    { "Hint", (SPUGenericFunction)printHint },
+    { "IndexMask", (SPUGenericFunction)printIndexMask },
+    { "IndexPointer", (SPUGenericFunction)printIndexPointer },
+    { "Indexd", (SPUGenericFunction)printIndexd },
+    { "Indexdv", (SPUGenericFunction)printIndexdv },
+    { "Indexf", (SPUGenericFunction)printIndexf },
+    { "Indexfv", (SPUGenericFunction)printIndexfv },
+    { "Indexi", (SPUGenericFunction)printIndexi },
+    { "Indexiv", (SPUGenericFunction)printIndexiv },
+    { "Indexs", (SPUGenericFunction)printIndexs },
+    { "Indexsv", (SPUGenericFunction)printIndexsv },
+    { "Indexub", (SPUGenericFunction)printIndexub },
+    { "Indexubv", (SPUGenericFunction)printIndexubv },
+    { "InitNames", (SPUGenericFunction)printInitNames },
+    { "InterleavedArrays", (SPUGenericFunction)printInterleavedArrays },
+    { "IsBufferARB", (SPUGenericFunction)printIsBufferARB },
+    { "IsEnabled", (SPUGenericFunction)printIsEnabled },
+    { "IsFenceNV", (SPUGenericFunction)printIsFenceNV },
+    { "IsList", (SPUGenericFunction)printIsList },
+    { "IsProgramARB", (SPUGenericFunction)printIsProgramARB },
+    { "IsQueryARB", (SPUGenericFunction)printIsQueryARB },
+    { "IsTexture", (SPUGenericFunction)printIsTexture },
+    { "LightModelf", (SPUGenericFunction)printLightModelf },
+    { "LightModelfv", (SPUGenericFunction)printLightModelfv },
+    { "LightModeli", (SPUGenericFunction)printLightModeli },
+    { "LightModeliv", (SPUGenericFunction)printLightModeliv },
+    { "Lightf", (SPUGenericFunction)printLightf },
+    { "Lightfv", (SPUGenericFunction)printLightfv },
+    { "Lighti", (SPUGenericFunction)printLighti },
+    { "Lightiv", (SPUGenericFunction)printLightiv },
+    { "LineStipple", (SPUGenericFunction)printLineStipple },
+    { "LineWidth", (SPUGenericFunction)printLineWidth },
+    { "ListBase", (SPUGenericFunction)printListBase },
+    { "LoadIdentity", (SPUGenericFunction)printLoadIdentity },
+    { "LoadMatrixd", (SPUGenericFunction)printLoadMatrixd },
+    { "LoadMatrixf", (SPUGenericFunction)printLoadMatrixf },
+    { "LoadName", (SPUGenericFunction)printLoadName },
+    { "LoadProgramNV", (SPUGenericFunction)printLoadProgramNV },
+    { "LoadTransposeMatrixdARB", (SPUGenericFunction)printLoadTransposeMatrixdARB },
+    { "LoadTransposeMatrixfARB", (SPUGenericFunction)printLoadTransposeMatrixfARB },
+    { "LogicOp", (SPUGenericFunction)printLogicOp },
+    { "MakeCurrent", (SPUGenericFunction)printMakeCurrent },
+    { "Map1d", (SPUGenericFunction)printMap1d },
+    { "Map1f", (SPUGenericFunction)printMap1f },
+    { "Map2d", (SPUGenericFunction)printMap2d },
+    { "Map2f", (SPUGenericFunction)printMap2f },
+    { "MapBufferARB", (SPUGenericFunction)printMapBufferARB },
+    { "MapGrid1d", (SPUGenericFunction)printMapGrid1d },
+    { "MapGrid1f", (SPUGenericFunction)printMapGrid1f },
+    { "MapGrid2d", (SPUGenericFunction)printMapGrid2d },
+    { "MapGrid2f", (SPUGenericFunction)printMapGrid2f },
+    { "Materialf", (SPUGenericFunction)printMaterialf },
+    { "Materialfv", (SPUGenericFunction)printMaterialfv },
+    { "Materiali", (SPUGenericFunction)printMateriali },
+    { "Materialiv", (SPUGenericFunction)printMaterialiv },
+    { "MatrixMode", (SPUGenericFunction)printMatrixMode },
+    { "MultMatrixd", (SPUGenericFunction)printMultMatrixd },
+    { "MultMatrixf", (SPUGenericFunction)printMultMatrixf },
+    { "MultTransposeMatrixdARB", (SPUGenericFunction)printMultTransposeMatrixdARB },
+    { "MultTransposeMatrixfARB", (SPUGenericFunction)printMultTransposeMatrixfARB },
+    { "MultiDrawArraysEXT", (SPUGenericFunction)printMultiDrawArraysEXT },
+    { "MultiDrawElementsEXT", (SPUGenericFunction)printMultiDrawElementsEXT },
+    { "MultiTexCoord1dARB", (SPUGenericFunction)printMultiTexCoord1dARB },
+    { "MultiTexCoord1dvARB", (SPUGenericFunction)printMultiTexCoord1dvARB },
+    { "MultiTexCoord1fARB", (SPUGenericFunction)printMultiTexCoord1fARB },
+    { "MultiTexCoord1fvARB", (SPUGenericFunction)printMultiTexCoord1fvARB },
+    { "MultiTexCoord1iARB", (SPUGenericFunction)printMultiTexCoord1iARB },
+    { "MultiTexCoord1ivARB", (SPUGenericFunction)printMultiTexCoord1ivARB },
+    { "MultiTexCoord1sARB", (SPUGenericFunction)printMultiTexCoord1sARB },
+    { "MultiTexCoord1svARB", (SPUGenericFunction)printMultiTexCoord1svARB },
+    { "MultiTexCoord2dARB", (SPUGenericFunction)printMultiTexCoord2dARB },
+    { "MultiTexCoord2dvARB", (SPUGenericFunction)printMultiTexCoord2dvARB },
+    { "MultiTexCoord2fARB", (SPUGenericFunction)printMultiTexCoord2fARB },
+    { "MultiTexCoord2fvARB", (SPUGenericFunction)printMultiTexCoord2fvARB },
+    { "MultiTexCoord2iARB", (SPUGenericFunction)printMultiTexCoord2iARB },
+    { "MultiTexCoord2ivARB", (SPUGenericFunction)printMultiTexCoord2ivARB },
+    { "MultiTexCoord2sARB", (SPUGenericFunction)printMultiTexCoord2sARB },
+    { "MultiTexCoord2svARB", (SPUGenericFunction)printMultiTexCoord2svARB },
+    { "MultiTexCoord3dARB", (SPUGenericFunction)printMultiTexCoord3dARB },
+    { "MultiTexCoord3dvARB", (SPUGenericFunction)printMultiTexCoord3dvARB },
+    { "MultiTexCoord3fARB", (SPUGenericFunction)printMultiTexCoord3fARB },
+    { "MultiTexCoord3fvARB", (SPUGenericFunction)printMultiTexCoord3fvARB },
+    { "MultiTexCoord3iARB", (SPUGenericFunction)printMultiTexCoord3iARB },
+    { "MultiTexCoord3ivARB", (SPUGenericFunction)printMultiTexCoord3ivARB },
+    { "MultiTexCoord3sARB", (SPUGenericFunction)printMultiTexCoord3sARB },
+    { "MultiTexCoord3svARB", (SPUGenericFunction)printMultiTexCoord3svARB },
+    { "MultiTexCoord4dARB", (SPUGenericFunction)printMultiTexCoord4dARB },
+    { "MultiTexCoord4dvARB", (SPUGenericFunction)printMultiTexCoord4dvARB },
+    { "MultiTexCoord4fARB", (SPUGenericFunction)printMultiTexCoord4fARB },
+    { "MultiTexCoord4fvARB", (SPUGenericFunction)printMultiTexCoord4fvARB },
+    { "MultiTexCoord4iARB", (SPUGenericFunction)printMultiTexCoord4iARB },
+    { "MultiTexCoord4ivARB", (SPUGenericFunction)printMultiTexCoord4ivARB },
+    { "MultiTexCoord4sARB", (SPUGenericFunction)printMultiTexCoord4sARB },
+    { "MultiTexCoord4svARB", (SPUGenericFunction)printMultiTexCoord4svARB },
+    { "NewList", (SPUGenericFunction)printNewList },
+    { "Normal3b", (SPUGenericFunction)printNormal3b },
+    { "Normal3bv", (SPUGenericFunction)printNormal3bv },
+    { "Normal3d", (SPUGenericFunction)printNormal3d },
+    { "Normal3dv", (SPUGenericFunction)printNormal3dv },
+    { "Normal3f", (SPUGenericFunction)printNormal3f },
+    { "Normal3fv", (SPUGenericFunction)printNormal3fv },
+    { "Normal3i", (SPUGenericFunction)printNormal3i },
+    { "Normal3iv", (SPUGenericFunction)printNormal3iv },
+    { "Normal3s", (SPUGenericFunction)printNormal3s },
+    { "Normal3sv", (SPUGenericFunction)printNormal3sv },
+    { "NormalPointer", (SPUGenericFunction)printNormalPointer },
+    { "Ortho", (SPUGenericFunction)printOrtho },
+    { "PassThrough", (SPUGenericFunction)printPassThrough },
+    { "PixelMapfv", (SPUGenericFunction)printPixelMapfv },
+    { "PixelMapuiv", (SPUGenericFunction)printPixelMapuiv },
+    { "PixelMapusv", (SPUGenericFunction)printPixelMapusv },
+    { "PixelStoref", (SPUGenericFunction)printPixelStoref },
+    { "PixelStorei", (SPUGenericFunction)printPixelStorei },
+    { "PixelTransferf", (SPUGenericFunction)printPixelTransferf },
+    { "PixelTransferi", (SPUGenericFunction)printPixelTransferi },
+    { "PixelZoom", (SPUGenericFunction)printPixelZoom },
+    { "PointParameterfARB", (SPUGenericFunction)printPointParameterfARB },
+    { "PointParameterfvARB", (SPUGenericFunction)printPointParameterfvARB },
+    { "PointParameteri", (SPUGenericFunction)printPointParameteri },
+    { "PointParameteriv", (SPUGenericFunction)printPointParameteriv },
+    { "PointSize", (SPUGenericFunction)printPointSize },
+    { "PolygonMode", (SPUGenericFunction)printPolygonMode },
+    { "PolygonOffset", (SPUGenericFunction)printPolygonOffset },
+    { "PolygonStipple", (SPUGenericFunction)printPolygonStipple },
+    { "PopAttrib", (SPUGenericFunction)printPopAttrib },
+    { "PopClientAttrib", (SPUGenericFunction)printPopClientAttrib },
+    { "PopMatrix", (SPUGenericFunction)printPopMatrix },
+    { "PopName", (SPUGenericFunction)printPopName },
+    { "PrioritizeTextures", (SPUGenericFunction)printPrioritizeTextures },
+    { "ProgramEnvParameter4dARB", (SPUGenericFunction)printProgramEnvParameter4dARB },
+    { "ProgramEnvParameter4dvARB", (SPUGenericFunction)printProgramEnvParameter4dvARB },
+    { "ProgramEnvParameter4fARB", (SPUGenericFunction)printProgramEnvParameter4fARB },
+    { "ProgramEnvParameter4fvARB", (SPUGenericFunction)printProgramEnvParameter4fvARB },
+    { "ProgramLocalParameter4dARB", (SPUGenericFunction)printProgramLocalParameter4dARB },
+    { "ProgramLocalParameter4dvARB", (SPUGenericFunction)printProgramLocalParameter4dvARB },
+    { "ProgramLocalParameter4fARB", (SPUGenericFunction)printProgramLocalParameter4fARB },
+    { "ProgramLocalParameter4fvARB", (SPUGenericFunction)printProgramLocalParameter4fvARB },
+    { "ProgramNamedParameter4dNV", (SPUGenericFunction)printProgramNamedParameter4dNV },
+    { "ProgramNamedParameter4dvNV", (SPUGenericFunction)printProgramNamedParameter4dvNV },
+    { "ProgramNamedParameter4fNV", (SPUGenericFunction)printProgramNamedParameter4fNV },
+    { "ProgramNamedParameter4fvNV", (SPUGenericFunction)printProgramNamedParameter4fvNV },
+    { "ProgramParameter4dNV", (SPUGenericFunction)printProgramParameter4dNV },
+    { "ProgramParameter4dvNV", (SPUGenericFunction)printProgramParameter4dvNV },
+    { "ProgramParameter4fNV", (SPUGenericFunction)printProgramParameter4fNV },
+    { "ProgramParameter4fvNV", (SPUGenericFunction)printProgramParameter4fvNV },
+    { "ProgramParameters4dvNV", (SPUGenericFunction)printProgramParameters4dvNV },
+    { "ProgramParameters4fvNV", (SPUGenericFunction)printProgramParameters4fvNV },
+    { "ProgramStringARB", (SPUGenericFunction)printProgramStringARB },
+    { "PushAttrib", (SPUGenericFunction)printPushAttrib },
+    { "PushClientAttrib", (SPUGenericFunction)printPushClientAttrib },
+    { "PushMatrix", (SPUGenericFunction)printPushMatrix },
+    { "PushName", (SPUGenericFunction)printPushName },
+    { "RasterPos2d", (SPUGenericFunction)printRasterPos2d },
+    { "RasterPos2dv", (SPUGenericFunction)printRasterPos2dv },
+    { "RasterPos2f", (SPUGenericFunction)printRasterPos2f },
+    { "RasterPos2fv", (SPUGenericFunction)printRasterPos2fv },
+    { "RasterPos2i", (SPUGenericFunction)printRasterPos2i },
+    { "RasterPos2iv", (SPUGenericFunction)printRasterPos2iv },
+    { "RasterPos2s", (SPUGenericFunction)printRasterPos2s },
+    { "RasterPos2sv", (SPUGenericFunction)printRasterPos2sv },
+    { "RasterPos3d", (SPUGenericFunction)printRasterPos3d },
+    { "RasterPos3dv", (SPUGenericFunction)printRasterPos3dv },
+    { "RasterPos3f", (SPUGenericFunction)printRasterPos3f },
+    { "RasterPos3fv", (SPUGenericFunction)printRasterPos3fv },
+    { "RasterPos3i", (SPUGenericFunction)printRasterPos3i },
+    { "RasterPos3iv", (SPUGenericFunction)printRasterPos3iv },
+    { "RasterPos3s", (SPUGenericFunction)printRasterPos3s },
+    { "RasterPos3sv", (SPUGenericFunction)printRasterPos3sv },
+    { "RasterPos4d", (SPUGenericFunction)printRasterPos4d },
+    { "RasterPos4dv", (SPUGenericFunction)printRasterPos4dv },
+    { "RasterPos4f", (SPUGenericFunction)printRasterPos4f },
+    { "RasterPos4fv", (SPUGenericFunction)printRasterPos4fv },
+    { "RasterPos4i", (SPUGenericFunction)printRasterPos4i },
+    { "RasterPos4iv", (SPUGenericFunction)printRasterPos4iv },
+    { "RasterPos4s", (SPUGenericFunction)printRasterPos4s },
+    { "RasterPos4sv", (SPUGenericFunction)printRasterPos4sv },
+    { "ReadBuffer", (SPUGenericFunction)printReadBuffer },
+    { "ReadPixels", (SPUGenericFunction)printReadPixels },
+    { "Rectd", (SPUGenericFunction)printRectd },
+    { "Rectdv", (SPUGenericFunction)printRectdv },
+    { "Rectf", (SPUGenericFunction)printRectf },
+    { "Rectfv", (SPUGenericFunction)printRectfv },
+    { "Recti", (SPUGenericFunction)printRecti },
+    { "Rectiv", (SPUGenericFunction)printRectiv },
+    { "Rects", (SPUGenericFunction)printRects },
+    { "Rectsv", (SPUGenericFunction)printRectsv },
+    { "RenderMode", (SPUGenericFunction)printRenderMode },
+    { "RequestResidentProgramsNV", (SPUGenericFunction)printRequestResidentProgramsNV },
+    { "Rotated", (SPUGenericFunction)printRotated },
+    { "Rotatef", (SPUGenericFunction)printRotatef },
+    { "SampleCoverageARB", (SPUGenericFunction)printSampleCoverageARB },
+    { "Scaled", (SPUGenericFunction)printScaled },
+    { "Scalef", (SPUGenericFunction)printScalef },
+    { "Scissor", (SPUGenericFunction)printScissor },
+    { "SecondaryColor3bEXT", (SPUGenericFunction)printSecondaryColor3bEXT },
+    { "SecondaryColor3bvEXT", (SPUGenericFunction)printSecondaryColor3bvEXT },
+    { "SecondaryColor3dEXT", (SPUGenericFunction)printSecondaryColor3dEXT },
+    { "SecondaryColor3dvEXT", (SPUGenericFunction)printSecondaryColor3dvEXT },
+    { "SecondaryColor3fEXT", (SPUGenericFunction)printSecondaryColor3fEXT },
+    { "SecondaryColor3fvEXT", (SPUGenericFunction)printSecondaryColor3fvEXT },
+    { "SecondaryColor3iEXT", (SPUGenericFunction)printSecondaryColor3iEXT },
+    { "SecondaryColor3ivEXT", (SPUGenericFunction)printSecondaryColor3ivEXT },
+    { "SecondaryColor3sEXT", (SPUGenericFunction)printSecondaryColor3sEXT },
+    { "SecondaryColor3svEXT", (SPUGenericFunction)printSecondaryColor3svEXT },
+    { "SecondaryColor3ubEXT", (SPUGenericFunction)printSecondaryColor3ubEXT },
+    { "SecondaryColor3ubvEXT", (SPUGenericFunction)printSecondaryColor3ubvEXT },
+    { "SecondaryColor3uiEXT", (SPUGenericFunction)printSecondaryColor3uiEXT },
+    { "SecondaryColor3uivEXT", (SPUGenericFunction)printSecondaryColor3uivEXT },
+    { "SecondaryColor3usEXT", (SPUGenericFunction)printSecondaryColor3usEXT },
+    { "SecondaryColor3usvEXT", (SPUGenericFunction)printSecondaryColor3usvEXT },
+    { "SecondaryColorPointerEXT", (SPUGenericFunction)printSecondaryColorPointerEXT },
+    { "SelectBuffer", (SPUGenericFunction)printSelectBuffer },
+    { "SemaphoreCreateCR", (SPUGenericFunction)printSemaphoreCreateCR },
+    { "SemaphoreDestroyCR", (SPUGenericFunction)printSemaphoreDestroyCR },
+    { "SemaphorePCR", (SPUGenericFunction)printSemaphorePCR },
+    { "SemaphoreVCR", (SPUGenericFunction)printSemaphoreVCR },
+    { "SetFenceNV", (SPUGenericFunction)printSetFenceNV },
+    { "ShadeModel", (SPUGenericFunction)printShadeModel },
+    { "StencilFunc", (SPUGenericFunction)printStencilFunc },
+    { "StencilMask", (SPUGenericFunction)printStencilMask },
+    { "StencilOp", (SPUGenericFunction)printStencilOp },
+    { "SwapBuffers", (SPUGenericFunction)printSwapBuffers },
+    { "TestFenceNV", (SPUGenericFunction)printTestFenceNV },
+    { "TexCoord1d", (SPUGenericFunction)printTexCoord1d },
+    { "TexCoord1dv", (SPUGenericFunction)printTexCoord1dv },
+    { "TexCoord1f", (SPUGenericFunction)printTexCoord1f },
+    { "TexCoord1fv", (SPUGenericFunction)printTexCoord1fv },
+    { "TexCoord1i", (SPUGenericFunction)printTexCoord1i },
+    { "TexCoord1iv", (SPUGenericFunction)printTexCoord1iv },
+    { "TexCoord1s", (SPUGenericFunction)printTexCoord1s },
+    { "TexCoord1sv", (SPUGenericFunction)printTexCoord1sv },
+    { "TexCoord2d", (SPUGenericFunction)printTexCoord2d },
+    { "TexCoord2dv", (SPUGenericFunction)printTexCoord2dv },
+    { "TexCoord2f", (SPUGenericFunction)printTexCoord2f },
+    { "TexCoord2fv", (SPUGenericFunction)printTexCoord2fv },
+    { "TexCoord2i", (SPUGenericFunction)printTexCoord2i },
+    { "TexCoord2iv", (SPUGenericFunction)printTexCoord2iv },
+    { "TexCoord2s", (SPUGenericFunction)printTexCoord2s },
+    { "TexCoord2sv", (SPUGenericFunction)printTexCoord2sv },
+    { "TexCoord3d", (SPUGenericFunction)printTexCoord3d },
+    { "TexCoord3dv", (SPUGenericFunction)printTexCoord3dv },
+    { "TexCoord3f", (SPUGenericFunction)printTexCoord3f },
+    { "TexCoord3fv", (SPUGenericFunction)printTexCoord3fv },
+    { "TexCoord3i", (SPUGenericFunction)printTexCoord3i },
+    { "TexCoord3iv", (SPUGenericFunction)printTexCoord3iv },
+    { "TexCoord3s", (SPUGenericFunction)printTexCoord3s },
+    { "TexCoord3sv", (SPUGenericFunction)printTexCoord3sv },
+    { "TexCoord4d", (SPUGenericFunction)printTexCoord4d },
+    { "TexCoord4dv", (SPUGenericFunction)printTexCoord4dv },
+    { "TexCoord4f", (SPUGenericFunction)printTexCoord4f },
+    { "TexCoord4fv", (SPUGenericFunction)printTexCoord4fv },
+    { "TexCoord4i", (SPUGenericFunction)printTexCoord4i },
+    { "TexCoord4iv", (SPUGenericFunction)printTexCoord4iv },
+    { "TexCoord4s", (SPUGenericFunction)printTexCoord4s },
+    { "TexCoord4sv", (SPUGenericFunction)printTexCoord4sv },
+    { "TexCoordPointer", (SPUGenericFunction)printTexCoordPointer },
+    { "TexEnvf", (SPUGenericFunction)printTexEnvf },
+    { "TexEnvfv", (SPUGenericFunction)printTexEnvfv },
+    { "TexEnvi", (SPUGenericFunction)printTexEnvi },
+    { "TexEnviv", (SPUGenericFunction)printTexEnviv },
+    { "TexGend", (SPUGenericFunction)printTexGend },
+    { "TexGendv", (SPUGenericFunction)printTexGendv },
+    { "TexGenf", (SPUGenericFunction)printTexGenf },
+    { "TexGenfv", (SPUGenericFunction)printTexGenfv },
+    { "TexGeni", (SPUGenericFunction)printTexGeni },
+    { "TexGeniv", (SPUGenericFunction)printTexGeniv },
+    { "TexImage1D", (SPUGenericFunction)printTexImage1D },
+    { "TexImage2D", (SPUGenericFunction)printTexImage2D },
+    { "TexImage3D", (SPUGenericFunction)printTexImage3D },
+    { "TexImage3DEXT", (SPUGenericFunction)printTexImage3DEXT },
+    { "TexParameterf", (SPUGenericFunction)printTexParameterf },
+    { "TexParameterfv", (SPUGenericFunction)printTexParameterfv },
+    { "TexParameteri", (SPUGenericFunction)printTexParameteri },
+    { "TexParameteriv", (SPUGenericFunction)printTexParameteriv },
+    { "TexSubImage1D", (SPUGenericFunction)printTexSubImage1D },
+    { "TexSubImage2D", (SPUGenericFunction)printTexSubImage2D },
+    { "TexSubImage3D", (SPUGenericFunction)printTexSubImage3D },
+    { "TrackMatrixNV", (SPUGenericFunction)printTrackMatrixNV },
+    { "Translated", (SPUGenericFunction)printTranslated },
+    { "Translatef", (SPUGenericFunction)printTranslatef },
+    { "UnmapBufferARB", (SPUGenericFunction)printUnmapBufferARB },
+    { "Vertex2d", (SPUGenericFunction)printVertex2d },
+    { "Vertex2dv", (SPUGenericFunction)printVertex2dv },
+    { "Vertex2f", (SPUGenericFunction)printVertex2f },
+    { "Vertex2fv", (SPUGenericFunction)printVertex2fv },
+    { "Vertex2i", (SPUGenericFunction)printVertex2i },
+    { "Vertex2iv", (SPUGenericFunction)printVertex2iv },
+    { "Vertex2s", (SPUGenericFunction)printVertex2s },
+    { "Vertex2sv", (SPUGenericFunction)printVertex2sv },
+    { "Vertex3d", (SPUGenericFunction)printVertex3d },
+    { "Vertex3dv", (SPUGenericFunction)printVertex3dv },
+    { "Vertex3f", (SPUGenericFunction)printVertex3f },
+    { "Vertex3fv", (SPUGenericFunction)printVertex3fv },
+    { "Vertex3i", (SPUGenericFunction)printVertex3i },
+    { "Vertex3iv", (SPUGenericFunction)printVertex3iv },
+    { "Vertex3s", (SPUGenericFunction)printVertex3s },
+    { "Vertex3sv", (SPUGenericFunction)printVertex3sv },
+    { "Vertex4d", (SPUGenericFunction)printVertex4d },
+    { "Vertex4dv", (SPUGenericFunction)printVertex4dv },
+    { "Vertex4f", (SPUGenericFunction)printVertex4f },
+    { "Vertex4fv", (SPUGenericFunction)printVertex4fv },
+    { "Vertex4i", (SPUGenericFunction)printVertex4i },
+    { "Vertex4iv", (SPUGenericFunction)printVertex4iv },
+    { "Vertex4s", (SPUGenericFunction)printVertex4s },
+    { "Vertex4sv", (SPUGenericFunction)printVertex4sv },
+    { "g_vertexArrayRangeNV", (SPUGenericFunction)printg_vertexArrayRangeNV },
+    { "VertexAttrib1dARB", (SPUGenericFunction)printVertexAttrib1dARB },
+    { "VertexAttrib1dvARB", (SPUGenericFunction)printVertexAttrib1dvARB },
+    { "VertexAttrib1fARB", (SPUGenericFunction)printVertexAttrib1fARB },
+    { "VertexAttrib1fvARB", (SPUGenericFunction)printVertexAttrib1fvARB },
+    { "VertexAttrib1sARB", (SPUGenericFunction)printVertexAttrib1sARB },
+    { "VertexAttrib1svARB", (SPUGenericFunction)printVertexAttrib1svARB },
+    { "VertexAttrib2dARB", (SPUGenericFunction)printVertexAttrib2dARB },
+    { "VertexAttrib2dvARB", (SPUGenericFunction)printVertexAttrib2dvARB },
+    { "VertexAttrib2fARB", (SPUGenericFunction)printVertexAttrib2fARB },
+    { "VertexAttrib2fvARB", (SPUGenericFunction)printVertexAttrib2fvARB },
+    { "VertexAttrib2sARB", (SPUGenericFunction)printVertexAttrib2sARB },
+    { "VertexAttrib2svARB", (SPUGenericFunction)printVertexAttrib2svARB },
+    { "VertexAttrib3dARB", (SPUGenericFunction)printVertexAttrib3dARB },
+    { "VertexAttrib3dvARB", (SPUGenericFunction)printVertexAttrib3dvARB },
+    { "VertexAttrib3fARB", (SPUGenericFunction)printVertexAttrib3fARB },
+    { "VertexAttrib3fvARB", (SPUGenericFunction)printVertexAttrib3fvARB },
+    { "VertexAttrib3sARB", (SPUGenericFunction)printVertexAttrib3sARB },
+    { "VertexAttrib3svARB", (SPUGenericFunction)printVertexAttrib3svARB },
+    { "VertexAttrib4NbvARB", (SPUGenericFunction)printVertexAttrib4NbvARB },
+    { "VertexAttrib4NivARB", (SPUGenericFunction)printVertexAttrib4NivARB },
+    { "VertexAttrib4NsvARB", (SPUGenericFunction)printVertexAttrib4NsvARB },
+    { "VertexAttrib4NubARB", (SPUGenericFunction)printVertexAttrib4NubARB },
+    { "VertexAttrib4NubvARB", (SPUGenericFunction)printVertexAttrib4NubvARB },
+    { "VertexAttrib4NuivARB", (SPUGenericFunction)printVertexAttrib4NuivARB },
+    { "VertexAttrib4NusvARB", (SPUGenericFunction)printVertexAttrib4NusvARB },
+    { "VertexAttrib4bvARB", (SPUGenericFunction)printVertexAttrib4bvARB },
+    { "VertexAttrib4dARB", (SPUGenericFunction)printVertexAttrib4dARB },
+    { "VertexAttrib4dvARB", (SPUGenericFunction)printVertexAttrib4dvARB },
+    { "VertexAttrib4fARB", (SPUGenericFunction)printVertexAttrib4fARB },
+    { "VertexAttrib4fvARB", (SPUGenericFunction)printVertexAttrib4fvARB },
+    { "VertexAttrib4ivARB", (SPUGenericFunction)printVertexAttrib4ivARB },
+    { "VertexAttrib4sARB", (SPUGenericFunction)printVertexAttrib4sARB },
+    { "VertexAttrib4svARB", (SPUGenericFunction)printVertexAttrib4svARB },
+    { "VertexAttrib4ubvARB", (SPUGenericFunction)printVertexAttrib4ubvARB },
+    { "VertexAttrib4uivARB", (SPUGenericFunction)printVertexAttrib4uivARB },
+    { "VertexAttrib4usvARB", (SPUGenericFunction)printVertexAttrib4usvARB },
+    { "VertexAttribPointerARB", (SPUGenericFunction)printVertexAttribPointerARB },
+    { "VertexAttribPointerNV", (SPUGenericFunction)printVertexAttribPointerNV },
+    { "VertexAttribs1dvNV", (SPUGenericFunction)printVertexAttribs1dvNV },
+    { "VertexAttribs1fvNV", (SPUGenericFunction)printVertexAttribs1fvNV },
+    { "VertexAttribs1svNV", (SPUGenericFunction)printVertexAttribs1svNV },
+    { "VertexAttribs2dvNV", (SPUGenericFunction)printVertexAttribs2dvNV },
+    { "VertexAttribs2fvNV", (SPUGenericFunction)printVertexAttribs2fvNV },
+    { "VertexAttribs2svNV", (SPUGenericFunction)printVertexAttribs2svNV },
+    { "VertexAttribs3dvNV", (SPUGenericFunction)printVertexAttribs3dvNV },
+    { "VertexAttribs3fvNV", (SPUGenericFunction)printVertexAttribs3fvNV },
+    { "VertexAttribs3svNV", (SPUGenericFunction)printVertexAttribs3svNV },
+    { "VertexAttribs4dvNV", (SPUGenericFunction)printVertexAttribs4dvNV },
+    { "VertexAttribs4fvNV", (SPUGenericFunction)printVertexAttribs4fvNV },
+    { "VertexAttribs4svNV", (SPUGenericFunction)printVertexAttribs4svNV },
+    { "VertexAttribs4ubvNV", (SPUGenericFunction)printVertexAttribs4ubvNV },
+    { "VertexPointer", (SPUGenericFunction)printVertexPointer },
+    { "Viewport", (SPUGenericFunction)printViewport },
+    { "WindowCreate", (SPUGenericFunction)printWindowCreate },
+    { "WindowDestroy", (SPUGenericFunction)printWindowDestroy },
+    { "WindowPos2dARB", (SPUGenericFunction)printWindowPos2dARB },
+    { "WindowPos2dvARB", (SPUGenericFunction)printWindowPos2dvARB },
+    { "WindowPos2fARB", (SPUGenericFunction)printWindowPos2fARB },
+    { "WindowPos2fvARB", (SPUGenericFunction)printWindowPos2fvARB },
+    { "WindowPos2iARB", (SPUGenericFunction)printWindowPos2iARB },
+    { "WindowPos2ivARB", (SPUGenericFunction)printWindowPos2ivARB },
+    { "WindowPos2sARB", (SPUGenericFunction)printWindowPos2sARB },
+    { "WindowPos2svARB", (SPUGenericFunction)printWindowPos2svARB },
+    { "WindowPos3dARB", (SPUGenericFunction)printWindowPos3dARB },
+    { "WindowPos3dvARB", (SPUGenericFunction)printWindowPos3dvARB },
+    { "WindowPos3fARB", (SPUGenericFunction)printWindowPos3fARB },
+    { "WindowPos3fvARB", (SPUGenericFunction)printWindowPos3fvARB },
+    { "WindowPos3iARB", (SPUGenericFunction)printWindowPos3iARB },
+    { "WindowPos3ivARB", (SPUGenericFunction)printWindowPos3ivARB },
+    { "WindowPos3sARB", (SPUGenericFunction)printWindowPos3sARB },
+    { "WindowPos3svARB", (SPUGenericFunction)printWindowPos3svARB },
+    { "WindowPosition", (SPUGenericFunction)printWindowPosition },
+    { "WindowShow", (SPUGenericFunction)printWindowShow },
+    { "WindowSize", (SPUGenericFunction)printWindowSize },
+    { "Writeback", (SPUGenericFunction)printWriteback },
+    { "ZPixCR", (SPUGenericFunction)printZPixCR },
+    { NULL, NULL }
 };
