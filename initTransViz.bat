@@ -25,7 +25,7 @@ set REVIEW_BIN=%REVIEW_DIR%\bin
 
 :: set Catia API libraries
 set CatiaCppApi_DIR=%OSSROOT%\CatiaCppApi
-set CatiaCppApi_BIN=%CATIACPPAPI_DIR%\bin
+set CatiaCppApi_BIN=%CatiaCppApi_DIR%\bin
 
 :: add external DLLs to the PATH
 :: dynamic libs paths
