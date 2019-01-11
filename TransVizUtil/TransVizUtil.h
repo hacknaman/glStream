@@ -45,6 +45,12 @@ namespace TransVizUtil{
     protected:
     };
 
+    class TransVizNodeUpdateCB
+    {
+    public:
+        virtual void TransVizNodeCallBack(osg::ref_ptr<osg::Node> node) = 0;
+    };
+
     class TRANSVIZ_UTIL_DLL_EXPORT TransVizUtil : public osg::Referenced{
     public:
         TransVizUtil();
@@ -83,6 +89,10 @@ namespace TransVizUtil{
         // return the version of TransViz API
         std::string getTransvizVersion();
 
+        void setNodeUpdateCallBack(TransVizNodeUpdateCB* cb) {
+            _TransVizNodeUpdateCB = cb;
+        }
+
     private:
 
         // root Node for the Scene , This Root Node will be used by GraphicsWindowViewer as the sceneData
@@ -96,6 +106,8 @@ namespace TransVizUtil{
         bool _bIsNodeDirty;
 
         TransVizServerThread* _thread;
+
+        TransVizNodeUpdateCB* _TransVizNodeUpdateCB;
 
         std::string _hostname;
         std::string _port;

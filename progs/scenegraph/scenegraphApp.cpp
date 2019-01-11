@@ -8,6 +8,8 @@
 #include <osgDB/Export>
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
+#include <osg/LineWidth>
+
 #include <osgGA/FirstPersonManipulator>
 #include <osgGA/StateSetManipulator>
 #include <osgGA/GUIEventAdapter>
@@ -77,7 +79,7 @@ public:
 
 	void mousePick(osgViewer::View* view, const osgGA::GUIEventAdapter& ea, osg::Vec3d startPoint, osg::Vec3d endPoint)
 	{
-
+        return;
 		osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector = new osgUtil::LineSegmentIntersector(startPoint, endPoint);
 		if (intersector)
 		{
@@ -99,19 +101,113 @@ public:
 	}
 };
 
+class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
+    void TransVizNodeCallBack(osg::ref_ptr<osg::Node> node)
+    {
+        std::cout << "Model Updated!!!" << std::endl;
+    }
+};
+
 
 
 int main(int argc, char* argv[]) {
 
     system("pause");
 
+    TVizcallback cb;
+
     osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator = new TransVizUtil::TransVizUtil();
 	rootGroup = new osg::Group();
 	SceneGraphGenerator->setRootNode(rootGroup);
+    SceneGraphGenerator->setNodeUpdateCallBack((TransVizUtil::TransVizNodeUpdateCB*)&cb);
 
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer();
 
 	viewer->addEventHandler(new SCAppEventHandler());
+
+    // Test Model
+    // TEst axis
+    osg::ref_ptr<osg::Geode> beamGeode = new osg::Geode;
+
+    osg::Vec3d startPoint = osg::Vec3d(0, 0, 0);
+    osg::Vec3d endPoint_x = osg::Vec3d(100, 0, 0);
+    osg::Vec3d endPoint_y = osg::Vec3d(0, 100, 0);
+    osg::Vec3d endPoint_z = osg::Vec3d(0, 0, 100);
+
+    osg::ref_ptr<osg::Geometry> beam_x = new osg::Geometry;
+    osg::ref_ptr<osg::Geometry> beam_y = new osg::Geometry;
+    osg::ref_ptr<osg::Geometry> beam_z = new osg::Geometry;
+
+    osg::ref_ptr<osg::Vec3Array> linePoints_x = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> linePoints_y = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> linePoints_z = new osg::Vec3Array;
+
+    linePoints_x->push_back(startPoint);
+    linePoints_x->push_back(endPoint_x);
+
+    linePoints_y->push_back(startPoint);
+    linePoints_y->push_back(endPoint_y);
+
+    linePoints_z->push_back(startPoint);
+    linePoints_z->push_back(endPoint_z);
+
+    osg::ref_ptr<osg::Vec4Array> color_x = new osg::Vec4Array;
+    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+
+    osg::ref_ptr<osg::Vec4Array> color_y = new osg::Vec4Array;
+    color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
+    color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
+
+    osg::ref_ptr<osg::Vec4Array> color_z = new osg::Vec4Array;
+    color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+    color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+
+    beam_x->setVertexArray(linePoints_x.get());
+    beam_x->setColorArray(color_x.get());
+    beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+
+    beam_y->setVertexArray(linePoints_y.get());
+    beam_y->setColorArray(color_y.get());
+    beam_y->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+
+    beam_z->setVertexArray(linePoints_z.get());
+    beam_z->setColorArray(color_z.get());
+    beam_z->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+
+    osg::StateSet* state = beam_x->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::ref_ptr<osg::LineWidth> linewidth_x = new osg::LineWidth();
+    linewidth_x->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
+
+    state = beam_y->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::ref_ptr<osg::LineWidth> linewidth_y = new osg::LineWidth();
+    linewidth_y->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_y, osg::StateAttribute::OVERRIDE);
+
+    state = beam_z->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::ref_ptr<osg::LineWidth> linewidth_z = new osg::LineWidth();
+    linewidth_z->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_z, osg::StateAttribute::OVERRIDE);
+
+    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+
+    state->setMode(GL_BLEND, osg::StateAttribute::ON);
+    state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
+
+    beamGeode->addChild(beam_x);
+    beamGeode->addChild(beam_y);
+    beamGeode->addChild(beam_z);
+
+    rootGroup->addChild(beamGeode);
 
 	// Test Model
 	rootGroup->addChild(osgDB::readNodeFile("C:/Project/TransViz/TestData/axes.osgt"));    // This won't crash the program. if the file isn't found.
@@ -148,7 +244,8 @@ int main(int argc, char* argv[]) {
         light->setAmbient(osg::Vec4(0, 0, 0, 1));
         light->setDiffuse(osg::Vec4(0, 0, 0, 1));
         light->setSpecular(osg::Vec4(0, 0, 0, 1));
-    }*/
+    }
+    */
 
 	// OSG window settings
 	osgViewer::Viewer::Windows ViewerWindow;
@@ -160,9 +257,9 @@ int main(int argc, char* argv[]) {
 
 	SceneGraphGenerator->run();
 
-    SceneGraphGenerator->setBaseScale( osg::Vec3d(2.0, 2.0, 2.0) );
-    SceneGraphGenerator->setBaseRotation( osg::Vec3d(0.0, 45.0, 0) );
-    SceneGraphGenerator->setBasePosition( osg::Vec3d(0.0, 45.0, 0) );
+    // SceneGraphGenerator->setBaseScale( osg::Vec3d(1.0, 1.0, 1.0) );
+    // SceneGraphGenerator->setBaseRotation( osg::Vec3d(0.0, 45.0, 0) );
+    // SceneGraphGenerator->setBasePosition( osg::Vec3d(0.0, 45.0, 0) );
 
     std::string mothership = "localhost";
 

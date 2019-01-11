@@ -25,6 +25,7 @@ namespace TransVizUtil{
             if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
             {
                 _util->iSPU->getUpdatedScene();
+                Sleep(100);
             }
 
             if ((GetKeyState('Y') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
@@ -66,7 +67,8 @@ namespace TransVizUtil{
 		_newNode(NULL),
 		_bIsNodeDirty(false),
 		_isconnected(false),
-        _basePat(new osg::PositionAttitudeTransform)
+        _basePat(new osg::PositionAttitudeTransform),
+        _TransVizNodeUpdateCB(NULL)
     {
         _hostname = "localhost";
         _port = "7000";
@@ -112,6 +114,11 @@ namespace TransVizUtil{
 
             _oldNode = newGroup;
             _oldNode->setName("TransVizGroup");
+
+            if (_TransVizNodeUpdateCB)
+            {
+                _TransVizNodeUpdateCB->TransVizNodeCallBack(newGroup);
+            }
         }
 
         _bIsNodeDirty = false;
