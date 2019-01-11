@@ -3,6 +3,7 @@
 #this command will set CatiaCppApi library inclde files path in variable CatiaCppApi_INCLUDE_DIR.if specified .h file found
 FIND_PATH(CatiaCppApi_INCLUDE_DIR CatiaLibCPPAdapter.h 
 								  $ENV{CatiaCppApi_DIR}/include 
+								  ${CatiaCppApi_DIR}/include
 								  NO_DEFAULT_PATH
 								  
 		  )
@@ -11,11 +12,13 @@ FIND_PATH(CatiaCppApi_INCLUDE_DIR CatiaLibCPPAdapter.h
 		  
 find_library(CatiaCppApi_LIBRARY_DEBUG_DIR  NAMES CatiaCppApid 
 								  PATHS $ENV{CatiaCppApi_DIR}/lib/ 
+								  ${CatiaCppApi_DIR}/lib
 								  NO_DEFAULT_PATH
 								  )
 #this command will set CatiaCppApi library's lib path for release  in variable CatiaCppApi_LIBRARY_DIR. if specified lib file found.								  
 find_library(CatiaCppApi_LIBRARY_DIR  NAMES CatiaCppApi 
 								  PATHS $ENV{CatiaCppApi_DIR}/lib/ 
+								  ${CatiaCppApi_DIR}/lib
 								  NO_DEFAULT_PATH
 								  )
 SET(CatiaCppApi_FOUND,"NO")
