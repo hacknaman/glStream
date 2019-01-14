@@ -46,7 +46,7 @@ set buildType=Release
 if DEFINED DBG set buildType=Debug
 
 call GenerateSolution.bat
-call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86
+call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
 echo "==============Starting Build for all TransViz.sln==========="
 msbuild "TransViz.sln" /p:configuration=%buildType%
 
