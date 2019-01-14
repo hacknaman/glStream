@@ -30,11 +30,26 @@ set CatiaCppApi_BIN=%CatiaCppApi_DIR%\bin
 :: dynamic libs paths
 set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CatiaCppApi_BIN%;%PATH%
 
+echo "================NEW BUILD==============="
+del "x64\TransViz.sln"
+del "x64\CMakeCache.txt"
+
+mkdir build
 :: set development mode
 :: This is used for licensing
 set Development=false
-unset DBG
-unset RLS
+
+set BUILDENV=Release
+if DEFINED DBG set BUILDENV=Debug
+
+set buildType=Release
+if DEFINED DBG set buildType=Debug
 
 call GenerateSolution.bat
+call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86
+echo "==============Starting Build for all TransViz.sln==========="
+msbuild "TransViz.sln" /p:configuration=%buildType%
+
+cmake --build . --config Release --target INSTALL
 cd ..
+echo "=================BUILD COMPLETE======================"
