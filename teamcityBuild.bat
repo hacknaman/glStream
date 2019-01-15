@@ -1,5 +1,6 @@
 :: OSS ROOT PATH IS SET FROM TEAMCITY CLIENT
-set OSSROOT=E:\agent\BuildAgent\work\OSS_VRTRACK
+call FetchExternalDeps.bat
+set OSSROOT=E:\agent\BuildAgent\work\TransViz\ExternalLibrary
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4
 set OSG_BIN=%OSG_DIR%\bin
@@ -28,7 +29,7 @@ set CatiaCppApi_BIN=%CatiaCppApi_DIR%\bin
 
 :: add external DLLs to the PATH
 :: dynamic libs paths
-set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%GLUT_DIR%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CatiaCppApi_BIN%;%PATH%
+set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CatiaCppApi_BIN%;%PATH%
 
 echo "================NEW BUILD==============="
 del "x64\TransViz.sln"
@@ -47,9 +48,7 @@ if DEFINED DBG set buildType=Debug
 
 call GenerateSolution.bat
 call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
-echo "==============Starting Build for all TransViz.sln==========="
 msbuild "TransViz.sln" /p:configuration=%buildType%
 
 cmake --build . --config Release --target INSTALL
 cd ..
-echo "=================BUILD COMPLETE======================"
