@@ -28,7 +28,7 @@ set CatiaCppApi_BIN=%CatiaCppApi_DIR%\bin
 
 :: add external DLLs to the PATH
 :: dynamic libs paths
-set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CatiaCppApi_BIN%;%PATH%
+set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%GLUT_DIR%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CatiaCppApi_BIN%;%PATH%
 
 echo "================NEW BUILD==============="
 del "x64\TransViz.sln"
