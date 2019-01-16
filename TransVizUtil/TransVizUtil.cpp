@@ -72,6 +72,7 @@ namespace TransVizUtil{
     {
         _hostname = "localhost";
         _port = "7000";
+		_basePat->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
     }
 
     TransVizUtil::~TransVizUtil(){}
@@ -176,6 +177,7 @@ namespace TransVizUtil{
     void TransVizUtil::resetBasePat()
     {
         _basePat = new osg::PositionAttitudeTransform;
+		_basePat->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
     }
 
     void TransVizServerThread::run()
