@@ -5,8 +5,12 @@
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
+
+//#define DEV_MODE
+
 namespace TransVizUtil{
 
+    // this travellsal can be changed to a Event handler if osg viewer is passed 
     class TransVizUtilCallback : public osg::NodeCallback {
 
         TransVizUtil* _util;
@@ -25,7 +29,7 @@ namespace TransVizUtil{
             if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
             {
                 _util->iSPU->getUpdatedScene();
-                Sleep(100);
+                Sleep(200);
             }
 
             if ((GetKeyState('Y') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
@@ -81,7 +85,11 @@ namespace TransVizUtil{
         _rootNode = root;
 
         osg::Group* btnCBnode = new osg::Group;
+
+#ifdef DEV_MODE
         btnCBnode->addUpdateCallback(new TransVizUtilCallback(this));
+#endif 
+
         _rootNode->addChild(btnCBnode);
     }
 
