@@ -35,7 +35,7 @@ static int g_ret_count = 2000;
 
 // comment out this code to disable material / lights
 #define ENABLE_MATERIAL
-#define ENABLE_LIGHTS
+//#define ENABLE_LIGHTS
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -86,10 +86,12 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 	g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
 	g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
+#ifdef ENABLE_LIGHTS
     for (auto light : g_light)
     {
         light = NULL;
     }
+#endif
 
 	g_PatArray.clear();
 	g_PatArrayDisplayList.clear();
@@ -1302,11 +1304,10 @@ static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param
         return;
     }
 
+#ifdef ENABLE_LIGHTS
     if (g_light[light - GL_LIGHT0] == NULL){
         g_light[light - GL_LIGHT0] = new osg::LightSource();
     }
-
-#ifdef ENABLE_LIGHTS
 
     switch (pname)
     {
@@ -2173,14 +2174,6 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
-
-	if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && g_calledreadFromApp == false)
-	{
-		if (g_isReading == false && std::difftime(std::time(0), g_time) > 1){
-			g_time = std::time(0);
-			g_calledreadFromApp = true;
-		}
-	}
 
 	if (g_isReading)
 	{

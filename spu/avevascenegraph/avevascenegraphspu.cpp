@@ -2240,14 +2240,6 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
 
-    if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000) && g_calledreadFromApp == false)
-    {
-        if (g_isReading == false && std::difftime(std::time(0), g_time) > 1){
-            g_time = std::time(0);
-            g_calledreadFromApp = true;
-        }
-    }
-
     if (g_isReading)
     {
         g_startReading = false;
