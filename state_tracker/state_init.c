@@ -11,6 +11,10 @@
 
 #ifdef CHROMIUM_THREADSAFE
 CRtsd __contextTSD;
+//it will be set to defaultContext when state will be initialized in stateInit function and this context will be shared
+//to each file of crstate when any thread will try to get currentContext and will find null context then this sharedDefaultContext
+//will be passed as current context at the place of null and in this way,thread will not be crashed.
+CRContext *sharedDefaultContext = NULL;
 #else
 CRContext *__currentContext = NULL;
 #endif
@@ -234,6 +238,7 @@ void crStateInit(void)
 #ifdef CHROMIUM_THREADSAFE
 	crInitTSD(&__contextTSD);
 	crSetTSD(&__contextTSD, defaultContext);
+	sharedDefaultContext = defaultContext;
 #else
 	__currentContext = defaultContext;
 #endif

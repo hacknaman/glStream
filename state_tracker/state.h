@@ -19,7 +19,12 @@ extern CRStateBits *__currentBits;
 
 #ifdef CHROMIUM_THREADSAFE
 extern CRtsd __contextTSD;
-#define GetCurrentContext() (CRContext *) crGetTSD(&__contextTSD)
+//it is the fix the problem sometime aveva's any thread finds context null and it gets crashed.
+//usually it should have find non-null context always as per chromium design but somehow it hits null context at some point
+//of execution.reason is still unknown why aveva thread hits null context.chromium design always has a default context to prevent
+//crash but in the case of aveva,that defaultContext is not assigned and it is found null.
+extern CRContext *sharedDefaultContext;
+#define GetCurrentContext() (CRContext *) crGetTSD(&__contextTSD) ?(CRContext *) crGetTSD(&__contextTSD):sharedDefaultContext;
 #else
 extern CRContext *__currentContext;
 #define GetCurrentContext() __currentContext
