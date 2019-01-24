@@ -145,7 +145,8 @@ crServerDispatchMakeCurrent( GLint window, GLint nativeWindow, GLint context )
 	CRMuralInfo *mural;
 	CRContext *ctx;
 
-	if (context >= 0 && window >= 0) {
+	if (context >= 0 && window >= 0) 
+	{
 		mural = (CRMuralInfo *) crHashtableSearch(cr_server.muralTable, window);
 		if (!mural && window == MAGIC_OFFSET &&
 				!cr_server.clients[0]->conn->actual_network) {
@@ -153,7 +154,14 @@ crServerDispatchMakeCurrent( GLint window, GLint nativeWindow, GLint context )
 			 * we have to fudge the window id here.
 			 */
 			window = 0;
-			mural = (CRMuralInfo *) crHashtableSearch(cr_server.muralTable, 0);
+			mural = (CRMuralInfo *)crHashtableSearch(cr_server.muralTable, window);
+		}
+		if (mural == NULL)
+		{
+		
+			//if we don't have mural for given window then will use default mural here
+			//it is fixed here because of aveva threading problem
+			mural = (CRMuralInfo *)crHashtableSearch(cr_server.muralTable, 0);
 		}
 		CRASSERT(mural);
 

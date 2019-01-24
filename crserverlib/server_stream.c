@@ -306,7 +306,16 @@ getNextClient(GLboolean block)
 static void
 crServerDispatchMessage(CRMessage *msg)
 {
-	 const CRMessageOpcodes *msg_opcodes;
+	if (cr_server.curClient->currentMural == NULL)
+	{
+		//if still there is no mural for current client then set it to default it is here
+		//basically current mural for the client is set in crServerMakeCurrent function but
+		//if aveva called any other gl command before makecurrent or may be crserver may dispatch
+		//any other glcommand before makecurrent then in that case,mural would be null and
+		//crserver would crash.
+		cr_server.curClient->currentMural = (CRMuralInfo *)crHashtableSearch(cr_server.muralTable, 0);//hack for testing
+	}
+	const CRMessageOpcodes *msg_opcodes;
 	 int opcodeBytes;
 	 const char *data_ptr;
 
