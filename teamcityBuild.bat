@@ -40,6 +40,8 @@ mkdir build
 :: This is used for licensing
 set Development=false
 
+if "%1" EQU "Debug" set DBG=1
+
 set BUILDENV=Release
 if DEFINED DBG set BUILDENV=Debug
 
