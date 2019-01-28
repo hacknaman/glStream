@@ -140,8 +140,9 @@ extern OSGEXPORT void getUpdatedSceneASC(){
 
     double cameraPosition[3];
     double cameraLookat[3];
+	double cameraRoll;
 
-    rapi.getCamera(cameraPosition, cameraLookat);
+	rapi.getCamera(cameraPosition, cameraLookat, cameraRoll);
 
     osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
     osg::Vec3d endPoint_x = osg::Vec3d(cameraLookat[0], cameraLookat[1], cameraLookat[2]);
@@ -170,9 +171,10 @@ extern OSGEXPORT void getUpdatedSceneASC(){
     beamGeode->addChild(beam_x);
     mybeamGeode = beamGeode;
 #endif
-    osg::Camera* cam = new osg::Camera();
-    cam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
-    g_matcam = cam->getInverseViewMatrix();
+
+    osg::ref_ptr<osg::Camera> reviewcam = new osg::Camera();
+    reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
+    g_matcam = reviewcam->getInverseViewMatrix();
 
     Sleep(100);
 #endif
@@ -2275,6 +2277,17 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         g_isReading = true;
         g_hasTouchedBegin = false;
         g_CurrentMatrix = osg::Matrix();
+
+		// update camera matrix
+		double cameraPosition[3];
+		double cameraLookat[3];
+		double cameraRoll;
+		rapi.getCamera(cameraPosition, cameraLookat, cameraRoll);
+		osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+		osg::Vec3d endPoint_x = osg::Vec3d(cameraLookat[0], cameraLookat[1], cameraLookat[2]);
+		osg::ref_ptr<osg::Camera> reviewcam = new osg::Camera();
+		reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
+		g_matcam = reviewcam->getInverseViewMatrix();
     }
 
     if (g_startReading)
