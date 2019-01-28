@@ -11,5 +11,5 @@ set OSG_PLUGIN_DIR=%OSG_BIN%\osgPlugins-3.4.2
 :: dynamic libs paths
 set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%PATH%
 
-cd %TrasVizPath%bin
+cd %TrasVizPath%/bin
 ScenegraphApp -mothership %SERVER_HOSTNAME%
