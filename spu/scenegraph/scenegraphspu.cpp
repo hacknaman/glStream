@@ -27,9 +27,7 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include <osg/LightSource>
 #include <osg/LightModel>
 #include <osg/Light>
-
 #include <ctime>
-
 #define PRINT_UNUSED(x) ((void)x)
 static int g_ret_count = 2000;
 

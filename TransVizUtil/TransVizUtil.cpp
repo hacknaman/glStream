@@ -6,7 +6,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
 
-//#define DEV_MODE
+#define DEV_MODE
 
 namespace TransVizUtil{
 
