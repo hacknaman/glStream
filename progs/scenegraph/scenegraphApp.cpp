@@ -34,8 +34,13 @@ osg::ref_ptr <osg::Group> rootGroup = new osg::Group();
 // Get info of part with this event handler
 class SCAppEventHandler : public osgGA::GUIEventHandler
 {
-
+    osg::ref_ptr<TransVizUtil::TransVizUtil> _SceneGraphGenerator;
 public:
+
+    SCAppEventHandler(osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator) {
+        _SceneGraphGenerator = SceneGraphGenerator;
+    }
+
 	bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
 	{
 		osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>(&aa);
@@ -63,14 +68,24 @@ public:
 				osgViewer::View* view = dynamic_cast<osgViewer::View*>(&aa);
 				if (view) mousePick(view, ea, nearPoint, farPoint);
 			}
+            return false;
 		}
 		case(osgGA::GUIEventAdapter::KEYDOWN) :
 		{
-
+            return false;
 		}
+        case(osgGA::GUIEventAdapter::KEYUP) :
+        {
+            if (ea.getKey() == osgGA::GUIEventAdapter::KEY_F)
+            {
+                _SceneGraphGenerator->generateScenegraph();
+            }
+            return false;
+        }
 		case(osgGA::GUIEventAdapter::FRAME) :
 		{
 
+            return false;
 		}
 		default:
 			return false;
@@ -111,8 +126,6 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
 
 int main(int argc, char* argv[]) {
 
-    system("pause");
-
     TVizcallback cb;
 
     osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator = new TransVizUtil::TransVizUtil();
@@ -122,16 +135,18 @@ int main(int argc, char* argv[]) {
 
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer();
 
-	viewer->addEventHandler(new SCAppEventHandler());
+    viewer->addEventHandler(new SCAppEventHandler(SceneGraphGenerator));
 
     // Test Model
     // TEst axis
     osg::ref_ptr<osg::Geode> beamGeode = new osg::Geode;
 
+    const double axisLen = 10000.0;
+
     osg::Vec3d startPoint = osg::Vec3d(0, 0, 0);
-    osg::Vec3d endPoint_x = osg::Vec3d(100, 0, 0);
-    osg::Vec3d endPoint_y = osg::Vec3d(0, 100, 0);
-    osg::Vec3d endPoint_z = osg::Vec3d(0, 0, 100);
+    osg::Vec3d endPoint_x = osg::Vec3d(axisLen, 0, 0);
+    osg::Vec3d endPoint_y = osg::Vec3d(0, axisLen, 0);
+    osg::Vec3d endPoint_z = osg::Vec3d(0, 0, axisLen);
 
     osg::ref_ptr<osg::Geometry> beam_x = new osg::Geometry;
     osg::ref_ptr<osg::Geometry> beam_y = new osg::Geometry;

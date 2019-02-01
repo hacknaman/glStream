@@ -6,59 +6,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
 
-#define DEV_MODE
-
 namespace TransVizUtil{
-
-    // this travellsal can be changed to a Event handler if osg viewer is passed 
-    class TransVizUtilCallback : public osg::NodeCallback {
-
-        TransVizUtil* _util;
-
-    public:
-
-        TransVizUtilCallback(TransVizUtil* util)
-        {
-            _util = util;
-            
-        }
-
-        void operator()(osg::Node* node, osg::NodeVisitor* nv)
-        {
-
-            if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
-            {
-                _util->iSPU->getUpdatedScene();
-                Sleep(200);
-            }
-
-            if ((GetKeyState('Y') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
-            {
-                osgDB::writeNodeFile(*(_util->getLastGeneratedNode().get()), "aveva.ive");
-            }
-
-            if ((GetKeyState('T') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
-            {
-                _util->iSPU->changeScene();
-            }
-
-            if ((GetKeyState('S') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
-            {
-                osgDB::writeNodeFile(*(_util->getLastGeneratedNode().get()), "aveva.osgt");
-            }
-
-            if ((GetKeyState('L') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
-            {
-                _util->updateNode(osgDB::readRefNodeFile("aveva.osgt")->asGroup());
-            }
-            if ((GetKeyState('M') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
-            {
-                _util->iSPU->preProcessClient();
-            }
-            traverse(node, nv);
-        }
-
-    };
 
     void forwarder(void* context, osg::ref_ptr<osg::Group> node) {
         static_cast<TransVizUtil*>(context)->updateNode(node);
@@ -85,10 +33,6 @@ namespace TransVizUtil{
         _rootNode = root;
 
         osg::Group* btnCBnode = new osg::Group;
-
-#ifdef DEV_MODE
-        btnCBnode->addUpdateCallback(new TransVizUtilCallback(this));
-#endif 
 
         _rootNode->addChild(btnCBnode);
     }
