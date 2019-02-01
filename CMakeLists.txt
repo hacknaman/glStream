@@ -55,6 +55,7 @@ add_subdirectory(crutserver)
 add_subdirectory(progs)
 
 add_subdirectory(TransVizUtil)
+add_subdirectory(TransVizUtilUE)
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/
 	DESTINATION include
