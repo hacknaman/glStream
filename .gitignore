@@ -2,3 +2,11 @@
 bin
 lib
 built
+x64/
+build/
+ExternalLibrary/ReviewApi/
+ExternalLibrary/CatiaCppApi/
+ExternalLibrary/flexera/
+ExternalLibrary/glut/
+ExternalLibrary/libjpeg-turbo64/
+ExternalLibrary/osg-3.4/
