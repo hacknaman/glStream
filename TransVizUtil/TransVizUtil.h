@@ -27,7 +27,7 @@ public:
     virtual void getUpdatedScene() = 0;
     virtual void changeScene() = 0;
     virtual void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context) = 0;
-    virtual void preProcessClient(){};
+    virtual void resetClient(){};
 };
 
 namespace TransVizUtil{

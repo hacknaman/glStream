@@ -44,9 +44,9 @@ public:
 	{
 		funcNodeUpdateSC(pt2Func, context);
 	}
-    void preProcessClient()
+    void resetClient()
     {
-        preProcessCatia();
+        resetColors();
     }
 };
 
