@@ -45,7 +45,7 @@ CatiaMetaDataApi::CatiaLibCPPAdapter adapter;
 CatiaMetaDataApi::CatiaGeomDetail* curr_catia_geom_detail = nullptr;
 std::string geode_name ="";
 osg::Vec3 g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-osg::Vec3 g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+osg::Vec3 g_CurrentColor = osg::Vec3(0.0, 0.0, 0.0);
 
 osg::Matrix g_CurrentMatrix;
 
@@ -80,11 +80,16 @@ int g_calledreadFromApp = false;
 int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
-std::time_t g_time = std::time(0);
+std::time_t g_time = std::time(0); 
+//#define DRAW_APPCAM_BEAM
+#ifdef DRAW_APPCAM_BEAM
+osg::Geode* mybeamGeode;
+#endif  
+osg::Matrix g_matcam; // default identity matrix
 /*here client may be catia,aveva or any other gl application which is going to send gl streams to this spu.*/
-extern void OSGEXPORT preProcessCatia()
+extern void OSGEXPORT resetColors()
 {
-    adapter.modifyCatiaColors();
+    adapter.revertToCatiaOriginalColor();
 
 }
 extern void PRINT_APIENTRY scenegraphSPUReset()
@@ -117,8 +122,67 @@ std::string camerashakeapp;
 
 extern OSGEXPORT void getUpdatedSceneSC(){
 
-	g_calledreadFromApp = true;
-    
+    double cameraPosition[3];
+    double cameraLookat[3];
+    double cameraUp[3]; 
+    adapter.getCameraTransform(cameraPosition, cameraLookat, cameraUp);
+    osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+    osg::Vec3d endPoint_x = osg::Vec3d(cameraPosition[0] + cameraLookat[0]*100, cameraPosition[1] + cameraLookat[1]*100, cameraPosition[2] + cameraLookat[2]*100);
+   
+#ifdef DRAW_APPCAM_BEAM
+    osg::Vec3d endPoint_up = osg::Vec3d(cameraPosition[0] + cameraUp[0] * 100, cameraPosition[1] + cameraUp[1] * 100, cameraPosition[2] + cameraUp[2] * 100);
+    osg::Geode* beamGeode = new osg::Geode;
+    osg::Geometry* beam_x = new osg::Geometry;
+    osg::Geometry* beam_up = new osg::Geometry;
+    osg::Vec3Array* linePoints_x = new osg::Vec3Array;
+    osg::Vec3Array* linePoints_up = new osg::Vec3Array;
+    linePoints_x->push_back(startPoint);
+    linePoints_x->push_back(endPoint_x);
+    linePoints_up->push_back(startPoint);
+    linePoints_up->push_back(endPoint_up);
+    osg::Vec4Array* color_x = new osg::Vec4Array;
+    osg::Vec4Array* color_up = new osg::Vec4Array;
+    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+    color_x->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+    color_up->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
+    color_up->push_back(osg::Vec4(0.0, 1.0, 0.0, 1.0));
+    beam_x->setVertexArray(linePoints_x);
+    beam_up->setVertexArray(linePoints_up);
+    beam_x->setColorArray(color_x);
+    beam_up->setColorArray(color_up);
+    beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_up->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_up->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    osg::StateSet* state = beam_x->getOrCreateStateSet();
+    osg::StateSet* state_up = beam_up->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    state_up->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::LineWidth* linewidth_x = new osg::LineWidth();
+    osg::LineWidth* linewidth_up = new osg::LineWidth();
+    linewidth_x->setWidth(2.0f);
+    linewidth_up->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
+    state_up->setAttributeAndModes(linewidth_up, osg::StateAttribute::OVERRIDE);
+    //beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    state->setMode(GL_BLEND, osg::StateAttribute::ON);
+    state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
+    state_up->setMode(GL_BLEND, osg::StateAttribute::ON);
+    state_up->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
+    beamGeode->addChild(beam_x);
+    beamGeode->addChild(beam_up);
+    mybeamGeode = beamGeode;
+#endif
+
+
+   
+    osg::ref_ptr<osg::Camera> catiacam = new osg::Camera();
+    catiacam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(cameraUp[0], cameraUp[1], cameraUp[2]));
+    g_matcam = catiacam->getInverseViewMatrix();
+  
+    adapter.modifyCatiaColors();
+    g_calledreadFromApp = true;
+    adapter.shakeCamera();
    
     if (camerashakeapp.empty())
     {
@@ -134,7 +198,8 @@ extern OSGEXPORT void getUpdatedSceneSC(){
     {
         system(camerashakeapp.c_str());
     }
-    adapter.revertToCatiaOriginalColor();
+
+   
 }
 
 void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
@@ -326,38 +391,35 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
 	
-  
-    g_CurrentColor = osg::Vec3(red, green, blue);
+        g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
-    
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+        g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
-    
-    g_CurrentColor = osg::Vec3(red, green, blue);
+        g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-	
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+   
+        g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
-   
-    g_CurrentColor = osg::Vec3(red, green, blue);
+    
+        g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
    
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+        g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -1343,6 +1405,8 @@ static void PRINT_APIENTRY printLoadIdentity(void)
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
     g_CurrentMatrix.set(m);
+    
+    
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
@@ -1360,7 +1424,9 @@ static void PRINT_APIENTRY printPushMatrix(void)
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-    g_CurrentMatrix.set(m);    
+    g_CurrentMatrix.set(m);
+    
+  
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1464,6 +1530,9 @@ static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
     osg::Matrix mat = osg::Matrix();
     mat.set(m);
     g_CurrentMatrix = mat * g_CurrentMatrix;
+    
+    
+    
 }
 
 static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
@@ -1471,6 +1540,9 @@ static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
     osg::Matrix mat = osg::Matrix();
     mat.set(m);
     g_CurrentMatrix = mat * g_CurrentMatrix;
+
+   
+    
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -2172,16 +2244,21 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 		}
 
 		g_isReading = false;
-		g_pt2Func(g_context, g_spuRootGroup.get());
+#ifdef DRAW_APPCAM_BEAM
+        g_spuRootGroup->addChild(mybeamGeode);
+#endif
+        g_pt2Func(g_context, g_spuRootGroup.get());
+       
        
 	}
 
 	if (g_calledreadFromApp)
 	{
-		g_calledreadFromApp = false;
+        g_calledreadFromApp = false;
 		g_startReading = true;
 		g_isReading = true;
 		g_hasTouchedBegin = false;
+        
 	}
 
 	if (g_startReading)
@@ -2198,7 +2275,6 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 #endif
 
 		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-
 		g_PatArray.push_back(pat);
 		g_startReading = false;
 	}
@@ -2468,25 +2544,27 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
-	if ((g_isReading || g_isDisplayList) && g_vertexArray){
-		// Math to transfrom vertex and normal to matrix mode
-		osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
-		osg::Matrix matFinal = mat * g_CurrentMatrix;
-		osg::Vec3 vertexPoint = matFinal.getTrans();
+    if ((g_isReading || g_isDisplayList) && g_vertexArray)
+    {
+       
+        // Math to transfrom vertex and normal to matrix mode
+        osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
+        osg::Matrix matFinal = mat * g_CurrentMatrix * g_matcam;
+        osg::Vec3 vertexPoint = matFinal.getTrans();
 
-		osg::Matrix Normalmat = osg::Matrix::translate(g_CurrentNormal);
-		osg::Matrix CurrentMatrixNew = g_CurrentMatrix;
-		CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
-		osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
-		osg::Vec3 normalPoint = NormalmatFinal.getTrans();
+        osg::Matrix Normalmat = osg::Matrix::translate(g_CurrentNormal);
+        osg::Matrix CurrentMatrixNew = g_CurrentMatrix;
+        CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
+        osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
+        osg::Vec3 normalPoint = NormalmatFinal.getTrans();
 
-		g_vertexArray->push_back(vertexPoint);
-		g_normalArray->push_back(normalPoint);
+        g_vertexArray->push_back(vertexPoint);
+        g_normalArray->push_back(normalPoint);
         //getting original color of catia part vertex
         curr_catia_geom_detail = adapter.getPartData(g_CurrentColor.x(), g_CurrentColor.y(), g_CurrentColor.z());
         if (curr_catia_geom_detail != nullptr)
         {
-            
+
             double red = curr_catia_geom_detail->r / 255.0;
             double green = curr_catia_geom_detail->g / 255.0;
             double blue = curr_catia_geom_detail->b / 255.0;
@@ -2495,12 +2573,12 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
             {
                 geode_name = curr_catia_geom_detail->name;
             }
-         }
+        }
         else
         {
             g_colorArray->push_back(g_CurrentColor);
         }
-	}
+    }
 }
 
 static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)

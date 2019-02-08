@@ -32,7 +32,7 @@ typedef struct {
 } PrintSpu;
 
 extern PrintSpu print_spu;
-extern void OSGEXPORT preProcessCatia();
+extern void OSGEXPORT resetColors();
 extern OSGEXPORT void getUpdatedSceneSC();
 extern OSGEXPORT void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
 
