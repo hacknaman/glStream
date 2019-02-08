@@ -75,6 +75,7 @@ namespace TransVizUtil{
         }
 
         _bIsNodeDirty = false;
+        iSPU->resetClient();
     }
 
     void TransVizUtil::updateNode(osg::ref_ptr<osg::Group> node)

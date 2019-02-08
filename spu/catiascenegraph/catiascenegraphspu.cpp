@@ -81,7 +81,7 @@ int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
 std::time_t g_time = std::time(0); 
-#define DRAW_APPCAM_BEAM
+//#define DRAW_APPCAM_BEAM
 #ifdef DRAW_APPCAM_BEAM
 osg::Geode* mybeamGeode;
 #endif  
