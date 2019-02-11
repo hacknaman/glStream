@@ -350,14 +350,14 @@ PROC WINAPI wglGetProcAddress_prox( LPCSTR name )
 
 BOOL WINAPI wglUseFontBitmapsA_prox( HDC hdc, DWORD first, DWORD count, DWORD listBase )
 {
-	crWarning( "wglUseFontBitmapsA: unsupported" );
-	return 0;
+	
+    return stub.wsInterface.wglUseFontBitmapsA(hdc, first, count, listBase);
 }
 
 BOOL WINAPI wglUseFontBitmapsW_prox( HDC hdc, DWORD first, DWORD count, DWORD listBase )
 {
-	crWarning( "wglUseFontBitmapsW: unsupported" );
-	return 0;
+	
+    return stub.wsInterface.wglUseFontBitmapsW(hdc,first,count,listBase);
 }
 
 BOOL WINAPI wglDescribeLayerPlane_prox( HDC hdc, int pixelFormat, int layerPlane,
@@ -397,16 +397,16 @@ BOOL WINAPI wglUseFontOutlinesA_prox( HDC hdc, DWORD first, DWORD count, DWORD l
 		FLOAT deviation, FLOAT extrusion, int format,
 		LPGLYPHMETRICSFLOAT gmf )
 {
-	crWarning( "wglUseFontOutlinesA: unsupported" );
-	return 0;
+	
+	return stub.wsInterface.wglUseFontOutlinesA(hdc,first,count,listBase,deviation,extrusion,format,gmf);
 }
 
 BOOL WINAPI wglUseFontOutlinesW_prox( HDC hdc, DWORD first, DWORD count, DWORD listBase,
 		FLOAT deviation, FLOAT extrusion, int format,
 		LPGLYPHMETRICSFLOAT gmf )
 {
-	crWarning( "wglUseFontOutlinesW: unsupported" );
-	return 0;
+	
+    return  stub.wsInterface.wglUseFontOutlinesW(hdc, first, count, listBase, deviation, extrusion, format, gmf);
 }
 
 
