@@ -67,6 +67,7 @@ osg::ref_ptr<osg::LightSource> g_light[8];
 #endif
 
 static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
+std::vector<osg::ref_ptr<osg::Group> > g_spuGroupMap;
 
 int g_geometryMode = -1;
 int g_currentMatrixMode = -1;
@@ -113,6 +114,8 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 }
 
 ReviewCppWrapper::ReviewCppAPI rapi;
+ReviewCppWrapper::Element RootElement;
+std::vector<ReviewCppWrapper::Element*> ElementSequence;
 std::string camerashakeapp;
 
 #define DRAW_APPCAM
@@ -124,7 +127,13 @@ osg::Geode* mybeamGeode;
 
 osg::Matrix g_matcam; // default identity matrix
 
-
+void FillSequenceGroup(std::vector<ReviewCppWrapper::Element*>& ElementSequence, std::vector<osg::ref_ptr<osg::Group> >& groupMap)
+{
+    for (auto element : ElementSequence){
+        groupMap.push_back(new osg::Group);
+        groupMap.back()->setName(element->name); 
+    }
+}
 
 extern OSGEXPORT void changeSceneASC() {
 
@@ -176,7 +185,15 @@ extern OSGEXPORT void getUpdatedSceneASC(){
     reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
     g_matcam = reviewcam->getInverseViewMatrix();
 
-    Sleep(100);
+    time_t current_time = time(NULL);
+    rapi.GetElementList(RootElement);
+    std::cout << time(NULL) - current_time << " seconds was taken to get the root node" << std::endl;
+    current_time = time(NULL);
+    rapi.FillSequence(ElementSequence, RootElement);
+    FillSequenceGroup(ElementSequence, g_spuGroupMap);
+    rapi.SetMaterialOnTree(RootElement);
+    std::cout << time(NULL) - current_time << " seconds was taken to set the colors" << std::endl;
+
 #endif
 
     g_calledreadFromApp = true;
@@ -749,7 +766,15 @@ static void PRINT_APIENTRY printEnd(void)
         }
 
         if (g_geode){
-            g_PatArray.back()->addChild(g_geode);
+           // g_PatArray.back()->addChild(g_geode);
+            int Index = int(g_CurrentColor[0]*1000000) + int(g_CurrentColor[1]*10000) + int(g_CurrentColor[2]*100);
+            osg::ref_ptr<osg::Group> currentgroup = g_spuGroupMap[Index];
+            osg::Vec3Array *colorarr = new osg::Vec3Array();
+            osg::Vec3 color(ElementSequence[Index]->realColor[0] / 100, ElementSequence[Index]->realColor[1] / 100, ElementSequence[Index]->realColor[2] / 100);
+            colorarr->push_back(color);
+            g_geom->setColorArray(colorarr, osg::Array::BIND_OVERALL);
+            currentgroup->addChild(g_geode);
+            g_geode->setName(ElementSequence[Index]->name);
         }
     }
 
@@ -2267,7 +2292,13 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 #ifdef DRAW_APPCAM_BEAM
         g_spuRootGroup->addChild(mybeamGeode);
 #endif
+        for (auto group : g_spuGroupMap)
+        {
+            g_spuRootGroup->addChild(group);
+        }
+
         g_pt2Func(g_context, g_spuRootGroup);
+       // rapi.ResetMaterials();
     }
 
     if (g_calledreadFromApp)
@@ -2279,7 +2310,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         g_CurrentMatrix = osg::Matrix();
 
 		// update camera matrix
-		double cameraPosition[3];
+		/*double cameraPosition[3];
 		double cameraLookat[3];
 		double cameraRoll;
 		rapi.getCamera(cameraPosition, cameraLookat, cameraRoll);
@@ -2287,7 +2318,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 		osg::Vec3d endPoint_x = osg::Vec3d(cameraLookat[0], cameraLookat[1], cameraLookat[2]);
 		osg::ref_ptr<osg::Camera> reviewcam = new osg::Camera();
 		reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
-		g_matcam = reviewcam->getInverseViewMatrix();
+		g_matcam = reviewcam->getInverseViewMatrix();*/
     }
 
     if (g_startReading)
