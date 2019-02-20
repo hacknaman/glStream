@@ -44,6 +44,11 @@ public:
 	{
 		funcNodeUpdateASC(pt2Func, context);
 	}
+
+    void resetClient()
+    {
+        resetClientASC();
+    }
 };
 
 #ifndef WINDOWS

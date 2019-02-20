@@ -8,6 +8,7 @@
 #include <osgDB/Export>
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
+#include <osgDB/Writefile>
 #include <osg/LineWidth>
 
 #include <osgGA/FirstPersonManipulator>
@@ -80,11 +81,16 @@ public:
             {
                 _SceneGraphGenerator->generateScenegraph();
             }
+            else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
+            {
+                // Save the model
+                osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.ive");
+                osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.osgt");
+            }
             return false;
         }
 		case(osgGA::GUIEventAdapter::FRAME) :
 		{
-
             return false;
 		}
 		default:
