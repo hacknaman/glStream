@@ -36,6 +36,7 @@ extern AvevaSpu aveva_spu;
 extern OSGEXPORT void getUpdatedSceneASC();
 extern OSGEXPORT void changeSceneASC();
 extern OSGEXPORT void funcNodeUpdateASC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
+extern OSGEXPORT void resetClientASC();
 
 extern void printspuGatherConfiguration(const SPU *child_spu);
 extern const char *printspuEnumToStr(GLenum e);
