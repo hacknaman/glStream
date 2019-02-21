@@ -57,8 +57,6 @@ namespace TransVizUtil{
         ~TransVizUtil();
 
         // set or returns the root Node from the scene
-        void setRootNode(osg::Group* root);
-        osg::ref_ptr<osg::Group> getRootNode();
         osg::ref_ptr<osg::Group> getLastGeneratedNode();
         void generateScenegraph();
 
@@ -66,12 +64,6 @@ namespace TransVizUtil{
         void update();
 
 		bool isConnected(){ return _isconnected; }
-
-        void setBasePosition(osg::Vec3d pos);
-        void setBaseRotation(osg::Vec3d orientation); // Angle in Degrees
-        void setBaseScale(osg::Vec3d scale);
-        void resetBasePat();
-        osg::ref_ptr<osg::Group> getBasePat(){ return _basePat; }
 
         void setMothership(std::string hostname){ _hostname = hostname; }
         std::string getMothership(){ return _hostname; }

@@ -29,18 +29,6 @@ namespace TransVizUtil{
 
     TransVizUtil::~TransVizUtil(){}
 
-    void TransVizUtil::setRootNode(osg::Group* root){
-        _rootNode = root;
-
-        osg::Group* btnCBnode = new osg::Group;
-
-        _rootNode->addChild(btnCBnode);
-    }
-
-    osg::ref_ptr<osg::Group> TransVizUtil::getRootNode(){
-        return _rootNode;
-    }
-
     osg::ref_ptr<osg::Group> TransVizUtil::getLastGeneratedNode(){
         return _oldNode;
     }
@@ -54,24 +42,11 @@ namespace TransVizUtil{
         if (!_bIsNodeDirty)
             return;
 
-        osg::Group* newGroup = _newNode->asGroup();
-        if (newGroup != NULL && _rootNode != NULL){
+        _oldNode = _newNode;
 
-            if (_oldNode != NULL && _oldNode != newGroup) {
-                _rootNode->removeChild(_basePat);
-                _basePat->removeChild(_oldNode);
-            }
-            
-            _basePat->addChild(newGroup);
-            _rootNode->addChild(_basePat);
-
-            _oldNode = newGroup;
-            _oldNode->setName("TransVizGroup");
-
-            if (_TransVizNodeUpdateCB)
-            {
-                _TransVizNodeUpdateCB->TransVizNodeCallBack(newGroup);
-            }
+        if (_TransVizNodeUpdateCB)
+        {
+            _TransVizNodeUpdateCB->TransVizNodeCallBack(_oldNode);
         }
 
         _bIsNodeDirty = false;
@@ -95,42 +70,6 @@ namespace TransVizUtil{
         _util(util)
     {
 
-    }
-
-    void TransVizUtil::setBasePosition(osg::Vec3d pos)
-    {
-        _basePat->setPosition(pos);
-    }
-
-    void TransVizUtil::setBaseRotation(osg::Vec3d orientation)
-    {
-        // This is code is stolen from wikipedia
-        // just look for euler to quaternion 
-
-        double cy = cos(orientation[0] * 0.5);
-        double sy = sin(orientation[0] * 0.5);
-        double cp = cos(orientation[1] * 0.5);
-        double sp = sin(orientation[1] * 0.5);
-        double cr = cos(orientation[2] * 0.5);
-        double sr = sin(orientation[2] * 0.5);
-
-        osg::Quat q;
-        q.w() = cy * cp * cr + sy * sp * sr;
-        q.x() = cy * cp * sr - sy * sp * cr;
-        q.y() = sy * cp * sr + cy * sp * cr;
-        q.z() = sy * cp * cr - cy * sp * sr;
-        _basePat->setAttitude(q);
-    }
-
-    void TransVizUtil::setBaseScale(osg::Vec3d scale)
-    {
-        _basePat->setScale(scale);
-    }
-
-    void TransVizUtil::resetBasePat()
-    {
-        _basePat = new osg::PositionAttitudeTransform;
-		_basePat->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
     }
 
     void TransVizServerThread::run()

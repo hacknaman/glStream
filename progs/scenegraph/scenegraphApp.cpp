@@ -122,10 +122,23 @@ public:
 };
 
 class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
+
+    public:
+    osg::ref_ptr<osg::Group> RootNode = nullptr;
+    osg::ref_ptr<osg::Node> TransVizNode = nullptr;
+
     void TransVizNodeCallBack(osg::ref_ptr<osg::Node> node)
     {
         std::cout << "Model Updated!!!" << std::endl;
+        if(TransVizNode != nullptr)
+        {
+            RootNode->removeChild(TransVizNode);
+        }
+        RootNode->addChild(node);
+        TransVizNode = node;
+        std::cout << "Node Added by app" << std::endl;
     }
+
 };
 
 
@@ -136,7 +149,6 @@ int main(int argc, char* argv[]) {
 
     osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator = new TransVizUtil::TransVizUtil();
 	rootGroup = new osg::Group();
-	SceneGraphGenerator->setRootNode(rootGroup);
     SceneGraphGenerator->setNodeUpdateCallBack((TransVizUtil::TransVizNodeUpdateCB*)&cb);
 
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer();
@@ -231,6 +243,7 @@ int main(int argc, char* argv[]) {
 
 	// Test Model
 	rootGroup->addChild(osgDB::readNodeFile("C:/Project/TransViz/TestData/axes.osgt"));    // This won't crash the program. if the file isn't found.
+    cb.RootNode = rootGroup;
     viewer->setSceneData(rootGroup);
 
 	// State Manipulator and show states
@@ -275,12 +288,6 @@ int main(int argc, char* argv[]) {
 		ViewerWindow.front()->setWindowName("TransViz Client");
 	}
 
-	SceneGraphGenerator->run();
-
-    // SceneGraphGenerator->setBaseScale( osg::Vec3d(1.0, 1.0, 1.0) );
-    // SceneGraphGenerator->setBaseRotation( osg::Vec3d(0.0, 45.0, 0) );
-    // SceneGraphGenerator->setBasePosition( osg::Vec3d(0.0, 45.0, 0) );
-
     std::string mothership = "localhost";
 
     for (int i = 1; i < argc; i++)
@@ -293,6 +300,7 @@ int main(int argc, char* argv[]) {
     }
 
     SceneGraphGenerator->setMothership(mothership);
+    SceneGraphGenerator->run();
 
 	//viewer->realize();
 	while (!viewer->done()){
