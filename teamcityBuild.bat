@@ -63,6 +63,3 @@ robocopy %OSSROOT%\osg-3.4\bin\osgPlugins-3.4.2 .\build\bin *.dll /MT:25
 
 :: copy glut
 robocopy %OSSROOT%\glut\bin\x64 .\build\bin *.dll /MT:25
-
-::copy build number file
-copy "E:\agent\BuildAgent\work\TransViz\buildNumber" "E:\agent\BuildAgent\work\TransViz\build"
