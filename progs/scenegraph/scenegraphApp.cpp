@@ -138,8 +138,10 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
         pat->setScale( osg::Vec3(0.5, 0.5, 0.5) );
         pat->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
         pat->addChild(node);
-        RootNode->addChild(pat);
-        TransVizNode = pat;
+        //RootNode->addChild(pat);
+        //TransVizNode = pat;
+        RootNode->addChild(node);
+        TransVizNode = node;
         std::cout << "Node Added by app" << std::endl;
     }
 

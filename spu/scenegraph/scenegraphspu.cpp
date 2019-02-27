@@ -34,9 +34,9 @@ static int g_ret_count = 2000;
 
 // Comment out this code to disable material / lights
 #define ENABLE_MATERIAL
-//#define ENABLE_LIGHTS
-//#define CLUB_GEODE
-#define AVEVA_REVIEW
+#define ENABLE_LIGHTS
+
+#define GEODE_WITH_COLORS
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -76,7 +76,7 @@ int g_calledreadFromApp = false;
 int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
-bool g_hasDrawn = false;
+bool g_hasDrawnSomething = false;
 std::time_t g_time = std::time(0);
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
@@ -187,8 +187,8 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 	if (g_isReading)
 	{
 		g_hasTouchedBegin = true;
+        g_hasDrawnSomething = true;
 		g_geometryMode = mode;
-		//g_geode = new osg::Geode();
 		g_vertexArray = new osg::Vec3Array();
 		g_normalArray = new osg::Vec3Array();	
 		g_colorArray = new osg::Vec3Array();
@@ -319,7 +319,8 @@ static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble b
 {
     if (g_isReading)
     {
-        /*if (g_hasDrawn)
+#ifdef GEODE_WITH_COLORS
+        if (g_hasDrawnSomething)
         {
             if (!(last_color[0] == red && last_color[1] == green && last_color[2] == blue))
             {
@@ -329,9 +330,10 @@ static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble b
 
                 g_spuRootGroup->addChild(g_geode);
                 g_geode = new osg::Geode();
-                g_hasDrawn = false;
+                g_hasDrawnSomething = false;
             }
-        }*/
+        }
+#endif
         g_CurrentColor = osg::Vec3(red, green, blue);
     }
 }
@@ -713,7 +715,6 @@ static void PRINT_APIENTRY printEnd(void)
 
 #endif
             g_geode->addDrawable(g_geom);
-            g_hasDrawn = true;
 		}
 		
 	}
@@ -1380,14 +1381,31 @@ static void PRINT_APIENTRY printLoadIdentity(void)
     g_CurrentMatrix = osg::Matrix();
 }
 
-static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
+static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-    if (g_hasDrawn)
+#ifndef GEODE_WITH_COLORS
+    if (g_hasDrawnSomething)
     {
         g_spuRootGroup->addChild(g_geode);
         g_geode = new osg::Geode();
-        g_hasDrawn = false;
+        g_hasDrawnSomething = false;
     }
+#endif
+
+    g_CurrentMatrix.set(m);
+}
+
+static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
+{
+
+#ifndef GEODE_WITH_COLORS
+    if (g_hasDrawnSomething)
+    {
+        g_spuRootGroup->addChild(g_geode);
+        g_geode = new osg::Geode();
+        g_hasDrawnSomething = false;
+    }
+#endif
 
     g_CurrentMatrix.set(m);
 
@@ -1399,18 +1417,6 @@ static void PRINT_APIENTRY printPushMatrix(void)
     {
         g_matrix_stack.push_back(g_CurrentMatrix);
     }
-}
-
-static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
-{
-    if (g_hasDrawn)
-    {
-        g_spuRootGroup->addChild(g_geode);
-        g_geode = new osg::Geode();
-        g_hasDrawn = false;
-    }
-
-    g_CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -2264,7 +2270,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         last_color[0] = -1;
         last_color[1] = -1;
         last_color[2] = -1;
-        g_hasDrawn = true;
+        g_hasDrawnSomething = true;
 		g_startReading = false;
 	}
 }
