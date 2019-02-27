@@ -2281,6 +2281,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     }
 }
 #endif
+        // This can be optimized further if geode are mearged
         osgUtil::Optimizer optimizer;
         optimizer.optimize(g_spuRootGroup);
 
