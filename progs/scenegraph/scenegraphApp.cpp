@@ -140,6 +140,7 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
         pat->addChild(node);
         //RootNode->addChild(pat);
         //TransVizNode = pat;
+        // No pat
         RootNode->addChild(node);
         TransVizNode = node;
         std::cout << "Node Added by app" << std::endl;

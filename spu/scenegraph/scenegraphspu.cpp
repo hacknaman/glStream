@@ -34,9 +34,10 @@ static int g_ret_count = 2000;
 
 // Comment out this code to disable material / lights
 #define ENABLE_MATERIAL
-#define ENABLE_LIGHTS
+//#define ENABLE_LIGHTS
 
-#define GEODE_WITH_COLORS
+// This is enabled for part selection in aveva
+#define GEODE_WITH_LM
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -313,27 +314,31 @@ static void PRINT_APIENTRY printColor3bv(const GLbyte * v)
 {
 }
 
+
+void CreateNewGeode() 
+{
+    if (g_hasDrawnSomething)
+    {
+        g_spuRootGroup->addChild(g_geode);
+        g_geode = new osg::Geode();
+        g_hasDrawnSomething = false;
+    }
+}
+
 double last_color[3];
 
 static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble blue)
 {
     if (g_isReading)
     {
-#ifdef GEODE_WITH_COLORS
-        if (g_hasDrawnSomething)
+        if (!(last_color[0] == red && last_color[1] == green && last_color[2] == blue))
         {
-            if (!(last_color[0] == red && last_color[1] == green && last_color[2] == blue))
-            {
-                last_color[0] = red;
-                last_color[1] = green;
-                last_color[2] = blue;
+            last_color[0] = red;
+            last_color[1] = green;
+            last_color[2] = blue;
 
-                g_spuRootGroup->addChild(g_geode);
-                g_geode = new osg::Geode();
-                g_hasDrawnSomething = false;
-            }
+            CreateNewGeode();
         }
-#endif
         g_CurrentColor = osg::Vec3(red, green, blue);
     }
 }
@@ -610,9 +615,12 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
+#ifdef ENABLE_MATERIAL
     if (cap == GL_POLYGON_STIPPLE){
+        CreateNewGeode();
 		g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
 	}
+#endif
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -657,8 +665,9 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
-#ifdef ENABLE_MATRIALS
+#ifdef ENABLE_MATERIAL
 	if (g_isReading && cap == GL_POLYGON_STIPPLE) {
+        CreateNewGeode();
 		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
 		g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
 	}
@@ -697,7 +706,6 @@ static void PRINT_APIENTRY printEnd(void)
 			g_geom->setVertexArray(g_vertexArray);
 			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
 			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
-
             g_geom->setSupportsDisplayList(true);
             g_geom->setUseDisplayList(true);
 
@@ -734,7 +742,7 @@ static void PRINT_APIENTRY printEnd(void)
 			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
 			if (g_state != NULL)
 			{
-                //g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
+                g_geode->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
 			}
 
             if (g_material != NULL)
@@ -747,6 +755,7 @@ static void PRINT_APIENTRY printEnd(void)
 		}
 
 		if (g_geode) {
+            // Display list isn't working
 			//g_PatArrayDisplayList.back()->addChild(g_geode);
 		}
 	}
@@ -1383,30 +1392,17 @@ static void PRINT_APIENTRY printLoadIdentity(void)
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-#ifndef GEODE_WITH_COLORS
-    if (g_hasDrawnSomething)
-    {
-        g_spuRootGroup->addChild(g_geode);
-        g_geode = new osg::Geode();
-        g_hasDrawnSomething = false;
-    }
+#ifdef GEODE_WITH_LM
+    CreateNewGeode();
 #endif
-
     g_CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-
-#ifndef GEODE_WITH_COLORS
-    if (g_hasDrawnSomething)
-    {
-        g_spuRootGroup->addChild(g_geode);
-        g_geode = new osg::Geode();
-        g_hasDrawnSomething = false;
-    }
+#ifdef GEODE_WITH_LM
+    CreateNewGeode();
 #endif
-
     g_CurrentMatrix.set(m);
 
 }
@@ -1482,6 +1478,10 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
+    if (!g_isReading)
+    {
+        return;
+    }
 
     osg::Material::Face osgface = osg::Material::Face::FRONT;
 
@@ -1502,6 +1502,7 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
     switch (pname)
     {
     case GL_SHININESS:
+        CreateNewGeode();
         g_material->setShininess(osgface, param);
         break;
     }
@@ -2226,9 +2227,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	if (g_isReading)
 	{
 		g_startReading = false;
-		//g_spuRootGroup->addChild(g_PatArray.back());
         g_spuRootGroup->addChild(g_geode);
-		//g_PatArray.pop_back();
 
 		if (g_hasTouchedBegin == false)
 		{
@@ -2262,7 +2261,6 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	if (g_startReading)
 	{
 		g_spuRootGroup = new osg::Group;
-        //g_geode = new osg::Geode;
 
 #ifdef ENABLE_MATERIAL
         g_material = new osg::Material();
@@ -2943,6 +2941,11 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 
+    if (!g_isReading)
+    {
+        return;
+    }
+
     osg::Material::Face osgface = osg::Material::Face::FRONT;
 
     switch (face){
@@ -2962,16 +2965,19 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
     switch (mode)
     {
     case GL_AMBIENT:
+        CreateNewGeode();
         g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_DIFFUSE:
+        CreateNewGeode();
         g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_SPECULAR:
+        CreateNewGeode();
         g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_AMBIENT_AND_DIFFUSE:
-        printColor3d(params[0], params[1], params[2]);
+        CreateNewGeode();
         g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
         break;
     }
