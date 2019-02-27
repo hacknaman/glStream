@@ -23,6 +23,7 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
+#include <osgUtil/Optimizer>
 
 #include <osg/LightSource>
 #include <osg/LightModel>
@@ -31,25 +32,25 @@ See the file LICENSE.txt for information on redistributing this software. */
 #define PRINT_UNUSED(x) ((void)x)
 static int g_ret_count = 2000;
 
-// comment out this code to disable material / lights
+// Comment out this code to disable material / lights
 #define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
+//#define CLUB_GEODE
+#define AVEVA_REVIEW
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
 osg::ref_ptr<osg::Vec3Array> g_colorArray;
 
 osg::Vec3 g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-osg::Vec3 g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+osg::Vec3 g_CurrentColor = osg::Vec3(-1.0, -1.0, -1.0);
 
 osg::Matrix g_CurrentMatrix;
 
 osg::ref_ptr<osg::Geometry> g_geom;
 osg::ref_ptr<osg::Geode> g_geode;
 
-std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArray;
 std::vector<osg::Matrix> g_matrix_stack;
-
 std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
 
 osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet;
@@ -75,6 +76,7 @@ int g_calledreadFromApp = false;
 int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
+bool g_hasDrawn = false;
 std::time_t g_time = std::time(0);
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
@@ -82,7 +84,7 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 	g_ret_count = 2000;
 
 	g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-	g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+	g_CurrentColor = osg::Vec3(-1.0, -1.0, -1.0);
 
 #ifdef ENABLE_LIGHTS
     for (auto light : g_light)
@@ -91,7 +93,6 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
     }
 #endif
 
-	g_PatArray.clear();
 	g_PatArrayDisplayList.clear();
 
 	g_spuRootGroup = new osg::Group;
@@ -187,7 +188,7 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 	{
 		g_hasTouchedBegin = true;
 		g_geometryMode = mode;
-		g_geode = new osg::Geode();
+		//g_geode = new osg::Geode();
 		g_vertexArray = new osg::Vec3Array();
 		g_normalArray = new osg::Vec3Array();	
 		g_colorArray = new osg::Vec3Array();
@@ -263,7 +264,7 @@ static void PRINT_APIENTRY printCallList(GLuint list)
         int displayListSizeLessOne = g_PatArrayDisplayList.size() - 1;
         if (listIndexInInt <= displayListSizeLessOne)
         {
-            g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
+            //g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
         }
 	}
 }
@@ -312,42 +313,62 @@ static void PRINT_APIENTRY printColor3bv(const GLbyte * v)
 {
 }
 
+double last_color[3];
+
 static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble blue)
 {
+    if (g_isReading)
+    {
+        /*if (g_hasDrawn)
+        {
+            if (!(last_color[0] == red && last_color[1] == green && last_color[2] == blue))
+            {
+                last_color[0] = red;
+                last_color[1] = green;
+                last_color[2] = blue;
+
+                g_spuRootGroup->addChild(g_geode);
+                g_geode = new osg::Geode();
+                g_hasDrawn = false;
+            }
+        }*/
+        g_CurrentColor = osg::Vec3(red, green, blue);
+    }
 }
 
 static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 {
+    printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
-	g_CurrentColor = osg::Vec3(red, green, blue);
+    printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
-	g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
-	g_CurrentColor = osg::Vec3(red, green, blue);
+    printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-	g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
-	g_CurrentColor = osg::Vec3(red, green, blue);
+    printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
-	g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -376,12 +397,12 @@ static void PRINT_APIENTRY printColor3usv(const GLushort * v)
 
 static void PRINT_APIENTRY printColor4b(GLbyte red, GLbyte green, GLbyte blue, GLbyte alpha)
 {
-	printColor3b(red, green, blue);
+	printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4bv(const GLbyte * v)
 {
-	printColor3bv(v);
+	printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor4d(GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha)
@@ -391,37 +412,37 @@ static void PRINT_APIENTRY printColor4d(GLdouble red, GLdouble green, GLdouble b
 
 static void PRINT_APIENTRY printColor4dv(const GLdouble * v)
 {
-	printColor3dv(v);
+	printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-	printColor3f(red, green, blue);
+	printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4fv(const GLfloat * v)
 {
-	printColor3fv(v);
+	printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor4i(GLint red, GLint green, GLint blue, GLint alpha)
 {
-	printColor3i(red, green, blue);
+	printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4iv(const GLint * v)
 {
-	printColor3iv(v);
+	printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor4s(GLshort red, GLshort green, GLshort blue, GLshort alpha)
 {
-	printColor3s(red, green, blue);
+	printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor4sv(const GLshort * v)
 {
-	printColor3sv(v);
+	printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
@@ -634,10 +655,12 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
+#ifdef ENABLE_MATRIALS
 	if (g_isReading && cap == GL_POLYGON_STIPPLE) {
 		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
 		g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
 	}
+#endif
 
 #ifdef ENABLE_LIGHTS
     if (cap >= GL_LIGHT0 && cap <= GL_LIGHT7)
@@ -673,23 +696,26 @@ static void PRINT_APIENTRY printEnd(void)
 			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
 			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
 
-			if (g_state != NULL)
-			{
-				g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
-			}
-			g_geode->addDrawable(g_geom);
+            g_geom->setSupportsDisplayList(true);
+            g_geom->setUseDisplayList(true);
 
 #ifdef ENABLE_MATERIAL
+
+			if (g_state != NULL)
+			{
+                g_geode->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
+			}
+
             if (g_material != NULL)
             {
                 g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
-#endif
-		}
 
-		if (g_geode){
-			g_PatArray.back()->addChild(g_geode);
+#endif
+            g_geode->addDrawable(g_geom);
+            g_hasDrawn = true;
 		}
+		
 	}
 
 	if (g_isDisplayList)
@@ -698,26 +724,29 @@ static void PRINT_APIENTRY printEnd(void)
 		// create a g_geode and add it to the pat
 		if (g_vertexArray->size() > 0)
 		{
+
+#ifdef ENABLE_MATERIAL
+
 			g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
 			g_geom->setVertexArray(g_vertexArray);
 			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
 			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
 			if (g_state != NULL)
 			{
-                g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
+                //g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
 			}
-			g_geode->addDrawable(g_geom);
 
-#ifdef ENABLE_MATERIAL
             if (g_material != NULL)
             {
                 g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
+
 #endif
+            g_geode->addDrawable(g_geom);
 		}
 
 		if (g_geode) {
-			g_PatArrayDisplayList.back()->addChild(g_geode);
+			//g_PatArrayDisplayList.back()->addChild(g_geode);
 		}
 	}
 }
@@ -1353,25 +1382,35 @@ static void PRINT_APIENTRY printLoadIdentity(void)
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
+    if (g_hasDrawn)
+    {
+        g_spuRootGroup->addChild(g_geode);
+        g_geode = new osg::Geode();
+        g_hasDrawn = false;
+    }
+
     g_CurrentMatrix.set(m);
+
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
     if (g_isReading)
     {
-        // create a pat node
-		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-		g_PatArray.back()->addChild(pat);
-        g_PatArray.push_back(pat);
+        g_matrix_stack.push_back(g_CurrentMatrix);
     }
-    //pushing current matrix in stack
-    g_matrix_stack.push_back(g_CurrentMatrix);
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-    g_CurrentMatrix.set(m);    
+    if (g_hasDrawn)
+    {
+        g_spuRootGroup->addChild(g_geode);
+        g_geode = new osg::Geode();
+        g_hasDrawn = false;
+    }
+
+    g_CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1479,16 +1518,22 @@ static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 }
 static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
 {
-    osg::Matrix mat = osg::Matrix();
-    mat.set(m);
-    g_CurrentMatrix = mat * g_CurrentMatrix;
+    if (g_isReading)
+    {
+        osg::Matrix mat = osg::Matrix();
+        mat.set(m);
+        g_CurrentMatrix = mat * g_CurrentMatrix;
+    }
 }
 
 static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
 {
-    osg::Matrix mat = osg::Matrix();
-    mat.set(m);
-    g_CurrentMatrix = mat * g_CurrentMatrix;
+    if (g_isReading)
+    {
+        osg::Matrix mat = osg::Matrix();
+        mat.set(m);
+        g_CurrentMatrix = mat * g_CurrentMatrix;
+    }
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -1777,14 +1822,10 @@ static void PRINT_APIENTRY printPopMatrix(void)
 {
     if (g_isReading)
     {
-        g_PatArray.pop_back();
+        osg::Matrix top_mat = g_matrix_stack.back();
+        g_matrix_stack.pop_back();
+        g_CurrentMatrix = top_mat;
     }
-        
-    osg::Matrix top_mat = g_matrix_stack.back();
-    g_matrix_stack.pop_back();
-    g_CurrentMatrix = top_mat;
-
-	
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -2034,16 +2075,14 @@ static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, 
 {
 	if (g_isReading)
 	{
-		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
+        osg::Matrix mat;
+        g_CurrentMatrix = mat.rotate(angle, x, y, z) * g_CurrentMatrix;
 	}
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading)
-	{
-		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
-	}
+    printRotated(angle, x, y, z);
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -2054,7 +2093,7 @@ static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
 	if (g_isReading)
 	{
-		g_PatArray.back()->setScale(osg::Vec3( x, y, z));
+
 	}
 }
 
@@ -2181,8 +2220,9 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	if (g_isReading)
 	{
 		g_startReading = false;
-		g_spuRootGroup->addChild(g_PatArray.back());
-		g_PatArray.pop_back();
+		//g_spuRootGroup->addChild(g_PatArray.back());
+        g_spuRootGroup->addChild(g_geode);
+		//g_PatArray.pop_back();
 
 		if (g_hasTouchedBegin == false)
 		{
@@ -2199,6 +2239,8 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
             }
         }
 #endif
+        osgUtil::Optimizer optimizer;
+        optimizer.optimize(g_spuRootGroup);
 
 		g_pt2Func(g_context, g_spuRootGroup.get());
 	}
@@ -2214,14 +2256,15 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	if (g_startReading)
 	{
 		g_spuRootGroup = new osg::Group;
+        //g_geode = new osg::Geode;
 
 #ifdef ENABLE_MATERIAL
         g_material = new osg::Material();
 #endif
-
-		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-
-		g_PatArray.push_back(pat);
+        last_color[0] = -1;
+        last_color[1] = -1;
+        last_color[2] = -1;
+        g_hasDrawn = true;
 		g_startReading = false;
 	}
 }
@@ -2437,18 +2480,16 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading && g_PatArray.size() > 1)
-	{
-		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-	}
+    if (g_isReading)
+    {
+        osg::Matrix mat;
+        g_CurrentMatrix = mat.translate(x, y, z) * g_CurrentMatrix;
+    }
 }
 
 static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading && g_PatArray.size() > 1)
-	{
-		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-	}
+    printTranslated(x, y, z);
 }
 
 static GLboolean PRINT_APIENTRY printUnmapBufferARB(GLenum target)
@@ -2924,7 +2965,7 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_AMBIENT_AND_DIFFUSE:
-    	g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
+        printColor3d(params[0], params[1], params[2]);
         g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
         break;
     }
