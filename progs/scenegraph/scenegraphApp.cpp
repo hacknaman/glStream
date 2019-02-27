@@ -134,6 +134,13 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
         {
             RootNode->removeChild(TransVizNode);
         }
+        osg::ref_ptr<osg::PositionAttitudeTransform> pat = new osg::PositionAttitudeTransform();
+        pat->setScale( osg::Vec3(0.5, 0.5, 0.5) );
+        pat->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
+        pat->addChild(node);
+        //RootNode->addChild(pat);
+        //TransVizNode = pat;
+        // No pat
         RootNode->addChild(node);
         TransVizNode = node;
         std::cout << "Node Added by app" << std::endl;
