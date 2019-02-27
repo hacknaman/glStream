@@ -36,8 +36,8 @@ See the file LICENSE.txt for information on redistributing this software. */
 static int g_ret_count = 2000;
 
 // comment out this code to disable material / lights
-#define ENABLE_MATERIAL
-#define ENABLE_LIGHTS
+//#define ENABLE_MATERIAL
+//#define ENABLE_LIGHTS
 
 osg::ref_ptr<osg::Vec3Array> g_vertexArray;
 osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -67,6 +67,7 @@ osg::ref_ptr<osg::LightSource> g_light[8];
 #endif
 
 static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
+std::vector<osg::ref_ptr<osg::Group> > g_spuGroupMap;
 
 int g_geometryMode = -1;
 int g_currentMatrixMode = -1;
@@ -79,7 +80,6 @@ int g_calledreadFromApp = false;
 int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
-std::time_t g_time = std::time(0);
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
@@ -88,10 +88,12 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
     g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
     g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
+#ifdef ENABLE_LIGHTS
     for (auto light : g_light)
     {
         light = NULL;
     }
+#endif 
 
     g_PatArray.clear();
     g_PatArrayDisplayList.clear();
@@ -109,10 +111,13 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 
     g_isDisplayList = false;
 
-    g_time = std::time(0);
 }
 
 ReviewCppWrapper::ReviewCppAPI rapi;
+ReviewCppWrapper::Element RootElement;
+std::vector<ReviewCppWrapper::Element*> ElementSequence;
+int sequence_index = -1;
+int depth_value = 2; 
 std::string camerashakeapp;
 
 #define DRAW_APPCAM
@@ -124,10 +129,29 @@ osg::Geode* mybeamGeode;
 
 osg::Matrix g_matcam; // default identity matrix
 
+void FillSequenceGroupRep(ReviewCppWrapper::Element& Element)
+{
+    // color id set by api to find elements who were colored
+    if (Element.colorid == ReviewCppWrapper::FirstColorid || Element.colorid == ReviewCppWrapper::SecondColorid)
+    {
+        g_spuGroupMap.push_back(new osg::Group());
+        g_spuGroupMap.back()->setName(Element.name);
+        ElementSequence.push_back(&Element);
+        return;
+    }
 
+    for (int i = 0; i < Element.Children.size(); i++) {
+        FillSequenceGroupRep(Element.Children[i]);
+    }
+}
 
 extern OSGEXPORT void changeSceneASC() {
 
+}
+
+extern OSGEXPORT void resetClientASC() {
+    if (rapi.IsConnected())
+        rapi.ResetMaterials();
 }
 
 extern OSGEXPORT void getUpdatedSceneASC(){
@@ -176,7 +200,13 @@ extern OSGEXPORT void getUpdatedSceneASC(){
     reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
     g_matcam = reviewcam->getInverseViewMatrix();
 
-    Sleep(100);
+    rapi.GetElementList(RootElement);
+    rapi.SetMaterialOnNodeNew(RootElement, depth_value);
+    ElementSequence.clear();
+    g_spuGroupMap.clear();
+    FillSequenceGroupRep(RootElement); // This fills ElementSequnce and g_spuGroupMap. Both stores element that were colored using the api
+    sequence_index = -1;
+
 #endif
 
     g_calledreadFromApp = true;
@@ -325,7 +355,12 @@ static void PRINT_APIENTRY printCallList(GLuint list)
 {
     if (g_isReading) {
         g_hasTouchedBegin = true;
-        g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
+        int listIndexInInt = list;
+        int displayListSizeLessOne = g_PatArrayDisplayList.size() - 1;
+        if (listIndexInInt <= displayListSizeLessOne)
+        {
+            g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
+        }
     }
 }
 
@@ -383,32 +418,59 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
+    if (!g_isReading)
+    {
+        return;
+    }
+
     g_CurrentColor = osg::Vec3(red, green, blue);
+   
+    int FakeColor = int(g_CurrentColor[0] * 1000000) + int(g_CurrentColor[1] * 10000) + int(g_CurrentColor[2] * 100);
+    if (FakeColor == ReviewCppWrapper::FirstColor || FakeColor == ReviewCppWrapper::SecondColor)
+    {
+        sequence_index++;
+        // bounding box check, to see if the geometry is present in the group we are about to get the
+        // gl calls for else we move ahead
+        for (int i = sequence_index; sequence_index < ElementSequence.size(); i++)
+        {
+            if (ElementSequence[sequence_index]->extents[0] - ElementSequence[sequence_index]->extents[3] == 0
+                && ElementSequence[sequence_index]->extents[1] - ElementSequence[sequence_index]->extents[4] == 0
+                && ElementSequence[sequence_index]->extents[2] - ElementSequence[sequence_index]->extents[5] == 0)
+            {
+                sequence_index++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+    }
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    printColor3f(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
-    g_CurrentColor = osg::Vec3(red, green, blue);
+    printColor3f(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    printColor3f(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
-    g_CurrentColor = osg::Vec3(red, green, blue);
+    printColor3f(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    printColor3f(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -749,7 +811,15 @@ static void PRINT_APIENTRY printEnd(void)
         }
 
         if (g_geode){
-            g_PatArray.back()->addChild(g_geode);
+           // g_PatArray.back()->addChild(g_geode);
+           // int Index = int(g_CurrentColor[0]*1000000) + int(g_CurrentColor[1]*10000) + int(g_CurrentColor[2]*100);
+            osg::ref_ptr<osg::Group> currentgroup = g_spuGroupMap[sequence_index];
+            osg::Vec3Array *colorarr = new osg::Vec3Array();
+            osg::Vec3 color(ElementSequence[sequence_index]->realColor[0] / 100, ElementSequence[sequence_index]->realColor[1] / 100, ElementSequence[sequence_index]->realColor[2] / 100);
+            colorarr->push_back(color);
+            g_geom->setColorArray(colorarr, osg::Array::BIND_OVERALL);
+            currentgroup->addChild(g_geode);
+            g_geode->setName(ElementSequence[sequence_index]->name);
         }
     }
 
@@ -1368,11 +1438,10 @@ static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param
         return;
     }
 
+#ifdef ENABLE_LIGHTS
     if (g_light[light - GL_LIGHT0] == NULL){
         g_light[light - GL_LIGHT0] = new osg::LightSource();
     }
-
-#ifdef ENABLE_LIGHTS
 
     switch (pname)
     {
@@ -2267,7 +2336,13 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 #ifdef DRAW_APPCAM_BEAM
         g_spuRootGroup->addChild(mybeamGeode);
 #endif
+        for (auto group : g_spuGroupMap)
+        {
+            g_spuRootGroup->addChild(group);
+        }
+
         g_pt2Func(g_context, g_spuRootGroup);
+       // rapi.ResetMaterials();
     }
 
     if (g_calledreadFromApp)
@@ -2279,7 +2354,8 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         g_CurrentMatrix = osg::Matrix();
 
 		// update camera matrix
-		double cameraPosition[3];
+		/*
+        double cameraPosition[3];
 		double cameraLookat[3];
 		double cameraRoll;
 		rapi.getCamera(cameraPosition, cameraLookat, cameraRoll);
@@ -2288,6 +2364,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 		osg::ref_ptr<osg::Camera> reviewcam = new osg::Camera();
 		reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
 		g_matcam = reviewcam->getInverseViewMatrix();
+        */
     }
 
     if (g_startReading)
@@ -2301,6 +2378,8 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 
         g_PatArray.push_back(pat);
         g_startReading = false;
+        
+        sequence_index = -1;
     }
 }
 

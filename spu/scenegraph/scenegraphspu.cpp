@@ -257,9 +257,14 @@ static void PRINT_APIENTRY printBufferSubDataARB(GLenum target, GLintptrARB offs
 
 static void PRINT_APIENTRY printCallList(GLuint list)
 {
-	if (g_isReading) {
-		g_hasTouchedBegin = true;
-		g_PatArray.back()->addChild(g_PatArrayDisplayList[list-1].get());
+    if (g_isReading) {
+        g_hasTouchedBegin = true;
+        int listIndexInInt = list;
+        int displayListSizeLessOne = g_PatArrayDisplayList.size() - 1;
+        if (listIndexInInt <= displayListSizeLessOne)
+        {
+            g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
+        }
 	}
 }
 

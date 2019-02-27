@@ -47,10 +47,7 @@ void PRINT_APIENTRY printChromiumParametervCR(GLenum target, GLenum type, GLsize
 
 void PRINT_APIENTRY printChromiumParameteriCR(GLenum target, GLint value)
 {
-	switch (target) {
-	default:
-		break;
-	}
+	
 }
 
 void PRINT_APIENTRY printGenTextures( GLsizei n, GLuint * textures )
