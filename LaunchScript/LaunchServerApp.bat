@@ -1,8 +1,12 @@
-SET ApplcaitonPath=C:/AVEVA_x64/rsdf
-SET ApplcaitonName=gears
-SET CLIENT_HOSTNAME=localhost
+SET ApplcaitonPath="C:\Program Files\Dassault Systemes\B20\win_b64\code\bin"
+SET ApplcaitonName=CNEXT
+SET CLIENT_HOSTNAME=DESKTOP-RGHON0Q
 
-SET TransVizInstalledPath=C:\Project\TransViz\build\
+SET TransVizInstalledPath=C:/Program Files (x86)/VRPlay/
 
-start /B cmd /k "runConfig.bat" 
+::SET TransVizInstalledPathConfig=%TransVizInstalledPath%LaunchScript/runconfig.bat
+::SET fakerpath=%TransVizInstalledPath%LaunchScript/runfaker.bat
+SET PATH=%PATH%;%TransVizInstalledPath%LaunchScript
+start /B cmd /c "runconfig.bat"
+
 runFaker.bat

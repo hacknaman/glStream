@@ -1,6 +1,6 @@
-SET OSSROOT=C:/Project/TransViz/ExternalLibrary
-SET TrasVizPath=C:/Project/TransViz/build/
-SET SERVER_HOSTNAME=localhost
+SET OSSROOT=C:/Program Files (x86)/VRPlay/bin
+SET TrasVizPath=C:/Program Files (x86)/VRPlay/
+SET SERVER_HOSTNAME=omesharma
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4
@@ -11,5 +11,5 @@ set OSG_PLUGIN_DIR=%OSG_BIN%\osgPlugins-3.4.2
 :: dynamic libs paths
 set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%PATH%
 
-cd %TrasVizPath%/bin
-ScenegraphApp -mothership %SERVER_HOSTNAME%
+cd %TrasVizPath%bin
+::ScenegraphApp -mothership %SERVER_HOSTNAME%
