@@ -1,8 +1,10 @@
-SET ApplcaitonPath=C:/AVEVA_x64/rsdf
-SET ApplcaitonName=gears
+SET ApplcaitonPath=D:/Project/TransViz/build/bin/gl
+SET ApplcaitonName=city
 SET CLIENT_HOSTNAME=localhost
+cd ..
+SET @TransVizPath=%cd%
+cd LaunchScript
 
-SET TransVizInstalledPath=C:\Project\TransViz\build\
-
+SET TransVizInstalledPath=%@TransVizPath%
 start /B cmd /k "runConfig.bat" 
 runFaker.bat
