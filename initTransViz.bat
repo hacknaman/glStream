@@ -1,6 +1,5 @@
 :: SET OSS ROOT PATH
-set OSSROOT=D:\Project\TransViz\ExternalLibrary
-
+set OSSROOT=%cd%\ExternalLibrary
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4
