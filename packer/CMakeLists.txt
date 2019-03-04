@@ -172,3 +172,9 @@ install(TARGETS replicatespu_crpacker_copy
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
 	RUNTIME DESTINATION bin COMPONENT runtime)
+SET_TARGET_PROPERTIES(crpacker  PROPERTIES FOLDER "Packer")
+SET_TARGET_PROPERTIES(tilesortspu_crpacker_copy  PROPERTIES FOLDER "Packer")
+SET_TARGET_PROPERTIES(hiddenlinespu_crpacker_copy  PROPERTIES FOLDER "Packer")
+SET_TARGET_PROPERTIES(archsplitspu_crpacker_copy  PROPERTIES FOLDER "Packer")
+SET_TARGET_PROPERTIES(replicatespu_crpacker_copy  PROPERTIES FOLDER "Packer")
+SET_TARGET_PROPERTIES(packspu_crpacker_copy  PROPERTIES FOLDER "Packer")
