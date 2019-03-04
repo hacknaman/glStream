@@ -1,3 +1,2 @@
-cd %TransVizInstalledPath%bin
-C:
+cd %TransVizInstalledPath%\bin
 crappfaker -mothership localhost
