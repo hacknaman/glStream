@@ -31,3 +31,9 @@ if (GLUT_FOUND)
   )
 
 endif()
+
+install(DIRECTORY $ENV{GLUT_DIR}/bin/x64/
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
+
+install(DIRECTORY $ENV{GLUT_DIR}/bin/x64/
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/apps )

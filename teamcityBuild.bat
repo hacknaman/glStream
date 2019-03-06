@@ -1,7 +1,7 @@
 :: OSS ROOT PATH IS SET FROM TEAMCITY CLIENT
 
 call FetchExternalDeps.bat
-set OSSROOT=E:\agent\BuildAgent\work\TransViz\ExternalLibrary
+set OSSROOT=%cd%\ExternalLibrary
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4
@@ -54,7 +54,9 @@ set buildType=%1
 call GenerateSolution.bat
 call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
 msbuild "TransViz.sln" /p:configuration=%buildType%
+IF %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
+:: This should be moved to package code
 cmake --build . --config %buildType% --target INSTALL
 cd ..
 
@@ -64,3 +66,6 @@ robocopy %OSSROOT%\osg-3.4\bin\osgPlugins-3.4.2 .\build\bin *.dll /MT:25
 
 :: copy glut
 robocopy %OSSROOT%\glut\bin\x64 .\build\bin *.dll /MT:25
+
+:: build ok
+exit /b 0
