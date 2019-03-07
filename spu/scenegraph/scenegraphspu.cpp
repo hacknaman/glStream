@@ -72,7 +72,7 @@ int g_startReading = false;
 int g_isReading = false;
 int g_canAdd = false;
 
-int g_calledreadFromApp = false;
+int g_shouldStartReading = false;
 int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
@@ -103,7 +103,7 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
     g_isReading = false;
     g_canAdd = false;
 
-    g_calledreadFromApp = false;
+    g_shouldStartReading = false;
     g_hasTouchedBegin = false;
 
     g_isDisplayList = false;
@@ -115,7 +115,7 @@ std::string camerashakeapp;
 
 extern OSGEXPORT void getUpdatedSceneSC(){
 
-    g_calledreadFromApp = true;
+    g_shouldStartReading = true;
 
     if (camerashakeapp.empty())
     {
@@ -1457,10 +1457,6 @@ static void PRINT_APIENTRY printLogicOp(GLenum opcode)
 {
 }
 
-static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
-{
-}
-
 static void PRINT_APIENTRY printMap1d(GLenum target, GLdouble u1, GLdouble u2, GLint stride, GLint order, const GLdouble * points)
 {
 }
@@ -2268,29 +2264,32 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 
         if (g_hasTouchedBegin == false)
         {
-            g_calledreadFromApp = true;
+            g_shouldStartReading = true;
         }
 
-        g_isReading = false;
+        if (g_shouldStartReading == false)
+        {
+            g_isReading = false;
 
 #ifdef ENABLE_LIGHTS
-        for (int i = GL_LIGHT0; i <= GL_LIGHT7; ++i)
-        {
-            if (g_light[i - GL_LIGHT0] != NULL){
-                g_spuRootGroup->addChild(g_light[i - GL_LIGHT0]);
-    }
-}
+            for (int i = GL_LIGHT0; i <= GL_LIGHT7; ++i)
+            {
+                if (g_light[i - GL_LIGHT0] != NULL){
+                    g_spuRootGroup->addChild(g_light[i - GL_LIGHT0]);
+                }
+            }
 #endif
-        // This can be optimized further if geode are mearged
-        osgUtil::Optimizer optimizer;
-        optimizer.optimize(g_spuRootGroup);
+            // This can be optimized further if geode are mearged
+            osgUtil::Optimizer optimizer;
+            optimizer.optimize(g_spuRootGroup);
 
-        g_pt2Func(g_context, g_spuRootGroup.get());
+            g_pt2Func(g_context, g_spuRootGroup.get());
+        }
     }
 
-    if (g_calledreadFromApp)
+    if (g_shouldStartReading)
     {
-        g_calledreadFromApp = false;
+        g_shouldStartReading = false;
         g_startReading = true;
         g_isReading = true;
         g_hasTouchedBegin = false;
@@ -2310,6 +2309,16 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         g_hasDrawnSomething = true;
         g_startReading = false;
     }
+}
+
+static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
+{
+    GLint flags = 0;
+    if (g_isReading)
+    {
+        g_shouldStartReading = true;
+    }
+    printSwapBuffers(window, flags);
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
