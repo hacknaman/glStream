@@ -53,7 +53,8 @@ set buildType=%1
 
 call GenerateSolution.bat
 call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
-msbuild "TransViz.sln" /p:configuration=%buildType%
+:: not building in parallel because of compilation error caused by source files generated from python scripts
+msbuild "TransViz.sln" /p:configuration=%buildType% /p:BuildInParallel=false
 IF %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 :: This should be moved to package code
