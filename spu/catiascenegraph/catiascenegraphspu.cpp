@@ -8,6 +8,7 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "cr_spu.h"
 #include "catiascenegraphspu.h"
 //global object
+
 #define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
 

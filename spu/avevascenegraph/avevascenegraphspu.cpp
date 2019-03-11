@@ -1466,10 +1466,6 @@ static void PRINT_APIENTRY printLogicOp(GLenum opcode)
 {
 }
 
-static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
-{
-}
-
 static void PRINT_APIENTRY printMap1d(GLenum target, GLdouble u1, GLdouble u2, GLint stride, GLint order, const GLdouble * points)
 {
 }
@@ -2344,6 +2340,16 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         
         aveva_spu.sequence_index = -1;
     }
+}
+
+static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
+{
+    GLint flags = 0;
+    if (aveva_spu.superSpuState->g_isReading)
+    {
+        aveva_spu.superSpuState->g_shouldStartReading = true;
+    }
+    printSwapBuffers(window, flags);
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)

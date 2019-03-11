@@ -11,6 +11,9 @@ See the file LICENSE.txt for information on redistributing this software. */
 // This is enabled for part selection in aveva
 #define GEODE_WITH_LM
 
+#define ENABLE_MATERIAL
+//#define ENABLE_LIGHTS
+
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
     scenegraph_spu_data.g_ret_count = 2000;
@@ -2283,12 +2286,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 
 static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
 {
-    GLint flags = 0;
-    if (scenegraph_spu_data.g_isReading)
-    {
-        scenegraph_spu_data.g_shouldStartReading = true;
-    }
-    printSwapBuffers(window, flags);
+  
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
