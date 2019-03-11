@@ -33,8 +33,7 @@
 #include <ctime>
 #define PRINT_UNUSED(x) ((void)x)
 // comment out this code to disable material / lights
-//#define ENABLE_MATERIAL
-//#define ENABLE_LIGHTS
+
 //(127-(-128)) where 127 is max value for signed byte and -128 is minimum value
 
 #define BYTEMINMAXDIFF 255
@@ -79,13 +78,8 @@ typedef struct {
 
      osg::ref_ptr<osg::StateSet> g_state;
 
-#ifdef ENABLE_MATERIAL
      osg::ref_ptr<osg::Material> g_material;
-#endif
-
-#ifdef ENABLE_LIGHTS
      osg::ref_ptr<osg::LightSource> g_light[8];
-#endif
 
      osg::ref_ptr<osg::Group> g_spuRootGroup;
 

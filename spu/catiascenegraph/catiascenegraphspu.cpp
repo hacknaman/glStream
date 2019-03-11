@@ -8,7 +8,8 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "cr_spu.h"
 #include "catiascenegraphspu.h"
 //global object
-
+#define ENABLE_MATERIAL
+//#define ENABLE_LIGHTS
 
 static CatiaMetaDataApi::CatiaGeomDetail* curr_catia_geom_detail = nullptr;
 static std::string geode_name = "";
@@ -612,9 +613,9 @@ static void PRINT_APIENTRY printEnd(void)
             catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
 
 #ifdef ENABLE_MATERIAL
-            if (g_material != NULL)
+            if (catia_spu.superSpuState->g_material != NULL)
             {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 #endif
 		}
@@ -646,9 +647,9 @@ static void PRINT_APIENTRY printEnd(void)
             catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
 
 #ifdef ENABLE_MATERIAL
-            if (g_material != NULL)
+            if (catia_spu.superSpuState->g_material != NULL)
             {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 #endif
 		}
@@ -1355,17 +1356,17 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
 
 #ifdef ENABLE_MATERIAL
 
-    if (g_material == NULL)
+    if (catia_spu.superSpuState->g_material == NULL)
     {
-        g_material = new osg::Material();
+        catia_spu.superSpuState->g_material = new osg::Material();
     }
 
-    g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
+    catia_spu.superSpuState->g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
 
     switch (pname)
     {
     case GL_SHININESS:
-        g_material->setShininess(osg::Material::Face::FRONT_AND_BACK, param);
+        catia_spu.superSpuState->g_material->setShininess(osg::Material::Face::FRONT_AND_BACK, param);
         break;
     }
 
