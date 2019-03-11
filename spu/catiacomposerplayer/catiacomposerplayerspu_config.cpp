@@ -4,7 +4,7 @@
  * See the file LICENSE.txt for information on redistributing this software.
  */
 
-#include "catiascenegraphspu.h"
+#include "catiacomposerplayerspu.h"
 #include "cr_mothership.h"
 #include "cr_string.h"
 #include "cr_error.h"
@@ -13,21 +13,21 @@
 
 static void __setDefaults( void )
 {
-	catia_spu.fp = stderr;
+	catia_composer_player_spu.fp = stderr;
 }
 
 static void set_marker_text( void *foo, const char *response )
 {
-	catia_spu.marker_text = crStrdup(response);
+	catia_composer_player_spu.marker_text = crStrdup(response);
 }
 static void set_marker_signal( void *foo, const char *response )
 {
-	catia_spu.marker_signal = crStrToInt(response);
+	catia_composer_player_spu.marker_signal = crStrToInt(response);
 }
 
 static void set_log_file( void *foo, const char *response )
 {
-	catia_spu.fp = stdout;
+	catia_composer_player_spu.fp = stdout;
 }
 
 
@@ -63,9 +63,9 @@ void printspuGatherConfiguration( const SPU *child_spu )
 		/* defaults are fine. */
 		return;
 	}
-	crMothershipIdentifySPU( conn, catia_spu.id );
+	crMothershipIdentifySPU( conn, catia_composer_player_spu.id );
 
-	crSPUGetMothershipParams( conn, &catia_spu, printSPUOptions );
+	crSPUGetMothershipParams( conn, &catia_composer_player_spu, printSPUOptions );
 
 	crMothershipDisconnect( conn );
 }

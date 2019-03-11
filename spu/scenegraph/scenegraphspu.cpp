@@ -7,115 +7,53 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "cr_error.h"
 #include "cr_spu.h"
 #include "scenegraphspu.h"
-#include <vector>
-#include <osg/LineWidth>
-#include <osg/BlendFunc>
-#include <osg/Group>
-#include <osg/Geode>
-#include <osg/Node>
-#include <osg/Geometry>
-#include <osg/Polygonmode>
-#include <osg/Material>
-#include <osg/PositionAttitudeTransform>
-#include <osg/PolygonStipple>
-#include <OpenThreads/Mutex>
-#include <osgDB/Export>
-#include <osgDB/Registry>
-#include <osgDB/ReadFile>
-#include <osgDB/Writefile>
-#include <osgUtil/Optimizer>
-
-#include <osg/LightSource>
-#include <osg/LightModel>
-#include <osg/Light>
-#include <ctime>
-#define PRINT_UNUSED(x) ((void)x)
-static int g_ret_count = 2000;
-
-// Comment out this code to disable material / lights
-#define ENABLE_MATERIAL
-//#define ENABLE_LIGHTS
-
+#include <osgUtil\Optimizer>
 // This is enabled for part selection in aveva
 #define GEODE_WITH_LM
 
-osg::ref_ptr<osg::Vec3Array> g_vertexArray;
-osg::ref_ptr<osg::Vec3Array> g_normalArray;
-osg::ref_ptr<osg::Vec3Array> g_colorArray;
 
-osg::Vec3 g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-osg::Vec3 g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
-osg::Matrix g_CurrentMatrix;
-
-osg::ref_ptr<osg::Geometry> g_geom;
-osg::ref_ptr<osg::Geode> g_geode;
-
-std::vector<osg::Matrix> g_matrix_stack;
-std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
-
-osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet;
-
-#ifdef ENABLE_MATERIAL
-osg::ref_ptr<osg::Material> g_material;
-#endif
-
-#ifdef ENABLE_LIGHTS
-osg::ref_ptr<osg::LightSource> g_light[8];
-#endif
-
-static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
-
-int g_geometryMode = -1;
-int g_currentMatrixMode = -1;
-
-int g_startReading = false;
-int g_isReading = false;
-int g_canAdd = false;
-
-int g_shouldStartReading = false;
-int g_hasTouchedBegin = false;
-
-int g_isDisplayList = false;
-bool g_hasDrawnSomething = false;
-std::time_t g_time = std::time(0);
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
-    g_ret_count = 2000;
+    scenegraph_spu_data.g_ret_count = 2000;
 
-    g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-    g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+    scenegraph_spu_data.g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
+    scenegraph_spu_data.g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
 #ifdef ENABLE_LIGHTS
     for (auto light : g_light)
     {
-        light = NULL;
+        scenegraph_spu_data.light = NULL;
     }
 #endif
 
-	g_PatArrayDisplayList.clear();
+    scenegraph_spu_data.g_PatArrayDisplayList.clear();
 
-    g_spuRootGroup = new osg::Group;
 
-    g_geometryMode = -1;
+    scenegraph_spu_data.g_spuRootGroup = new osg::Group;
+    scenegraph_spu_data.g_state = new osg::StateSet;
 
-    g_startReading = false;
-    g_isReading = false;
-    g_canAdd = false;
+    scenegraph_spu_data.g_geometryMode = -1;
 
-    g_shouldStartReading = false;
-    g_hasTouchedBegin = false;
+    scenegraph_spu_data.g_startReading = false;
+    scenegraph_spu_data.g_isReading = false;
+    scenegraph_spu_data.g_canAdd = false;
 
-    g_isDisplayList = false;
+    scenegraph_spu_data.g_shouldStartReading = false;
+    scenegraph_spu_data.g_hasTouchedBegin = false;
 
-    g_time = std::time(0);
+
+    scenegraph_spu_data.g_isDisplayList = false;
+    scenegraph_spu_data.g_hasDrawnSomething = false;
+    scenegraph_spu_data.g_time = std::time(0);
 }
 
 std::string camerashakeapp;
 
-extern OSGEXPORT void getUpdatedSceneSC(){
+extern void getUpdatedSceneSC(){
 
-    g_shouldStartReading = true;
+    scenegraph_spu_data.g_shouldStartReading = true;
+
 
     if (camerashakeapp.empty())
     {
@@ -133,15 +71,15 @@ extern OSGEXPORT void getUpdatedSceneSC(){
     }
 }
 
-void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
-void *g_context = NULL;
+extern void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
 
-extern OSGEXPORT void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
-
-    g_pt2Func = pt2Func;
-    g_context = context;
+    scenegraph_spu_data.g_pt2Func = pt2Func;
+    scenegraph_spu_data.g_context = context;
 }
-
+extern OSGEXPORT ScenegraphSpuData* getScenegraphSpuData()
+{
+    return &scenegraph_spu_data;
+}
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
 {
 
@@ -184,23 +122,24 @@ static void PRINT_APIENTRY printBarrierExecCR(GLuint name)
 
 static void PRINT_APIENTRY printBegin(GLenum mode)
 {
-    if (g_isReading)
+    if (scenegraph_spu_data.g_isReading)
     {
-        g_hasTouchedBegin = true;
-        g_hasDrawnSomething = true;
-        g_geometryMode = mode;
-        g_vertexArray = new osg::Vec3Array();
-        g_normalArray = new osg::Vec3Array();	
-        g_colorArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_hasTouchedBegin = true;
+        scenegraph_spu_data.g_hasDrawnSomething = true;
+        scenegraph_spu_data.g_geometryMode = mode;
+        scenegraph_spu_data.g_vertexArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_normalArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_colorArray = new osg::Vec3Array();
+
     }
 
-    if (g_isDisplayList)
+    if (scenegraph_spu_data.g_isDisplayList)
     {
-        g_geometryMode = mode;
-        g_geode = new osg::Geode();
-        g_vertexArray = new osg::Vec3Array();
-        g_normalArray = new osg::Vec3Array();
-        g_colorArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_geometryMode = mode;
+        scenegraph_spu_data.g_geode = new osg::Geode();
+        scenegraph_spu_data.g_vertexArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_normalArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_colorArray = new osg::Vec3Array();
     }
 }
 
@@ -258,13 +197,14 @@ static void PRINT_APIENTRY printBufferSubDataARB(GLenum target, GLintptrARB offs
 
 static void PRINT_APIENTRY printCallList(GLuint list)
 {
-    if (g_isReading) {
-        g_hasTouchedBegin = true;
+    if (scenegraph_spu_data.g_isReading) {
+        scenegraph_spu_data.g_hasTouchedBegin = true;
         int listIndexInInt = list;
-        int displayListSizeLessOne = g_PatArrayDisplayList.size() - 1;
+        int displayListSizeLessOne = scenegraph_spu_data.g_PatArrayDisplayList.size() - 1;
         if (listIndexInInt <= displayListSizeLessOne)
         {
             //g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
+
         }
 	}
 }
@@ -307,11 +247,11 @@ static void PRINT_APIENTRY printClipPlane(GLenum plane, const GLdouble * equatio
 
 void CreateNewGeode() 
 {
-    if (g_hasDrawnSomething)
+    if (scenegraph_spu_data.g_hasDrawnSomething)
     {
-        g_spuRootGroup->addChild(g_geode);
-        g_geode = new osg::Geode();
-        g_hasDrawnSomething = false;
+        scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
+        scenegraph_spu_data.g_geode = new osg::Geode();
+        scenegraph_spu_data.g_hasDrawnSomething = false;
     }
 }
 
@@ -319,7 +259,7 @@ double last_color[3];
 
 static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble blue)
 {
-    if (g_isReading)
+    if (scenegraph_spu_data.g_isReading)
     {
         if (!(last_color[0] == red && last_color[1] == green && last_color[2] == blue))
         {
@@ -327,15 +267,18 @@ static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble b
             last_color[1] = green;
             last_color[2] = blue;
 
+
             CreateNewGeode();
         }
-        g_CurrentColor = osg::Vec3(red, green, blue);
+        scenegraph_spu_data.g_CurrentColor = osg::Vec3(red, green, blue);
     }
 }
 
 static void PRINT_APIENTRY printColor3b(GLbyte red, GLbyte green, GLbyte blue)
 {
+
     printColor3d(red, green, blue);
+
 }
 
 static void PRINT_APIENTRY printColor3bv(const GLbyte * v)
@@ -440,7 +383,11 @@ static void PRINT_APIENTRY printColor4fv(const GLfloat * v)
 
 static void PRINT_APIENTRY printColor4i(GLint red, GLint green, GLint blue, GLint alpha)
 {
-	printColor3d(red, green, blue);
+    double r = GLdouble(2 * red + 1) / GLdouble(INTMAXMINDIFF);
+    double g = GLdouble(2 * green + 1) / GLdouble(INTMAXMINDIFF);
+    double b = GLdouble(2 * blue + 1) / GLdouble(INTMAXMINDIFF);
+    double a = GLdouble(2 * alpha + 1) / GLdouble(INTMAXMINDIFF);
+    printColor3d(r, g, b);
 }
 
 static void PRINT_APIENTRY printColor4iv(const GLint * v)
@@ -450,7 +397,11 @@ static void PRINT_APIENTRY printColor4iv(const GLint * v)
 
 static void PRINT_APIENTRY printColor4s(GLshort red, GLshort green, GLshort blue, GLshort alpha)
 {
-	printColor3d(red, green, blue);
+    double r = GLdouble(2 * red + 1) / GLdouble(SHORTMAXMINDIFF);
+    double g = GLdouble(2 * green + 1) / GLdouble(SHORTMAXMINDIFF);
+    double b = GLdouble(2 * blue + 1) / GLdouble(SHORTMAXMINDIFF);
+    double a = GLdouble(2 * alpha + 1) / GLdouble(SHORTMAXMINDIFF);
+    printColor3d(r, g, b);
 }
 
 static void PRINT_APIENTRY printColor4sv(const GLshort * v)
@@ -460,7 +411,7 @@ static void PRINT_APIENTRY printColor4sv(const GLshort * v)
 
 static void PRINT_APIENTRY printColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
 {
-    printColor3d((GLdouble)red / 255.0, (GLdouble)green / 255.0, (GLdouble)blue / 255.0);
+    printColor3d((GLdouble)red / GLdouble(BYTEMINMAXDIFF), (GLdouble)green / GLdouble(BYTEMINMAXDIFF), (GLdouble)blue / GLdouble(BYTEMINMAXDIFF));
 }
 
 static void PRINT_APIENTRY printColor4ubv(const GLubyte * v)
@@ -470,6 +421,11 @@ static void PRINT_APIENTRY printColor4ubv(const GLubyte * v)
 
 static void PRINT_APIENTRY printColor4ui(GLuint red, GLuint green, GLuint blue, GLuint alpha)
 {
+    double r = GLdouble(red) / GLdouble(INTMAXMINDIFF);
+    double g = GLdouble(green) / GLdouble(INTMAXMINDIFF);
+    double b = GLdouble(blue) / GLdouble(INTMAXMINDIFF);
+    double a = GLdouble(alpha) / GLdouble(INTMAXMINDIFF);
+    printColor3d(r, g, b);
 }
 
 static void PRINT_APIENTRY printColor4uiv(const GLuint * v)
@@ -577,7 +533,7 @@ static void PRINT_APIENTRY printCopyTexSubImage3D(GLenum target, GLint level, GL
 
 static GLint PRINT_APIENTRY printCreateContext(const char * dpyName, GLint visual, GLint shareCtx)
 {
-    return g_ret_count++;
+    return  scenegraph_spu_data.g_ret_count++;
 }
 
 static void PRINT_APIENTRY printCullFace(GLenum mode)
@@ -628,10 +584,17 @@ static void PRINT_APIENTRY printDisable(GLenum cap)
 {
 #ifdef ENABLE_MATERIAL
     if (cap == GL_POLYGON_STIPPLE){
+
         CreateNewGeode();
         g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
 	}
 #endif
+    
+    if (cap == GL_NORMALIZE)
+        scenegraph_spu_data.isNormalNormalizationEnabled = false;
+    if (cap == GL_RESCALE_NORMAL)
+        scenegraph_spu_data.isNormalRescaleEnabled = false;
+
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -679,11 +642,12 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
+
 #ifdef ENABLE_MATERIAL
     if (g_isReading && cap == GL_POLYGON_STIPPLE) {
         CreateNewGeode();
         osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
-        g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+        scenegraph_spu_data.g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
     }
 #endif
 
@@ -696,6 +660,12 @@ static void PRINT_APIENTRY printEnable(GLenum cap)
         }
     }
 #endif
+
+
+    if (cap == GL_NORMALIZE)
+        scenegraph_spu_data.isNormalNormalizationEnabled = true;
+    if (cap == GL_RESCALE_NORMAL)
+        scenegraph_spu_data.isNormalRescaleEnabled = true;
 
 }
 
@@ -710,42 +680,43 @@ static void PRINT_APIENTRY printEnableVertexAttribArrayARB(GLuint index)
 // 
 static void PRINT_APIENTRY printEnd(void)
 {
-    if (g_isReading)
+    if (scenegraph_spu_data.g_isReading)
     {
-        g_geom = new osg::Geometry();
+        scenegraph_spu_data.g_geom = new osg::Geometry();
         // create a g_geode and add it to the pat
-        if (g_vertexArray->size() > 0)
+        if (scenegraph_spu_data.g_vertexArray->size() > 0)
         {
-            g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
-            g_geom->setVertexArray(g_vertexArray);
-            g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
-            g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
-            g_geom->setSupportsDisplayList(true);
-            g_geom->setUseDisplayList(true);
+            scenegraph_spu_data.g_geom->addPrimitiveSet(new osg::DrawArrays(scenegraph_spu_data.g_geometryMode, 0, scenegraph_spu_data.g_vertexArray->size()));
+            scenegraph_spu_data.g_geom->setVertexArray(scenegraph_spu_data.g_vertexArray);
+            scenegraph_spu_data.g_geom->setColorArray(scenegraph_spu_data.g_colorArray, osg::Array::BIND_PER_VERTEX);
+            scenegraph_spu_data.g_geom->setNormalArray(scenegraph_spu_data.g_normalArray, osg::Array::BIND_PER_VERTEX);
+            scenegraph_spu_data.g_geom->setSupportsDisplayList(true);
+            scenegraph_spu_data.g_geom->setUseDisplayList(true);
 
 #ifdef ENABLE_MATERIAL
 
-            if (g_state != NULL)
+
+            if (scenegraph_spu_data.g_state != NULL)
             {
                 g_geode->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
             }
 
             if (g_material != NULL)
             {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+                scenegraph_spu_data.g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 
 #endif
-            g_geode->addDrawable(g_geom);
+            scenegraph_spu_data.g_geode->addDrawable(scenegraph_spu_data.g_geom);
         }
 
     }
 
-    if (g_isDisplayList)
+    if (scenegraph_spu_data.g_isDisplayList)
     {
-        g_geom = new osg::Geometry();
+        scenegraph_spu_data.g_geom = new osg::Geometry();
         // create a g_geode and add it to the pat
-        if (g_vertexArray->size() > 0)
+        if (scenegraph_spu_data.g_vertexArray->size() > 0)
         {
 
 #ifdef ENABLE_MATERIAL
@@ -765,10 +736,10 @@ static void PRINT_APIENTRY printEnd(void)
             }
 
 #endif
-            g_geode->addDrawable(g_geom);
+            scenegraph_spu_data.g_geode->addDrawable(scenegraph_spu_data.g_geom);
         }
 
-        if (g_geode) {
+        if (scenegraph_spu_data.g_geode) {
             // Display list isn't working
         }
     }
@@ -776,7 +747,7 @@ static void PRINT_APIENTRY printEnd(void)
 
 static void PRINT_APIENTRY printEndList(void)
 {
-    g_isDisplayList = false;
+    scenegraph_spu_data.g_isDisplayList = false;
 }
 
 static void PRINT_APIENTRY printEndQueryARB(GLenum target)
@@ -913,7 +884,7 @@ static void PRINT_APIENTRY printGenFencesNV(GLsizei n, GLuint * fences)
 
 static GLuint PRINT_APIENTRY printGenLists(GLsizei range)
 {
-    return g_ret_count++;
+    return scenegraph_spu_data.g_ret_count++;
 }
 
 static void PRINT_APIENTRY printGenProgramsARB(GLsizei n, GLuint * programs)
@@ -1354,7 +1325,7 @@ static void PRINT_APIENTRY printLightModeliv(GLenum pname, const GLint * params)
 
 static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param)
 {
-    if (!g_isReading)
+    if (!scenegraph_spu_data.g_isReading)
     {
         return;
     }
@@ -1400,9 +1371,9 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-    g_CurrentMatrix = osg::Matrix();
+     scenegraph_spu_data.g_CurrentMatrix = osg::Matrix();
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
@@ -1410,31 +1381,28 @@ static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 #ifdef GEODE_WITH_LM
     CreateNewGeode();
 #endif
-    g_CurrentMatrix.set(m);
+    scenegraph_spu_data.g_CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-
 #ifdef GEODE_WITH_LM
     CreateNewGeode();
 #endif
 
-    g_CurrentMatrix.set(m);
+    scenegraph_spu_data.g_CurrentMatrix.set(m);
+
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-        
-    if (g_isReading)
-    {
-        g_matrix_stack.push_back(g_CurrentMatrix);
-    }
-
+    //pushing current matrix in stack
+    scenegraph_spu_data.g_matrix_stack.push_back(scenegraph_spu_data.g_CurrentMatrix);
+   
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1496,7 +1464,7 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
-    if (!g_isReading)
+    if (!scenegraph_spu_data.g_isReading)
     {
         return;
     }
@@ -1535,7 +1503,7 @@ static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param
 
 static void PRINT_APIENTRY printMatrixMode(GLenum mode)
 {
-    g_currentMatrixMode = mode;
+     scenegraph_spu_data.g_currentMatrixMode = mode;
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
@@ -1543,26 +1511,23 @@ static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 }
 static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-    if (g_isReading)
-    {
-        osg::Matrix mat = osg::Matrix();
-        mat.set(m);
-        g_CurrentMatrix = mat * g_CurrentMatrix;
-    }
+
+    osg::Matrix mat = osg::Matrix();
+    mat.set(m);
+     scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
 }
 
 static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-    if (g_isReading)
-    {
-        osg::Matrix mat = osg::Matrix();
-        mat.set(m);
-        g_CurrentMatrix = mat * g_CurrentMatrix;
-    }
+
+    osg::Matrix mat = osg::Matrix();
+    mat.set(m);
+     scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
+
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -1707,59 +1672,71 @@ static void PRINT_APIENTRY printMultiTexCoord4svARB(GLenum texture, const GLshor
 
 static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 {
-    g_isDisplayList = true;
+    scenegraph_spu_data.g_isDisplayList = true;
     osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform();
-    g_PatArrayDisplayList.push_back(pat);
-}
-
-static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
-{
-    g_CurrentNormal = osg::Vec3(nx, ny, nz);
-}
-
-static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
-{
-    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    scenegraph_spu_data.g_PatArrayDisplayList.push_back(pat);
 }
 
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
-    g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    scenegraph_spu_data.g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
+
+static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
+{
+    GLdouble ndx = ((2 * (GLdouble)nx + 1) / GLdouble(BYTEMINMAXDIFF));
+    GLdouble ndy = ((2 * (GLdouble)ny + 1) / GLdouble(BYTEMINMAXDIFF));
+    GLdouble ndz = ((2 * (GLdouble)nz + 1) / GLdouble(BYTEMINMAXDIFF));
+    
+    printNormal3d(ndx, ndy, ndz);
+}
+
+static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
+{
+    printNormal3b(v[0], v[1], v[2]);
+}
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
-    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    scenegraph_spu_data.g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
-    g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    scenegraph_spu_data.g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
-    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    scenegraph_spu_data.g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
-    g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    GLdouble ndx = ((2 * (GLdouble)nx + 1) / GLdouble(INTMAXMINDIFF));
+    GLdouble ndy = ((2 * (GLdouble)ny + 1) / GLdouble(INTMAXMINDIFF));
+    GLdouble ndz = ((2 * (GLdouble)nz + 1) / GLdouble(INTMAXMINDIFF));
+
+    printNormal3d(ndx, ndy, ndz);
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
-    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    printNormal3i(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
-    g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    GLdouble ndx = ((2 * (GLdouble)nx + 1) / GLdouble(SHORTMAXMINDIFF));
+    GLdouble ndy = ((2 * (GLdouble)ny + 1) / GLdouble(SHORTMAXMINDIFF));
+    GLdouble ndz = ((2 * (GLdouble)nz + 1) / GLdouble(SHORTMAXMINDIFF));
+
+    printNormal3d(ndx, ndy, ndz);
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
-    g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    printNormal3s(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -1850,14 +1827,16 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 
 static void PRINT_APIENTRY printPopMatrix(void)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-    if (g_isReading)
-    {
-        osg::Matrix top_mat = g_matrix_stack.back();
-        g_matrix_stack.pop_back();
-        g_CurrentMatrix = top_mat;
-    }
+    
+
+    osg::Matrix top_mat = scenegraph_spu_data.g_matrix_stack.back();
+    scenegraph_spu_data.g_matrix_stack.pop_back();
+     scenegraph_spu_data.g_CurrentMatrix = top_mat;
+
+
+
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -2096,7 +2075,7 @@ static void PRINT_APIENTRY printRectsv(const GLshort * v1, const GLshort * v2)
 
 static GLint PRINT_APIENTRY printRenderMode(GLenum mode)
 {
-    return g_ret_count++;
+    return scenegraph_spu_data.g_ret_count++;
 }
 
 static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuint * ids)
@@ -2105,15 +2084,11 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-
-    if (g_isReading)
-	{
-        osg::Matrix mat = osg::Matrix();
-        mat.setRotate(osg::Quat(angle, x, y, z));
-         g_CurrentMatrix = mat * g_CurrentMatrix;
-     }
+      osg::Matrix mat = osg::Matrix();
+     mat.setRotate(osg::Quat(angle, x, y, z));
+      scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
@@ -2127,14 +2102,11 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-    if (g_isReading)
-	{
-        osg::Matrix mat = osg::Matrix();
-        mat.makeScale(osg::Vec3(x, y, z));
-        g_CurrentMatrix = mat * g_CurrentMatrix;
-    }
+    osg::Matrix mat = osg::Matrix();
+    mat.makeScale(osg::Vec3(x, y, z));
+     scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
 }
 
 static void PRINT_APIENTRY printScalef(GLfloat x, GLfloat y, GLfloat z)
@@ -2257,19 +2229,19 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
 
-	if (g_isReading)
+    if (scenegraph_spu_data.g_isReading)
 	{
-		g_startReading = false;
-        g_spuRootGroup->addChild(g_geode);
+        scenegraph_spu_data.g_startReading = false;
+        scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
 
-        if (g_hasTouchedBegin == false)
+        if (scenegraph_spu_data.g_hasTouchedBegin == false)
         {
-            g_shouldStartReading = true;
+            scenegraph_spu_data.g_shouldStartReading = true;
         }
 
-        if (g_shouldStartReading == false)
+        if (scenegraph_spu_data.g_shouldStartReading == false)
         {
-            g_isReading = false;
+            scenegraph_spu_data.g_isReading = false;
 
 #ifdef ENABLE_LIGHTS
             for (int i = GL_LIGHT0; i <= GL_LIGHT7; ++i)
@@ -2281,24 +2253,24 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 #endif
             // This can be optimized further if geode are mearged
             osgUtil::Optimizer optimizer;
-            optimizer.optimize(g_spuRootGroup);
+            optimizer.optimize(scenegraph_spu_data.g_spuRootGroup);
 
-            g_pt2Func(g_context, g_spuRootGroup.get());
+            scenegraph_spu_data.g_pt2Func(scenegraph_spu_data.g_context, scenegraph_spu_data.g_spuRootGroup.get());
         }
     }
 
-    if (g_shouldStartReading)
+    if (scenegraph_spu_data.g_shouldStartReading)
     {
-        g_shouldStartReading = false;
-        g_startReading = true;
-        g_isReading = true;
-        g_hasTouchedBegin = false;
-        g_CurrentMatrix.makeIdentity();
+        scenegraph_spu_data.g_shouldStartReading = false;
+        scenegraph_spu_data.g_startReading = true;
+        scenegraph_spu_data.g_isReading = true;
+        scenegraph_spu_data.g_hasTouchedBegin = false;
+        scenegraph_spu_data.g_CurrentMatrix.makeIdentity();
     }
 
-    if (g_startReading)
+    if (scenegraph_spu_data.g_startReading)
     {
-        g_spuRootGroup = new osg::Group;
+        scenegraph_spu_data.g_spuRootGroup = new osg::Group;
 
 #ifdef ENABLE_MATERIAL
         g_material = new osg::Material();
@@ -2306,17 +2278,17 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         last_color[0] = -1;
         last_color[1] = -1;
         last_color[2] = -1;
-        g_hasDrawnSomething = true;
-        g_startReading = false;
+        scenegraph_spu_data.g_hasDrawnSomething = true;
+        scenegraph_spu_data.g_startReading = false;
     }
 }
 
 static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
 {
     GLint flags = 0;
-    if (g_isReading)
+    if (scenegraph_spu_data.g_isReading)
     {
-        g_shouldStartReading = true;
+        scenegraph_spu_data.g_shouldStartReading = true;
     }
     printSwapBuffers(window, flags);
 }
@@ -2532,14 +2504,11 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
-    if (g_currentMatrixMode != GL_MODELVIEW)
+    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-    if (g_isReading)
-    {
-         osg::Matrix mat = osg::Matrix();
-         mat.setTrans(osg::Vec3(x, y, z));
-         g_CurrentMatrix = mat * g_CurrentMatrix;
-    }
+     osg::Matrix mat = osg::Matrix();
+     mat.setTrans(osg::Vec3(x, y, z));
+      scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
 
 }
 
@@ -2587,21 +2556,50 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
-    if ((g_isReading || g_isDisplayList) && g_vertexArray){
+    if ((scenegraph_spu_data.g_isReading || scenegraph_spu_data.g_isDisplayList) && scenegraph_spu_data.g_vertexArray){
         // Math to transfrom vertex and normal to matrix mode
         osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
-        osg::Matrix matFinal = mat * g_CurrentMatrix;
+        osg::Matrix matFinal = mat *  scenegraph_spu_data.g_CurrentMatrix;
         osg::Vec3 vertexPoint = matFinal.getTrans();
 
-        osg::Matrix Normalmat = osg::Matrix::translate(g_CurrentNormal);
-        osg::Matrix CurrentMatrixNew = g_CurrentMatrix;
+        osg::Matrix Normalmat = osg::Matrix::translate(scenegraph_spu_data.g_CurrentNormal);
+        osg::Matrix CurrentMatrixNew =  scenegraph_spu_data.g_CurrentMatrix;
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
         osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
         osg::Vec3 normalPoint = NormalmatFinal.getTrans();
 
-        g_vertexArray->push_back(vertexPoint);
-        g_normalArray->push_back(normalPoint);
-        g_colorArray->push_back(g_CurrentColor);
+        if (scenegraph_spu_data.isNormalRescaleEnabled)
+        {
+            double x = normalPoint.x();
+            double y = normalPoint.y();
+            double z = normalPoint.z();
+            double magn = 1/std::sqrt(x*x + y*y + z*z);
+            if (magn)
+            {
+                x = x / magn;
+                y = y / magn;
+                z = z / magn;
+               normalPoint.set(osg::Vec3(x,y,z));
+            }
+        }
+        if (scenegraph_spu_data.isNormalNormalizationEnabled)
+        {
+            double x = normalPoint.x();
+            double y = normalPoint.y();
+            double z = normalPoint.z();
+            double magn = 1 / std::sqrt(x*x + y*y + z*z);
+            if (magn)
+            {
+                x = x / magn;
+                y = y / magn;
+                z = z / magn;
+                normalPoint.set(osg::Vec3(x, y, z));
+            }
+        }
+        scenegraph_spu_data.g_vertexArray->push_back(vertexPoint);
+        scenegraph_spu_data.g_normalArray->push_back(normalPoint);
+        scenegraph_spu_data.g_colorArray->push_back(scenegraph_spu_data.g_CurrentColor);
+
 
     }
 }
@@ -2900,7 +2898,7 @@ static void PRINT_APIENTRY printViewport(GLint x, GLint y, GLsizei width, GLsize
 
 static GLint PRINT_APIENTRY printWindowCreate(const char * dpyName, GLint visBits)
 {
-    return g_ret_count++;
+    return scenegraph_spu_data.g_ret_count++;
 }
 
 static void PRINT_APIENTRY printWindowDestroy(GLint window)
@@ -2995,7 +2993,7 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 
-    if (!g_isReading)
+    if (!scenegraph_spu_data.g_isReading)
     {
         return;
     }

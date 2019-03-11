@@ -54,7 +54,22 @@ crServerHeadSPU(void)
 	 return cr_server.head_spu;
 }
 
-
+EXPORTTOTRANSVIZ void crServerSetHeadSPU(unsigned flag)
+{
+	
+    
+    if (!flag)
+    {
+        cr_server.inactive_head_spu = cr_server.head_spu;
+        cr_server.head_spu = cr_server.head_spu->superSPU;
+        crDebug("disable part selection");
+    }
+    else if (cr_server.inactive_head_spu)
+    {
+        cr_server.head_spu = cr_server.inactive_head_spu;
+        cr_server.inactive_head_spu = NULL;
+    }
+}
 
 static void DeleteBarrierCallback( void *data )
 {
@@ -273,6 +288,7 @@ crServerInitNew(const char* hostname, const char *port)
 
     cr_server.barriers = crAllocHashtable();
     cr_server.semaphores = crAllocHashtable();
+    cr_server.inactive_head_spu = NULL;
 }
 
 
@@ -380,6 +396,7 @@ crServerInit(int argc, char *argv[])
 
 	cr_server.barriers = crAllocHashtable();
 	cr_server.semaphores = crAllocHashtable();
+    cr_server.inactive_head_spu = NULL;
 }
 
 
