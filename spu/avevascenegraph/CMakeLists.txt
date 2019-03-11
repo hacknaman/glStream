@@ -5,14 +5,7 @@ include_directories(${REVIEW_INCLUDE_DIR})
 
 set(SOURCES
 	avevascenegraphspu_config.cpp
-	avevascenegraphspu_enums.cpp
-	avevascenegraphspu_get.cpp
 	avevascenegraphspu_init.cpp
-	avevascenegraphspu_lighting.cpp
-	avevascenegraphspu_lists.cpp
-	avevascenegraphspu_matrices.cpp
-	avevascenegraphspu_misc.cpp
-	avevascenegraphspu_tex.cpp
 	avevascenegraphspu.cpp
 	avevascenegraph.def
 )
@@ -22,7 +15,7 @@ set(SOURCES
 #	python enums.py /usr/include/GL/gl.h ../../include/GL/glext.h ../../include/chromium.h > printspu_enums.c
 
 add_library(avevascenegraphspu SHARED ${SOURCES})
-target_link_libraries(avevascenegraphspu crutil crmothership spuload) 
+target_link_libraries(avevascenegraphspu crutil crmothership spuload scenegraphspu) 
 
 target_link_libraries(avevascenegraphspu	
 	debug		${OSG_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D} debug ${OSGDB_LIBRARY_D}

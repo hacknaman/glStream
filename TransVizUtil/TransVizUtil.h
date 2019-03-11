@@ -56,6 +56,8 @@ namespace TransVizUtil{
         TransVizUtil();
         ~TransVizUtil();
 
+        //this API switched between head spu of crserver and super spu of head spu.this is designed to switch between scenegraph and avevascenegraph or catiascenegraph specially
+        void setPartIdentification(bool flag);
         // set or returns the root Node from the scene
         osg::ref_ptr<osg::Group> getLastGeneratedNode();
         void generateScenegraph();

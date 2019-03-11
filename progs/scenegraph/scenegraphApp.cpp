@@ -36,10 +36,12 @@ osg::ref_ptr <osg::Group> rootGroup = new osg::Group();
 class SCAppEventHandler : public osgGA::GUIEventHandler
 {
     osg::ref_ptr<TransVizUtil::TransVizUtil> _SceneGraphGenerator;
+    bool _isPartIdentificationEnabled;
 public:
 
     SCAppEventHandler(osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator) {
         _SceneGraphGenerator = SceneGraphGenerator;
+        _isPartIdentificationEnabled = true;
     }
 
 	bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
@@ -86,6 +88,12 @@ public:
                 // Save the model
                 osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.ive");
                 osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.osgt");
+            }
+            else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_T)
+            {
+                _SceneGraphGenerator->setPartIdentification(_isPartIdentificationEnabled);
+          
+                _isPartIdentificationEnabled = (! _isPartIdentificationEnabled);
             }
             return false;
         }

@@ -4,11 +4,9 @@
  * See the file LICENSE.txt for information on redistributing this software.
  */
 
-
 #include "spu_dispatch_table.h"
 #include "cr_spu.h"
 #include "scenegraph\scenegraphspu.h"
-#include "CatiaLibCPPAdapter.h"
 #if defined(WINDOWS)
 #define PRINT_APIENTRY __stdcall
 #define OSGEXPORT __declspec(dllexport)
@@ -18,50 +16,29 @@
 
 #include <stdio.h>
 #include <osg/Group>
+
 typedef struct {
-	
-    int id;
-    CatiaMetaDataApi::CatiaLibCPPAdapter adapter;
-    SPUDispatchTable super;
-    ScenegraphSpuData* superSpuState;//this will hold super spu global variable's states
+	int id;
+	SPUDispatchTable super;//this is the dispatch table of super spu 
+    ScenegraphSpuData *superSpuState;//global variable's state of super spu
     FILE *fp;
 
 	/* These handle marker signals */
 	int marker_signal;
 	char *marker_text;
 	void (*old_signal_handler)(int);
-} CatiaSpu;
-class CatiaSpufunc : public Scenespufunc
+} CatiaComposerPlayerSpu;
+class CatiaComposerPlayerFunc :public Scenespufunc
 {
-public:
-    void getUpdatedScene();
-
-
-    void changeScene();
-
-
-    void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
-
-    void resetClient();
+    public:
+        void getUpdatedScene();
+        void changeScene();
+        void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
+        void resetClient();
 };
-extern CatiaSpu catia_spu;
+extern CatiaComposerPlayerSpu catia_composer_player_spu;
 extern void  resetColors();
-extern void getUpdatedCatiaSceneSC();
+extern void getUpdatedCatiaComposerPlayerSceneSC();
 extern void printspuGatherConfiguration( const SPU *child_spu );
-extern void scenegraphCatiaSPUReset();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+extern void catiaComposerPlayerSPUReset();
 
