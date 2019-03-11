@@ -19,7 +19,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#define EXPORTTOTRANSVIZ __declspec(dllexport)
 #define CR_MAX_WINDOWS 100
 #define CR_MAX_CLIENTS 20
 
@@ -110,7 +110,7 @@ typedef struct {
 	int mtu;
 	int buffer_size;
 	char protocol[1024];
-
+    SPU *inactive_head_spu;
 	SPU *head_spu;
 	SPUDispatchTable dispatch;
 
@@ -184,7 +184,7 @@ typedef struct {
 	GLuint currentSerialNo;
 } CRServer;
 
-
+EXPORTTOTRANSVIZ void crServerSetHeadSPU(unsigned flag);
 extern void crServerInit( int argc, char *argv[] );
 extern void crServerInitNew( const char* hostname, const char* port);
 

@@ -28,6 +28,14 @@ namespace TransVizUtil{
     }
 
     TransVizUtil::~TransVizUtil(){}
+    void TransVizUtil::setPartIdentification(bool flag)
+    {
+        crServerSetHeadSPU(flag);
+        SPU *spu = crServerHeadSPU();
+        iSPU = (ISpufunc*)spu->privatePtr;
+        
+
+    }
 
     osg::ref_ptr<osg::Group> TransVizUtil::getLastGeneratedNode(){
         return _oldNode;
