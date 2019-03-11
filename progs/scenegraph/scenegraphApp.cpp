@@ -170,91 +170,91 @@ int main(int argc, char* argv[]) {
 
     viewer->addEventHandler(new SCAppEventHandler(SceneGraphGenerator));
 
-    //// Test Model
-    //// TEst axis
-    //osg::ref_ptr<osg::Geode> beamGeode = new osg::Geode;
+    // Test Model
+    // TEst axis
+    osg::ref_ptr<osg::Geode> beamGeode = new osg::Geode;
 
-    //const double axisLen = 10000.0;
+    const double axisLen = 10000.0;
 
-    //osg::Vec3d startPoint = osg::Vec3d(0, 0, 0);
-    //osg::Vec3d endPoint_x = osg::Vec3d(axisLen, 0, 0);
-    //osg::Vec3d endPoint_y = osg::Vec3d(0, axisLen, 0);
-    //osg::Vec3d endPoint_z = osg::Vec3d(0, 0, axisLen);
+    osg::Vec3d startPoint = osg::Vec3d(0, 0, 0);
+    osg::Vec3d endPoint_x = osg::Vec3d(axisLen, 0, 0);
+    osg::Vec3d endPoint_y = osg::Vec3d(0, axisLen, 0);
+    osg::Vec3d endPoint_z = osg::Vec3d(0, 0, axisLen);
 
-    //osg::ref_ptr<osg::Geometry> beam_x = new osg::Geometry;
-    //osg::ref_ptr<osg::Geometry> beam_y = new osg::Geometry;
-    //osg::ref_ptr<osg::Geometry> beam_z = new osg::Geometry;
+    osg::ref_ptr<osg::Geometry> beam_x = new osg::Geometry;
+    osg::ref_ptr<osg::Geometry> beam_y = new osg::Geometry;
+    osg::ref_ptr<osg::Geometry> beam_z = new osg::Geometry;
 
-    //osg::ref_ptr<osg::Vec3Array> linePoints_x = new osg::Vec3Array;
-    //osg::ref_ptr<osg::Vec3Array> linePoints_y = new osg::Vec3Array;
-    //osg::ref_ptr<osg::Vec3Array> linePoints_z = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> linePoints_x = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> linePoints_y = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> linePoints_z = new osg::Vec3Array;
 
-    //linePoints_x->push_back(startPoint);
-    //linePoints_x->push_back(endPoint_x);
+    linePoints_x->push_back(startPoint);
+    linePoints_x->push_back(endPoint_x);
 
-    //linePoints_y->push_back(startPoint);
-    //linePoints_y->push_back(endPoint_y);
+    linePoints_y->push_back(startPoint);
+    linePoints_y->push_back(endPoint_y);
 
-    //linePoints_z->push_back(startPoint);
-    //linePoints_z->push_back(endPoint_z);
+    linePoints_z->push_back(startPoint);
+    linePoints_z->push_back(endPoint_z);
 
-    //osg::ref_ptr<osg::Vec4Array> color_x = new osg::Vec4Array;
-    //color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
-    //color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+    osg::ref_ptr<osg::Vec4Array> color_x = new osg::Vec4Array;
+    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
 
-    //osg::ref_ptr<osg::Vec4Array> color_y = new osg::Vec4Array;
-    //color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
-    //color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
+    osg::ref_ptr<osg::Vec4Array> color_y = new osg::Vec4Array;
+    color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
+    color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
 
-    //osg::ref_ptr<osg::Vec4Array> color_z = new osg::Vec4Array;
-    //color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
-    //color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+    osg::ref_ptr<osg::Vec4Array> color_z = new osg::Vec4Array;
+    color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+    color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
 
-    //beam_x->setVertexArray(linePoints_x.get());
-    //beam_x->setColorArray(color_x.get());
-    //beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    //beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_x->setVertexArray(linePoints_x.get());
+    beam_x->setColorArray(color_x.get());
+    beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    //beam_y->setVertexArray(linePoints_y.get());
-    //beam_y->setColorArray(color_y.get());
-    //beam_y->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    //beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_y->setVertexArray(linePoints_y.get());
+    beam_y->setColorArray(color_y.get());
+    beam_y->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    //beam_z->setVertexArray(linePoints_z.get());
-    //beam_z->setColorArray(color_z.get());
-    //beam_z->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    //beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_z->setVertexArray(linePoints_z.get());
+    beam_z->setColorArray(color_z.get());
+    beam_z->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    //osg::StateSet* state = beam_x->getOrCreateStateSet();
-    //state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    //osg::ref_ptr<osg::LineWidth> linewidth_x = new osg::LineWidth();
-    //linewidth_x->setWidth(2.0f);
-    //state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
+    osg::StateSet* state = beam_x->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::ref_ptr<osg::LineWidth> linewidth_x = new osg::LineWidth();
+    linewidth_x->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
 
-    //state = beam_y->getOrCreateStateSet();
-    //state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    //osg::ref_ptr<osg::LineWidth> linewidth_y = new osg::LineWidth();
-    //linewidth_y->setWidth(2.0f);
-    //state->setAttributeAndModes(linewidth_y, osg::StateAttribute::OVERRIDE);
+    state = beam_y->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::ref_ptr<osg::LineWidth> linewidth_y = new osg::LineWidth();
+    linewidth_y->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_y, osg::StateAttribute::OVERRIDE);
 
-    //state = beam_z->getOrCreateStateSet();
-    //state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    //osg::ref_ptr<osg::LineWidth> linewidth_z = new osg::LineWidth();
-    //linewidth_z->setWidth(2.0f);
-    //state->setAttributeAndModes(linewidth_z, osg::StateAttribute::OVERRIDE);
+    state = beam_z->getOrCreateStateSet();
+    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    osg::ref_ptr<osg::LineWidth> linewidth_z = new osg::LineWidth();
+    linewidth_z->setWidth(2.0f);
+    state->setAttributeAndModes(linewidth_z, osg::StateAttribute::OVERRIDE);
 
-    //beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
-    //beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
-    //beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+    beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    //state->setMode(GL_BLEND, osg::StateAttribute::ON);
-    //state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
+    state->setMode(GL_BLEND, osg::StateAttribute::ON);
+    state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
 
-    //beamGeode->addChild(beam_x);
-    //beamGeode->addChild(beam_y);
-    //beamGeode->addChild(beam_z);
+    beamGeode->addChild(beam_x);
+    beamGeode->addChild(beam_y);
+    beamGeode->addChild(beam_z);
 
-    //rootGroup->addChild(beamGeode);
+    rootGroup->addChild(beamGeode);
 
 	// Test Model
 	rootGroup->addChild(osgDB::readNodeFile("C:/Project/TransViz/TestData/axes.osgt"));    // This won't crash the program. if the file isn't found.
