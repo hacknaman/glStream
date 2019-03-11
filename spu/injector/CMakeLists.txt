@@ -6,6 +6,7 @@ set(SOURCES
 	injectorspu.def
 )
 add_library(injectorspu SHARED ${SOURCES})
+add_dependencies(injectorspu injectorspu_crunpacker_copy)
 target_link_libraries(injectorspu spuload crutil crmothership injectorspu_crunpacker_copy)
 target_link_libraries(injectorspu ${EXTRA_LIBS})
 install(TARGETS injectorspu
