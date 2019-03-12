@@ -21,4 +21,5 @@ taskkill /FI "WindowTitle eq testmothership*" /T /F
 taskkill /FI "WindowTitle eq testcrappfaker*" /T /F
 
 echo %errlevel%
+cd ..
 exit /b %errlevel%
