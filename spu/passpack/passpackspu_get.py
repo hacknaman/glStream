@@ -58,7 +58,7 @@ for func_name in keys:
 	if "get" in apiutil.Properties(func_name):
 		print '%s PACKSPU_APIENTRY packspu_%s( %s )' % ( return_type, func_name, apiutil.MakeDeclarationString( params ) )
 		print '{'
-		print ' return; // We dont want to get anything from client window'
+		print ' return 0; // We dont want to get anything from client window'
 		print '\tGET_THREAD(thread);'
 		print '\tint writeback = 1;'
 		if return_type != 'void':
