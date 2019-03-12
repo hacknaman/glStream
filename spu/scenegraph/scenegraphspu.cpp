@@ -2272,6 +2272,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     if (scenegraph_spu_data.g_startReading)
     {
         scenegraph_spu_data.g_spuRootGroup = new osg::Group;
+        scenegraph_spu_data.g_geode = new osg::Geode;
 
 #ifdef ENABLE_MATERIAL
         scenegraph_spu_data.g_material = new osg::Material();
