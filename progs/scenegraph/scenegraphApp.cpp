@@ -30,7 +30,16 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <TransVizUtil.h>
 
+// Globals
 osg::ref_ptr <osg::Group> rootGroup = new osg::Group();
+bool TestMode = false;
+std::string mothership = "localhost";
+double axisLen = 1000.0;
+double timeToDraw = 5.0f;
+bool hasDrawn = false;
+bool checkmodel = false;
+
+time_t lastRecordedTime;
 
 // Get info of part with this event handler
 class SCAppEventHandler : public osgGA::GUIEventHandler
@@ -92,13 +101,20 @@ public:
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_T)
             {
                 _SceneGraphGenerator->setPartIdentification(_isPartIdentificationEnabled);
-          
                 _isPartIdentificationEnabled = (! _isPartIdentificationEnabled);
             }
             return false;
         }
 		case(osgGA::GUIEventAdapter::FRAME) :
 		{
+            // start test
+            if (TestMode && !hasDrawn){
+                if (time(nullptr) - lastRecordedTime > timeToDraw)
+                {
+                    _SceneGraphGenerator->generateScenegraph();
+                    hasDrawn = true;
+                }
+            }
             return false;
 		}
 		default:
@@ -152,13 +168,54 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
         RootNode->addChild(node);
         TransVizNode = node;
         std::cout << "Node Added by app" << std::endl;
-    }
 
+        if (TestMode){
+            if (node->asGroup()->getNumChildren())
+            {
+                if (checkmodel)
+                {
+                    exit(1);
+                }
+                else {
+                    exit(0);
+                }
+            }
+            else {
+                exit(1);
+            }
+        }
+    }
 };
 
 
-
 int main(int argc, char* argv[]) {
+
+    osg::ArgumentParser arguments(&argc, argv);
+
+    arguments.getApplicationUsage()->addCommandLineOption("--Axislength", "length of axislines drawn");
+    arguments.getApplicationUsage()->addCommandLineOption("-t or --TestMode", "Set the Width of the Display in cm; with Vive Tracker units reported in cm");
+    arguments.getApplicationUsage()->addCommandLineOption("-m or --mothership", "hostname or ip of mothership machine");
+    arguments.getApplicationUsage()->addCommandLineOption("-h or --help", "Press 'f' to get the model generated from transviz.This App is also used for testing purpose");
+
+    if (arguments.read("-t") || arguments.read("--TestMode"))
+    {
+        TestMode = true;
+    }
+
+    while (arguments.read("--Mothership", mothership)) {}
+    while (arguments.read("-m", mothership)) {}
+    while (arguments.read("--Axislength", axisLen)) {}
+
+    if (arguments.read("-h") || arguments.read("--help"))
+    {
+        arguments.getApplicationUsage()->write(std::cout);
+        return 1;
+    }
+
+    if (TestMode)
+    {
+        lastRecordedTime = time(nullptr);
+    }
 
     TVizcallback cb;
 
@@ -170,94 +227,96 @@ int main(int argc, char* argv[]) {
 
     viewer->addEventHandler(new SCAppEventHandler(SceneGraphGenerator));
 
-    // Test Model
-    // TEst axis
-    osg::ref_ptr<osg::Geode> beamGeode = new osg::Geode;
+    // draw axis beam
+    {
+        osg::ref_ptr<osg::Geode> beamGeode = new osg::Geode;
 
-    const double axisLen = 10000.0;
+        osg::Vec3d startPoint_x = osg::Vec3d(-axisLen/3, 0, 0);
+        osg::Vec3d startPoint_y = osg::Vec3d(0, -axisLen/3, 0);
+        osg::Vec3d startPoint_z = osg::Vec3d(0, 0, -axisLen/3);
+        osg::Vec3d endPoint_x = osg::Vec3d(axisLen, 0, 0);
+        osg::Vec3d endPoint_y = osg::Vec3d(0, axisLen, 0);
+        osg::Vec3d endPoint_z = osg::Vec3d(0, 0, axisLen);
 
-    osg::Vec3d startPoint = osg::Vec3d(0, 0, 0);
-    osg::Vec3d endPoint_x = osg::Vec3d(axisLen, 0, 0);
-    osg::Vec3d endPoint_y = osg::Vec3d(0, axisLen, 0);
-    osg::Vec3d endPoint_z = osg::Vec3d(0, 0, axisLen);
+        osg::ref_ptr<osg::Geometry> beam_x = new osg::Geometry;
+        osg::ref_ptr<osg::Geometry> beam_y = new osg::Geometry;
+        osg::ref_ptr<osg::Geometry> beam_z = new osg::Geometry;
 
-    osg::ref_ptr<osg::Geometry> beam_x = new osg::Geometry;
-    osg::ref_ptr<osg::Geometry> beam_y = new osg::Geometry;
-    osg::ref_ptr<osg::Geometry> beam_z = new osg::Geometry;
+        osg::ref_ptr<osg::Vec3Array> linePoints_x = new osg::Vec3Array;
+        osg::ref_ptr<osg::Vec3Array> linePoints_y = new osg::Vec3Array;
+        osg::ref_ptr<osg::Vec3Array> linePoints_z = new osg::Vec3Array;
 
-    osg::ref_ptr<osg::Vec3Array> linePoints_x = new osg::Vec3Array;
-    osg::ref_ptr<osg::Vec3Array> linePoints_y = new osg::Vec3Array;
-    osg::ref_ptr<osg::Vec3Array> linePoints_z = new osg::Vec3Array;
+        linePoints_x->push_back(startPoint_x);
+        linePoints_x->push_back(endPoint_x);
 
-    linePoints_x->push_back(startPoint);
-    linePoints_x->push_back(endPoint_x);
+        linePoints_y->push_back(startPoint_y);
+        linePoints_y->push_back(endPoint_y);
 
-    linePoints_y->push_back(startPoint);
-    linePoints_y->push_back(endPoint_y);
+        linePoints_z->push_back(startPoint_z);
+        linePoints_z->push_back(endPoint_z);
 
-    linePoints_z->push_back(startPoint);
-    linePoints_z->push_back(endPoint_z);
+        osg::ref_ptr<osg::Vec4Array> color_x = new osg::Vec4Array;
+        color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+        color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
 
-    osg::ref_ptr<osg::Vec4Array> color_x = new osg::Vec4Array;
-    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
-    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
+        osg::ref_ptr<osg::Vec4Array> color_y = new osg::Vec4Array;
+        color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
+        color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
 
-    osg::ref_ptr<osg::Vec4Array> color_y = new osg::Vec4Array;
-    color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
-    color_y->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
+        osg::ref_ptr<osg::Vec4Array> color_z = new osg::Vec4Array;
+        color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+        color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
 
-    osg::ref_ptr<osg::Vec4Array> color_z = new osg::Vec4Array;
-    color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
-    color_z->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
+        beam_x->setVertexArray(linePoints_x.get());
+        beam_x->setColorArray(color_x.get());
+        beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+        beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    beam_x->setVertexArray(linePoints_x.get());
-    beam_x->setColorArray(color_x.get());
-    beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+        beam_y->setVertexArray(linePoints_y.get());
+        beam_y->setColorArray(color_y.get());
+        beam_y->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+        beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    beam_y->setVertexArray(linePoints_y.get());
-    beam_y->setColorArray(color_y.get());
-    beam_y->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+        beam_z->setVertexArray(linePoints_z.get());
+        beam_z->setColorArray(color_z.get());
+        beam_z->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+        beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    beam_z->setVertexArray(linePoints_z.get());
-    beam_z->setColorArray(color_z.get());
-    beam_z->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+        osg::StateSet* state = beam_x->getOrCreateStateSet();
+        state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+        osg::ref_ptr<osg::LineWidth> linewidth_x = new osg::LineWidth();
+        linewidth_x->setWidth(2.0f);
+        state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
 
-    osg::StateSet* state = beam_x->getOrCreateStateSet();
-    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    osg::ref_ptr<osg::LineWidth> linewidth_x = new osg::LineWidth();
-    linewidth_x->setWidth(2.0f);
-    state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
+        state = beam_y->getOrCreateStateSet();
+        state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+        osg::ref_ptr<osg::LineWidth> linewidth_y = new osg::LineWidth();
+        linewidth_y->setWidth(2.0f);
+        state->setAttributeAndModes(linewidth_y, osg::StateAttribute::OVERRIDE);
 
-    state = beam_y->getOrCreateStateSet();
-    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    osg::ref_ptr<osg::LineWidth> linewidth_y = new osg::LineWidth();
-    linewidth_y->setWidth(2.0f);
-    state->setAttributeAndModes(linewidth_y, osg::StateAttribute::OVERRIDE);
+        state = beam_z->getOrCreateStateSet();
+        state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+        osg::ref_ptr<osg::LineWidth> linewidth_z = new osg::LineWidth();
+        linewidth_z->setWidth(2.0f);
+        state->setAttributeAndModes(linewidth_z, osg::StateAttribute::OVERRIDE);
 
-    state = beam_z->getOrCreateStateSet();
-    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    osg::ref_ptr<osg::LineWidth> linewidth_z = new osg::LineWidth();
-    linewidth_z->setWidth(2.0f);
-    state->setAttributeAndModes(linewidth_z, osg::StateAttribute::OVERRIDE);
+        beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+        beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+        beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
 
-    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
-    beam_y->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
-    beam_z->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
+        state->setMode(GL_BLEND, osg::StateAttribute::ON);
+        state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
 
-    state->setMode(GL_BLEND, osg::StateAttribute::ON);
-    state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
+        beamGeode->addChild(beam_x);
+        beamGeode->addChild(beam_y);
+        beamGeode->addChild(beam_z);
 
-    beamGeode->addChild(beam_x);
-    beamGeode->addChild(beam_y);
-    beamGeode->addChild(beam_z);
-
-    rootGroup->addChild(beamGeode);
+        rootGroup->addChild(beamGeode);
+    }
 
 	// Test Model
-	rootGroup->addChild(osgDB::readNodeFile("C:/Project/TransViz/TestData/axes.osgt"));    // This won't crash the program. if the file isn't found.
+	// rootGroup->addChild(osgDB::readNodeFile("C:/Project/TransViz/TestData/axes.osgt"));    // This won't crash the program. if the file isn't found.
+    
     cb.RootNode = rootGroup;
     viewer->setSceneData(rootGroup);
 
@@ -277,7 +336,6 @@ int main(int argc, char* argv[]) {
 	manipulator->addMatrixManipulator('5', "Orbit",		new osgGA::OrbitManipulator());
 	manipulator->addMatrixManipulator('6', "FirstPerson", new osgGA::FirstPersonManipulator());
 	manipulator->addMatrixManipulator('7', "Spherical", new osgGA::SphericalManipulator());
-
 	viewer->setCameraManipulator(manipulator.get());
 	viewer->setUpViewInWindow(100, 100, 1024, 786);
 
@@ -303,23 +361,31 @@ int main(int argc, char* argv[]) {
 		ViewerWindow.front()->setWindowName("TransViz Client");
 	}
 
-    std::string mothership = "localhost";
-
-    for (int i = 1; i < argc; i++)
-    {
-        if (!strcmp(argv[i], "-mothership"))
-        {
-            mothership = argv[i + 1];
-            i++;
-        }
-    }
-
     SceneGraphGenerator->setMothership(mothership);
     SceneGraphGenerator->run();
 
-	//viewer->realize();
-	while (!viewer->done()){
-		SceneGraphGenerator->update();
-		viewer->frame();
+    while (!viewer->done()){
+        SceneGraphGenerator->update();
+        viewer->frame();
+
+        if (TestMode)
+        {
+            if ( (time(nullptr) - lastRecordedTime) > (timeToDraw + 10.0f) )
+            {
+                if(cb.TransVizNode == nullptr)
+                {
+                    std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Nothing happend!" << std::endl;
+                    return 1;
+                }
+            }
+        }
 	}
+
+    if (!SceneGraphGenerator->isConnected())
+    {
+        std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "TransViz was never connected" << std::endl;
+        exit(1);
+    }
+    
+    exit(0);
 }
