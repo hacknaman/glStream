@@ -60,12 +60,7 @@ IF %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cmake --build . --config %buildType% --target INSTALL
 cd ..
 
-:: copy osg plugins
-robocopy %OSSROOT%\osg-3.4\bin .\build\bin *.dll /MT:25
-robocopy %OSSROOT%\osg-3.4\bin\osgPlugins-3.4.2 .\build\bin *.dll /MT:25
-
-:: copy glut
-robocopy %OSSROOT%\glut\bin\x64 .\build\bin *.dll /MT:25
+call copyDeps.bat
 
 :: build ok
 exit /b 0
