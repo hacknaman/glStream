@@ -5,7 +5,7 @@ cd build
 SET currentdir=%cd%
 cd mothership
 cd configs
-start "testmothership" cmd /k python crRelease.conf city "%currentdir%\apps" localhost scenegraph
+start "testmothership" cmd /k python crRelease.conf %1 "%currentdir%\apps" localhost scenegraph
 cd ..
 cd ..
 echo %cd%
