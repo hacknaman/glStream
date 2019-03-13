@@ -211,7 +211,7 @@ GLboolean checkLicense(){
 /**
 * Do CRServer initializations.  After this, we can begin servicing clients.
 */
-void
+int
 crServerInitNew(const char* hostname, const char *port)
 {
     // check for the license
@@ -269,7 +269,9 @@ crServerInitNew(const char* hostname, const char *port)
     crStateInit();
 
     if (!crServerGatherConfiguration(mothership))
-        return;
+    {
+        return -1;
+    }
 
     crStateLimitsInit(&(cr_server.limits));
 
@@ -289,6 +291,8 @@ crServerInitNew(const char* hostname, const char *port)
     cr_server.barriers = crAllocHashtable();
     cr_server.semaphores = crAllocHashtable();
     cr_server.inactive_head_spu = NULL;
+
+    return 0;
 }
 
 
