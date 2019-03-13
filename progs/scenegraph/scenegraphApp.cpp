@@ -384,8 +384,8 @@ int main(int argc, char* argv[]) {
     if (!SceneGraphGenerator->isConnected())
     {
         std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "TransViz was never connected" << std::endl;
-        exit(1);
+        return 1;
     }
     
-    exit(0);
+    return 0;
 }
