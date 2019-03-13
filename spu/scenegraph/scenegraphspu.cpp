@@ -11,7 +11,8 @@ See the file LICENSE.txt for information on redistributing this software. */
 // This is enabled for part selection in aveva
 #define GEODE_WITH_LM
 
-
+#define ENABLE_MATERIAL
+//#define ENABLE_LIGHTS
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
@@ -586,7 +587,7 @@ static void PRINT_APIENTRY printDisable(GLenum cap)
     if (cap == GL_POLYGON_STIPPLE){
 
         CreateNewGeode();
-        g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
+        scenegraph_spu_data.g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
 	}
 #endif
     
@@ -644,7 +645,7 @@ static void PRINT_APIENTRY printEnable(GLenum cap)
 {
 
 #ifdef ENABLE_MATERIAL
-    if (g_isReading && cap == GL_POLYGON_STIPPLE) {
+    if (scenegraph_spu_data.g_isReading && cap == GL_POLYGON_STIPPLE) {
         CreateNewGeode();
         osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
         scenegraph_spu_data.g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
@@ -698,12 +699,12 @@ static void PRINT_APIENTRY printEnd(void)
 
             if (scenegraph_spu_data.g_state != NULL)
             {
-                g_geode->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
+                scenegraph_spu_data.g_geode->setStateSet(new osg::StateSet(*scenegraph_spu_data.g_state, osg::CopyOp::DEEP_COPY_ALL));
             }
 
-            if (g_material != NULL)
+            if (scenegraph_spu_data.g_material != NULL)
             {
-                scenegraph_spu_data.g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+                scenegraph_spu_data.g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(scenegraph_spu_data.g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 
 #endif
@@ -721,18 +722,18 @@ static void PRINT_APIENTRY printEnd(void)
 
 #ifdef ENABLE_MATERIAL
 
-            g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
-            g_geom->setVertexArray(g_vertexArray);
-            g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
-            g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
-            if (g_state != NULL)
+            scenegraph_spu_data.g_geom->addPrimitiveSet(new osg::DrawArrays(scenegraph_spu_data.g_geometryMode, 0, scenegraph_spu_data.g_vertexArray->size()));
+            scenegraph_spu_data.g_geom->setVertexArray(scenegraph_spu_data.g_vertexArray);
+            scenegraph_spu_data.g_geom->setColorArray(scenegraph_spu_data.g_colorArray, osg::Array::BIND_PER_VERTEX);
+            scenegraph_spu_data.g_geom->setNormalArray(scenegraph_spu_data.g_normalArray, osg::Array::BIND_PER_VERTEX);
+            if (scenegraph_spu_data.g_state != NULL)
             {
-                g_geode->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
+                scenegraph_spu_data.g_geode->setStateSet(new osg::StateSet(*scenegraph_spu_data.g_state, osg::CopyOp::DEEP_COPY_ALL));
             }
 
-            if (g_material != NULL)
+            if (scenegraph_spu_data.g_material != NULL)
             {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+                scenegraph_spu_data.g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(scenegraph_spu_data.g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 
 #endif
@@ -1480,16 +1481,16 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
 
 #ifdef ENABLE_MATERIAL
 
-    if (g_material == NULL)
+    if (scenegraph_spu_data.g_material == NULL)
     {
-        g_material = new osg::Material();
+        scenegraph_spu_data.g_material = new osg::Material();
     }
 
     switch (pname)
     {
     case GL_SHININESS:
         CreateNewGeode();
-        g_material->setShininess(osgface, param);
+        scenegraph_spu_data.g_material->setShininess(osgface, param);
         break;
     }
 
@@ -2271,9 +2272,10 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     if (scenegraph_spu_data.g_startReading)
     {
         scenegraph_spu_data.g_spuRootGroup = new osg::Group;
+        scenegraph_spu_data.g_geode = new osg::Geode;
 
 #ifdef ENABLE_MATERIAL
-        g_material = new osg::Material();
+        scenegraph_spu_data.g_material = new osg::Material();
 #endif
         last_color[0] = -1;
         last_color[1] = -1;
@@ -2285,12 +2287,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 
 static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
 {
-    GLint flags = 0;
-    if (scenegraph_spu_data.g_isReading)
-    {
-        scenegraph_spu_data.g_shouldStartReading = true;
-    }
-    printSwapBuffers(window, flags);
+  
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
@@ -3009,28 +3006,28 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
 
 #ifdef ENABLE_MATERIAL
 
-    if (g_material == NULL)
+    if (scenegraph_spu_data.g_material == NULL)
     {
-        g_material = new osg::Material();
+        scenegraph_spu_data.g_material = new osg::Material();
     }
 
     switch (mode)
     {
     case GL_AMBIENT:
         CreateNewGeode();
-        g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_DIFFUSE:
         CreateNewGeode();
-        g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_SPECULAR:
         CreateNewGeode();
-        g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_AMBIENT_AND_DIFFUSE:
         CreateNewGeode();
-        g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
         break;
     }
 

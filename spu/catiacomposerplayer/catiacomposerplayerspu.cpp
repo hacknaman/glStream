@@ -10,7 +10,8 @@
 #include "cr_spu.h"
 #include "catiacomposerplayerspu.h"
 
-
+#define ENABLE_MATERIAL
+//#define ENABLE_LIGHTS
 
 extern void  catiaComposerPlayerSPUReset()
 {

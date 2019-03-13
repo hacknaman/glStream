@@ -42,12 +42,15 @@ namespace TransVizUtil{
     }
 
     void TransVizUtil::generateScenegraph() {
-        iSPU->getUpdatedScene();
+        if (_isconnected)
+        {
+            iSPU->getUpdatedScene();
+        }
     }
 
     void TransVizUtil::update()
     {
-        if (!_bIsNodeDirty)
+        if (!_bIsNodeDirty || !_isconnected)
             return;
 
         _oldNode = _newNode;
@@ -82,7 +85,13 @@ namespace TransVizUtil{
 
     void TransVizServerThread::run()
     {
-        crServerInitNew(_util->getMothership().c_str(), _util->getPort().c_str());
+        // this will not continue if crappfaker isn't connected
+        if (crServerInitNew(_util->getMothership().c_str(), _util->getPort().c_str()) < 0)
+        {
+            throw std::runtime_error("TransViz: Unable to establish connection");
+            return;
+        }
+
         SPU* spu = crServerHeadSPU();
 
 		if (spu == NULL)

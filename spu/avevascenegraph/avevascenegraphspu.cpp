@@ -13,6 +13,8 @@ extern void avevaSPUReset()
     aveva_spu.depth_value = 2;
 }
 
+//#define ENABLE_MATERIAL
+//#define ENABLE_LIGHTS
 
 #define DRAW_APPCAM
 //#define DRAW_APPCAM_BEAM
@@ -122,13 +124,10 @@ extern void getUpdatedAvevaSceneASC(){
     }*/
 }
 
-void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
-void *g_context = NULL;
-
 extern OSGEXPORT void funcNodeUpdateASC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
 
-    g_pt2Func = pt2Func;
-    g_context = context;
+    aveva_spu.superSpuState->g_pt2Func = pt2Func;
+    aveva_spu.superSpuState->g_context = context;
 }
 
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
@@ -175,24 +174,10 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 {
     aveva_spu.super.Begin(mode);
     
-    /* if (g_isReading)
+    if (aveva_spu.superSpuState->g_isReading)
     {
-        g_hasTouchedBegin = true;
-        g_geometryMode = mode;
-        g_geode = new osg::Geode();
-        g_vertexArray = new osg::Vec3Array();
-        g_normalArray = new osg::Vec3Array();
-        g_colorArray = new osg::Vec3Array();
+        aveva_spu.superSpuState->g_geode = new osg::Geode();
     }
-
-    if (g_isDisplayList)
-    {
-        g_geometryMode = mode;
-        g_geode = new osg::Geode();
-        g_vertexArray = new osg::Vec3Array();
-        g_normalArray = new osg::Vec3Array();
-        g_colorArray = new osg::Vec3Array();
-    }*/
 }
 
 static void PRINT_APIENTRY printBeginQueryARB(GLenum target, GLuint id)
@@ -670,7 +655,7 @@ static void PRINT_APIENTRY printEnable(GLenum cap)
 {
 
     aveva_spu.super.Enable(cap);
- //    if (g_isReading && cap == GL_POLYGON_STIPPLE) {
+//    if (g_isReading && cap == GL_POLYGON_STIPPLE) {
 //        osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
 //        g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
 //    }
@@ -716,9 +701,9 @@ static void PRINT_APIENTRY printEnd(void)
             aveva_spu.superSpuState->g_geode->addDrawable(aveva_spu.superSpuState->g_geom);
 
 #ifdef ENABLE_MATERIAL
-            if (g_material != NULL)
+            if (aveva_spu.superSpuState->g_material != NULL)
             {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+                aveva_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(aveva_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 #endif
         }
@@ -753,9 +738,9 @@ static void PRINT_APIENTRY printEnd(void)
             aveva_spu.superSpuState->g_geode->addDrawable(aveva_spu.superSpuState->g_geom);
 
 #ifdef ENABLE_MATERIAL
-            if (g_material != NULL)
+            if (aveva_spu.superSpuState->g_material != NULL)
             {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+                aveva_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(aveva_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 #endif
         }
@@ -1478,10 +1463,6 @@ static void PRINT_APIENTRY printLoadTransposeMatrixfARB(const GLfloat * m)
 }
 
 static void PRINT_APIENTRY printLogicOp(GLenum opcode)
-{
-}
-
-static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
 {
 }
 
@@ -2319,7 +2300,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
             aveva_spu.superSpuState->g_spuRootGroup->addChild(group);
         }
 
-        g_pt2Func(g_context, aveva_spu.superSpuState->g_spuRootGroup);
+        aveva_spu.superSpuState->g_pt2Func(aveva_spu.superSpuState->g_context, aveva_spu.superSpuState->g_spuRootGroup);
        // rapi.ResetMaterials();
     }
 
@@ -2350,7 +2331,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         aveva_spu.superSpuState->g_spuRootGroup = new osg::Group;
 
 #ifdef ENABLE_MATERIAL
-        g_material = new osg::Material();
+        aveva_spu.superSpuState->g_material = new osg::Material();
 #endif
         osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
 
@@ -2359,6 +2340,16 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         
         aveva_spu.sequence_index = -1;
     }
+}
+
+static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
+{
+    GLint flags = 0;
+    if (aveva_spu.superSpuState->g_isReading)
+    {
+        aveva_spu.superSpuState->g_shouldStartReading = true;
+    }
+    printSwapBuffers(window, flags);
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
@@ -3045,25 +3036,25 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
 
 #ifdef ENABLE_MATERIAL
 
-    if (g_material == NULL)
+    if (aveva_spu.superSpuState->g_material == NULL)
     {
-        g_material = new osg::Material();
+        aveva_spu.superSpuState->g_material = new osg::Material();
     }
 
     switch (mode)
     {
     case GL_AMBIENT:
-        g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        aveva_spu.superSpuState->g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_DIFFUSE:
-        g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        aveva_spu.superSpuState->g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_SPECULAR:
-        g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        aveva_spu.superSpuState->g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_AMBIENT_AND_DIFFUSE:
-        g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
-        g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
+        aveva_spu.superSpuState->g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
+        aveva_spu.superSpuState->g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
         break;
     }
 
