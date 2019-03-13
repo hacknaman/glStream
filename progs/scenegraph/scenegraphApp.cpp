@@ -386,6 +386,12 @@ int main(int argc, char* argv[]) {
         std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "TransViz was never connected" << std::endl;
         return 1;
     }
+
+    if (cb.TransVizNode == nullptr)
+    {
+        std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Nothing happend!" << std::endl;
+        return 1;
+    }
     
     return 0;
 }

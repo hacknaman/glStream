@@ -1,0 +1,8 @@
+Sleep(2000)
+Local $hWnd = WinWait("TransViz Client")
+WinActivate($hWnd)
+Send("f")
+Sleep(5000)
+;Send("{SPACE}")
+;Sleep(1000)
+Send("{ESC}")
