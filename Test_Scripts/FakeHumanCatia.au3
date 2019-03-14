@@ -15,6 +15,7 @@ Send("{UP}")
 Send("{UP}")
 Send("{UP}")
 Send("{UP}")
+Send("{UP}")
 Send("{ENTER}")
 
 ; Camera Shake
@@ -24,12 +25,14 @@ Sleep(2000)
 Send("f")
 
 WinActivate($hWndCat)
+Sleep(1000)
 MouseMove(924,917)
+Sleep(2000)
 MouseDown("Middle")
-MouseMove(918,893)
+MouseMove(918,843)
 MouseUp("Middle")
 
-Sleep(4000)
+Sleep(5000)
 
 WinClose($hWndCat)
 WinClose($hWndTC)

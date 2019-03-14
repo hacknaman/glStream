@@ -8,6 +8,7 @@ cd Test_Scripts
 if %1 == 1 call AppTest.bat simpleapp 0 NUL
 if %1 == 2 call AppTest.bat city 1 NUL
 if %1 == 3 call AppTest.bat atlantis 0 NUL atlantisTestModel.ive
-if %1 == 4 call AppTest.bat cnext catia "C:\Program Files\Dassault Systemes\B20\win_b64\code\bin" engineTestModel.ive
+if %1 == 4 call AppTest.bat cnext catia "E:\Program Files\Dassault Systemes\B20\win_b64\code\bin" engineTestModel.ive
 
 cd ..
+exit /b %errlevel%
