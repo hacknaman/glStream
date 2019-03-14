@@ -60,9 +60,9 @@ typedef struct {
      bool isNormalRescaleEnabled;
 
 
-      osg::ref_ptr<osg::Vec3Array> g_vertexArray;
-      osg::ref_ptr<osg::Vec3Array> g_normalArray;
-      osg::ref_ptr<osg::Vec3Array> g_colorArray;
+     osg::ref_ptr<osg::Vec3Array> g_vertexArray;
+     osg::ref_ptr<osg::Vec3Array> g_normalArray;
+     osg::ref_ptr<osg::Vec3Array> g_colorArray;
 
      osg::Vec3 g_CurrentNormal;
      osg::Vec3 g_CurrentColor;
@@ -70,7 +70,6 @@ typedef struct {
 
      osg::ref_ptr<osg::Geometry> g_geom;
      osg::ref_ptr<osg::Geode> g_geode;
-
      
      std::vector<osg::Matrix> g_matrix_stack;
 
@@ -88,11 +87,10 @@ typedef struct {
 
      int g_startReading;
      int g_isReading;
-     int g_canAdd;
-
      int g_shouldStartReading;
      int g_hasTouchedBegin;
      int g_hasDrawnSomething;
+
      int g_isDisplayList;
      std::time_t g_time;
      void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>);

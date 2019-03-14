@@ -38,14 +38,12 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 
     scenegraph_spu_data.g_startReading = false;
     scenegraph_spu_data.g_isReading = false;
-    scenegraph_spu_data.g_canAdd = false;
-
+    scenegraph_spu_data.g_hasDrawnSomething = false;
     scenegraph_spu_data.g_shouldStartReading = false;
     scenegraph_spu_data.g_hasTouchedBegin = false;
 
-
     scenegraph_spu_data.g_isDisplayList = false;
-    scenegraph_spu_data.g_hasDrawnSomething = false;
+    
     scenegraph_spu_data.g_time = std::time(0);
 }
 
@@ -1402,6 +1400,9 @@ static void PRINT_APIENTRY printPushMatrix(void)
     if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
     //pushing current matrix in stack
+#ifdef GEODE_WITH_LM
+    CreateNewGeode();
+#endif
     scenegraph_spu_data.g_matrix_stack.push_back(scenegraph_spu_data.g_CurrentMatrix);
    
 }
@@ -2233,7 +2234,12 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     if (scenegraph_spu_data.g_isReading)
 	{
         scenegraph_spu_data.g_startReading = false;
-        scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
+
+        if (scenegraph_spu_data.g_hasDrawnSomething)
+        {
+            scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
+            scenegraph_spu_data.g_hasDrawnSomething = false;
+        }
 
         if (scenegraph_spu_data.g_hasTouchedBegin == false)
         {
@@ -2280,7 +2286,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         last_color[0] = -1;
         last_color[1] = -1;
         last_color[2] = -1;
-        scenegraph_spu_data.g_hasDrawnSomething = true;
+        scenegraph_spu_data.g_hasDrawnSomething = false;
         scenegraph_spu_data.g_startReading = false;
     }
 }
