@@ -36,8 +36,10 @@ bool TestMode = false;
 std::string mothership = "localhost";
 double axisLen = 1000.0;
 double timeToDraw = 5.0f;
-bool hasDrawn = false;
-bool checkmodel = false;
+bool hasCalledGenerate = false;
+bool istestcasepassed = true;
+int appkilltime = 1000; // 1000 seconds
+std::string checkmodel = "";
 
 time_t lastRecordedTime;
 
@@ -97,6 +99,7 @@ public:
                 // Save the model
                 osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.ive");
                 osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.osgt");
+                std::cout << "Model saved as osgt and ive" << std::endl;
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_T)
             {
@@ -108,11 +111,11 @@ public:
 		case(osgGA::GUIEventAdapter::FRAME) :
 		{
             // start test
-            if (TestMode && !hasDrawn){
+            if (TestMode && !hasCalledGenerate){
                 if (time(nullptr) - lastRecordedTime > timeToDraw)
                 {
                     _SceneGraphGenerator->generateScenegraph();
-                    hasDrawn = true;
+                    hasCalledGenerate = true;
                 }
             }
             return false;
@@ -167,22 +170,35 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
         // No pat
         RootNode->addChild(node);
         TransVizNode = node;
-        std::cout << "Node Added by app" << std::endl;
 
-        if (TestMode){
-            if (node->asGroup()->getNumChildren())
+        if (node->asGroup()->getNumChildren())
+        {
+            if (checkmodel.size() > 1)
             {
-                if (checkmodel)
+                osg::ref_ptr<osg::Node> checknode = osgDB::readNodeFile(checkmodel.c_str());
+
+                if (checknode == NULL)
                 {
-                    exit(1);
+                    std::cout << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Invalid Model File" << std::endl;
+                    istestcasepassed = false;
+                    return ;
+                }
+
+                if (node->asGroup()->getNumChildren() == checknode->asGroup()->getNumChildren()){
+                    std::cout << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models have same number of nodes" << std::endl;
                 }
                 else {
-                    exit(0);
+                    std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models are not same" << std::endl;
+                    istestcasepassed = false;
                 }
             }
             else {
-                exit(1);
+                std::cout << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models loaded in TransViz" << std::endl;
             }
+        }
+        else {
+            std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models loaded in TransViz has no children" << std::endl;
+            istestcasepassed = false;
         }
     }
 };
@@ -195,6 +211,8 @@ int main(int argc, char* argv[]) {
     arguments.getApplicationUsage()->addCommandLineOption("--Axislength", "length of axislines drawn");
     arguments.getApplicationUsage()->addCommandLineOption("-t or --TestMode", "Set the Width of the Display in cm; with Vive Tracker units reported in cm");
     arguments.getApplicationUsage()->addCommandLineOption("-m or --mothership", "hostname or ip of mothership machine");
+    arguments.getApplicationUsage()->addCommandLineOption("--checkmodel", "path of model to compare for testing");
+    arguments.getApplicationUsage()->addCommandLineOption("--appkilltime", "time after app is killed automatically");
     arguments.getApplicationUsage()->addCommandLineOption("-h or --help", "Press 'f' to get the model generated from transviz.This App is also used for testing purpose");
 
     if (arguments.read("-t") || arguments.read("--TestMode"))
@@ -203,8 +221,12 @@ int main(int argc, char* argv[]) {
     }
 
     while (arguments.read("--Mothership", mothership)) {}
+    while (arguments.read("--checkmodel", checkmodel)) {}
     while (arguments.read("-m", mothership)) {}
     while (arguments.read("--Axislength", axisLen)) {}
+    while (arguments.read("--appkilltime", appkilltime)) {}
+
+    std::cout << "Model to Check path " << checkmodel << std::endl;
 
     if (arguments.read("-h") || arguments.read("--help"))
     {
@@ -212,10 +234,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (TestMode)
-    {
-        lastRecordedTime = time(nullptr);
-    }
+    lastRecordedTime = time(nullptr);
 
     TVizcallback cb;
 
@@ -367,17 +386,9 @@ int main(int argc, char* argv[]) {
     while (!viewer->done()){
         SceneGraphGenerator->update();
         viewer->frame();
-
-        if (TestMode)
+        if ((time(nullptr) - lastRecordedTime) > appkilltime)
         {
-            if ( (time(nullptr) - lastRecordedTime) > (timeToDraw + 10.0f) )
-            {
-                if(cb.TransVizNode == nullptr)
-                {
-                    std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Nothing happend!" << std::endl;
-                    return 1;
-                }
-            }
+            break;
         }
 	}
 
@@ -386,6 +397,16 @@ int main(int argc, char* argv[]) {
         std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "TransViz was never connected" << std::endl;
         return 1;
     }
+
+    if (cb.TransVizNode == nullptr)
+    {
+        std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Nothing happend!" << std::endl;
+        return 1;
+    }
+
+    if (!istestcasepassed)
+        return 1;
+        
     
     return 0;
 }

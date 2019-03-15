@@ -39,236 +39,162 @@ void		DisplayFunc(void)
   glRotatef(30, 1, 0, 0);
   glRotatef(alpha, 0, 1, 0);
 
-  // Red
 #if 0
+  // Red
+  glColor3f(1, 0, 0);
   /* We tell we want to draw quads */
   glBegin(GL_QUADS);
 
   /* Every four calls to glVertex, a quad is drawn */
-
-  glColor3f(1, 0, 0); 
   glVertex3f(-0.25, -0.1, -0.1);
-  glColor3f(1, 0, 0);
   glVertex3f(-0.25, -0.1, 0.1);
-  glColor3f(1, 0, 0);
   glVertex3f(-0.25, 0.1, 0.1);
-  glColor3f(1, 0, 0);
   glVertex3f(-0.25, 0.1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(1, 0, 0); 
   glVertex3f( 1, -0.1, -0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1, -0.1,  0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1,  0.1,  0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1,  0.1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(1, 0, 0); 
   glVertex3f(-0.25, -0.1, -0.1);
-  glColor3f(1, 0, 0);
   glVertex3f(-0.25, -0.1, 0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1, -0.1,  0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1, -0.1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(1, 0, 0); 
   glVertex3f(-0.25, 0.1, -0.1);
-  glColor3f(1, 0, 0);
   glVertex3f(-0.25, 0.1, 0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1,  0.1,  0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1,  0.1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(1, 0, 0); 
   glVertex3f(-0.25, -0.1, -0.1);
-  glColor3f(1, 0, 0);
   glVertex3f(-0.25, 0.1, -0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1,  0.1, -0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1, -0.1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(1, 0, 0); 
   glVertex3f(-0.25, -0.1, 0.1);
-  glColor3f(1, 0, 0);
   glVertex3f(-0.25, 0.1, 0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1,  0.1,  0.1);
-  glColor3f(1, 0, 0);
   glVertex3f( 1, -0.1,  0.1);
 
   /* No more quads */
   glEnd();
 
   // Green
-
+  glColor3f(0, 1, 0);
   glBegin(GL_QUADS);
 
   /* Every four calls to glVertex, a quad is drawn */
-
-  glColor3f(0, 1, 0); 
   glVertex3f(-0.1, -0.25, -0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(-0.1, -0.25, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(-0.1, 1, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(-0.1, 1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 1, 0); 
   glVertex3f(0.1, -0.25, -0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, -0.25, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, 1, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, 1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 1, 0); 
   glVertex3f(-0.1, -0.25, -0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(-0.1, -0.25, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, -0.25, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, -0.25, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 1, 0); 
   glVertex3f(-0.1, 1, -0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(-0.1, 1, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, 1, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, 1, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 1, 0); 
   glVertex3f(-0.1, -0.25, -0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(-0.1, 1, -0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, 1, -0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, -0.25, -0.1);
 
   glEnd();
   glBegin(GL_QUADS);
-
-  glColor3f(0, 1, 0); 
+ 
   glVertex3f(-0.1, -0.25, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(-0.1, 1, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, 1, 0.1);
-  glColor3f(0, 1, 0);
   glVertex3f(0.1, -0.25, 0.1);
 
   /* No more quads */
   glEnd();
 
   // Blue
-
+  glColor3f(0, 0, 1);
   glBegin(GL_QUADS);
 
   /* Every four calls to glVertex, a quad is drawn */
-
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, -0.1, -0.25);
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, -0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, 0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, 0.1, -0.25);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, -0.1, -0.25);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, -0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, 0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, 0.1, -0.25);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 0, 1); 
   glVertex3f(-0.1, -0.1, -0.25);
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, -0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, -0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, -0.1, -0.25);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, 0.1, -0.25);
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, 0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, 0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, 0.1, -0.25);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, -0.1, -0.25);
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, 0.1, -0.25);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, 0.1, -0.25);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, -0.1, -0.25);
 
   glEnd();
   glBegin(GL_QUADS);
 
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, -0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(-0.1, 0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, 0.1, 1);
-  glColor3f(0, 0, 1);
   glVertex3f(0.1, -0.1, 1);
 
   /* No more quads */
