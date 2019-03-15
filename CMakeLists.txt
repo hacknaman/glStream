@@ -13,6 +13,7 @@ find_package(OSG REQUIRED)
 find_package(Flexera REQUIRED)
 find_package(ReviewAPI)
 find_package(CatiaCppApi)
+find_package(ServerAppContentApi)
 
 set(EXTRA_LIBS)
 if(CMAKE_THREAD_LIBS_INIT)
@@ -51,10 +52,9 @@ add_subdirectory(crutapi)
 add_subdirectory(crutclientapi)
 add_subdirectory(crutproxy)
 add_subdirectory(crutserver)
-
 add_subdirectory(progs)
-
 add_subdirectory(TransVizUtil)
+
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/
 	DESTINATION include

@@ -19,8 +19,10 @@
 #include <OpenThreads/Thread>
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
-
-
+  
+namespace ServerAppContentApi{
+    class ServerContentNode;
+}
 class ISpufunc
 {
 public:
@@ -28,6 +30,7 @@ public:
     virtual void changeScene() = 0;
     virtual void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context) = 0;
     virtual void resetClient(){};
+    virtual void generateContentTree(ServerAppContentApi::ServerContentNode *root){};
 };
 
 namespace TransVizUtil{
@@ -52,6 +55,7 @@ namespace TransVizUtil{
     };
 
     class TRANSVIZ_UTIL_DLL_EXPORT TransVizUtil : public osg::Referenced{
+       
     public:
         TransVizUtil();
         ~TransVizUtil();
@@ -61,7 +65,8 @@ namespace TransVizUtil{
         // set or returns the root Node from the scene
         osg::ref_ptr<osg::Group> getLastGeneratedNode();
         void generateScenegraph();
-
+        //it will be called from vr play to get root_node of server app content tree and then vrplay will be able to access part name,meta data of part .
+        void getServerAppContentTree(ServerAppContentApi::ServerContentNode*);
         void updateNode(osg::ref_ptr<osg::Group> node);
         void update();
 
@@ -105,6 +110,9 @@ namespace TransVizUtil{
 
         std::string _hostname;
         std::string _port;
+        //it will be generated as soon as catiaspu,avevaspu,catiacomposer, or any other cad app spu loads and register itself to transviz util in iSPU
+        //variable
+        ServerAppContentApi::ServerContentNode *server_App_content_root_node;
 
     };// class TransVizUtil
 } // nameSpace TransVizUtil

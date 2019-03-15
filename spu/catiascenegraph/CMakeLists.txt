@@ -1,6 +1,7 @@
 include_directories(.)
 include_directories(${OSG_INCLUDE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/TransVizUtil)
+include_directories(${SERVER_CONTENT_API_INCLUDE_DIR})
 include_directories(${CatiaCppApi_INCLUDE_DIR})
 
 set(SOURCES

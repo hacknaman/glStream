@@ -47,6 +47,7 @@ public:
     void changeScene();
     void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
     void resetClient();
+    void generateContentTree(ServerAppContentApi::ServerContentNode* root);
     
 };
 extern AvevaSpu aveva_spu;

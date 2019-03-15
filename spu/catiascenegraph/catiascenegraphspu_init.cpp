@@ -10,6 +10,7 @@
 #include "catiascenegraphspu.h"
 #include <stdio.h>
 #include <signal.h>
+#include "ServerContentNode.h"
 #ifndef WINDOWS
 #include <sys/time.h>
 #endif
@@ -40,7 +41,11 @@ void CatiaSpufunc::changeScene()
 {
     Scenespufunc::changeScene();
 }
-
+void CatiaSpufunc::generateContentTree(ServerAppContentApi::ServerContentNode* root)
+{
+    catia_spu.adapter.getServerContentTree(root);
+    crDebug("Server Content tree is created");
+}
 
 void CatiaSpufunc::funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
 {

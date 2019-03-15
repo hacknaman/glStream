@@ -1,5 +1,6 @@
 include_directories(.)
 include_directories(${OSG_INCLUDE_DIR})
+include_directories(${SERVER_CONTENT_API_INCLUDE_DIR})
 
 SET(LIB_HEADERS
 	TransVizUtil.h

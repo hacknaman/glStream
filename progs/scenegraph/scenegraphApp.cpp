@@ -29,6 +29,7 @@
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
 #include <TransVizUtil.h>
+#include "ServerContentNode.h"
 
 // Globals
 osg::ref_ptr <osg::Group> rootGroup = new osg::Group();
@@ -48,11 +49,13 @@ class SCAppEventHandler : public osgGA::GUIEventHandler
 {
     osg::ref_ptr<TransVizUtil::TransVizUtil> _SceneGraphGenerator;
     bool _isPartIdentificationEnabled;
+    ServerAppContentApi::ServerContentNode *_content_root_node;
 public:
 
-    SCAppEventHandler(osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator) {
+    SCAppEventHandler(osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator, ServerAppContentApi::ServerContentNode * root) {
         _SceneGraphGenerator = SceneGraphGenerator;
         _isPartIdentificationEnabled = true;
+        _content_root_node = root;
     }
 
 	bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
@@ -93,6 +96,7 @@ public:
             if (ea.getKey() == osgGA::GUIEventAdapter::KEY_F)
             {
                 _SceneGraphGenerator->generateScenegraph();
+                _SceneGraphGenerator->getServerAppContentTree(_content_root_node);
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
             {
@@ -143,6 +147,23 @@ public:
 				std::string intersectedGeodeName = intersectedNode->asGeode()->getName();
 
 				std::cout << "This is the node we have pressed - " << intersectedGeodeName << std::endl;
+                ServerAppContentApi::ServerContentNode *selected_node = _content_root_node->getServerContentNode(intersectedGeodeName);
+                ServerAppContentApi::PartInfo part_info;
+                ServerAppContentApi::MetaData meta_data;
+                selected_node->getPartInfo(&part_info);
+                selected_node->getMetaData(&meta_data);
+                std::cout << "part info is given below-" << std::endl;
+                std::cout <<"mass:"<< part_info.mass << std::endl;
+                std::cout << "volume:"<<part_info.volume << std::endl;
+                std::cout << "wetAera:"<<part_info.wetArea << std::endl;
+                std::cout << "gravity center:" << part_info.gravityCenter[0]<< "," << part_info.gravityCenter[1]<< "," << part_info.gravityCenter[2] << std::endl;
+                std::cout << "extents:" << part_info.extents[0] << "," << part_info.extents[1] << "," << part_info.extents[2] << part_info.extents[3] << "," << part_info.extents[4] << "," << part_info.extents[5] << std::endl;
+
+                std::cout << "metaData is given below-" << std::endl;
+                std::cout << "definition:" << meta_data.definition<< std::endl;
+                std::cout << "Descrption:" << meta_data.partDescription<< std::endl;
+                
+
 			}
 		}
 	}
@@ -243,8 +264,8 @@ int main(int argc, char* argv[]) {
     SceneGraphGenerator->setNodeUpdateCallBack((TransVizUtil::TransVizNodeUpdateCB*)&cb);
 
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer();
-
-    viewer->addEventHandler(new SCAppEventHandler(SceneGraphGenerator));
+    ServerAppContentApi::ServerContentNode *root = new ServerAppContentApi::ServerContentNode();
+    viewer->addEventHandler(new SCAppEventHandler(SceneGraphGenerator,root));
 
     // draw axis beam
     {

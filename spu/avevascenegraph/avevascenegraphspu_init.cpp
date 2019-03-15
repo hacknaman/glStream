@@ -50,6 +50,10 @@ void Avevaspufunc::changeScene()
 {
 
 }
+void Avevaspufunc::generateContentTree(ServerAppContentApi::ServerContentNode *root)
+{
+    //aveva_spu.rapi.getServerContentTree(root);
+}
 void Avevaspufunc::funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
 {
     Scenespufunc::funcNodeUpdate(pt2Func, context);
