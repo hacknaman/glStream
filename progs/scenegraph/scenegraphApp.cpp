@@ -30,6 +30,8 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <TransVizUtil.h>
 
+#include "Viz_Debug.h"
+
 // Globals
 osg::ref_ptr <osg::Group> rootGroup = new osg::Group();
 bool TestMode = false;
@@ -179,32 +181,34 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
 
                 if (checknode == NULL)
                 {
-                    std::cout << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Invalid Model File" << std::endl;
+                    VIZ_LOG("Invalid Model File");
                     istestcasepassed = false;
                     return ;
                 }
 
                 if (node->asGroup()->getNumChildren() == checknode->asGroup()->getNumChildren()){
-                    std::cout << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models have same number of nodes" << std::endl;
+                    VIZ_LOG("Models have same number of nodes");
                 }
                 else {
-                    std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models are not same" << std::endl;
+                    VIZ_LOG("Models are not same");
                     istestcasepassed = false;
                 }
             }
             else {
-                std::cout << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models loaded in TransViz" << std::endl;
+                VIZ_LOG("Models loaded in TransViz");
             }
         }
         else {
-            std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Models loaded in TransViz has no children" << std::endl;
+            VIZ_LOG("Models loaded in TransViz has no children");
             istestcasepassed = false;
         }
     }
 };
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) 
+{
+    initdebug();
 
     osg::ArgumentParser arguments(&argc, argv);
 
@@ -383,30 +387,77 @@ int main(int argc, char* argv[]) {
     SceneGraphGenerator->setMothership(mothership);
     SceneGraphGenerator->run();
 
+    unsigned int numOfFrame = 0;
+    unsigned int TotalNumOfFrame = 0;
+
+    double lowestfps = DBL_MAX;
+    double highestfps = -1;
+    double averagefps = 0;
+
+    time_t startTime = time(NULL);
+    time_t startTimeFinal = time(NULL);
+
     while (!viewer->done()){
+
         SceneGraphGenerator->update();
         viewer->frame();
-        if ((time(nullptr) - lastRecordedTime) > appkilltime)
+
+        if ((time(NULL) - lastRecordedTime) > appkilltime)
         {
             break;
         }
+
+        ++numOfFrame;
+        ++TotalNumOfFrame;
+
+        time_t endTime = time(NULL);
+        if ((endTime - startTime) > 4.0f) 
+        {
+            // Discard first call
+            if (highestfps < 0)
+            {
+                highestfps = 0;
+            }
+            else {
+
+                double frameRate = (double)numOfFrame / (endTime - startTime);
+                if (frameRate < lowestfps)
+                {
+                    lowestfps = frameRate;
+                }
+
+                if (frameRate > highestfps)
+                {
+                    highestfps = frameRate;
+                }
+                startTime = time(NULL);
+                numOfFrame = 0;
+            }
+        }
+
 	}
+
+    time_t endTime = time(NULL);
+    double frameRate = (double)TotalNumOfFrame / (endTime - startTimeFinal);
+
+    VIZ_LOG("Lowest FPS - " << lowestfps);
+    VIZ_LOG("Higest FPS - " << highestfps);
+    VIZ_LOG("Average FPS - " << frameRate);
 
     if (!SceneGraphGenerator->isConnected())
     {
-        std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "TransViz was never connected" << std::endl;
+        VIZ_LOG("TransViz was never connected");
         return 1;
     }
 
     if (cb.TransVizNode == nullptr)
     {
-        std::cerr << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << ":" << "Nothing happend!" << std::endl;
+        VIZ_LOG("Nothing happend!");
         return 1;
     }
 
     if (!istestcasepassed)
         return 1;
         
-    
     return 0;
 }
