@@ -29,12 +29,12 @@ int printStackTrace()
         SymFromAddr(process, address, NULL, symbol);
         if (SymGetLineFromAddr64(process, address, &displacement, line))
         {
-            printf("\tat %s in %s: line: %lu: address: 0x%0X\n", symbol->Name, line->FileName, line->LineNumber, symbol->Address);
+            VIZ_LOG("\tat " << symbol->Name << " in " << line->FileName << ": line: " << line->LineNumber << "address: " << symbol->Address );
         }
         else
         {
-            printf("\tSymGetLineFromAddr64 returned error code %lu.\n", GetLastError());
-            printf("\tat %s, address 0x%0X.\n", symbol->Name, symbol->Address);
+            VIZ_LOG("\tSymGetLineFromAddr64 returned error code " << GetLastError());
+            VIZ_LOG("\tat " << symbol->Name << " address " << symbol->Address);
         }
     }
     return 0;

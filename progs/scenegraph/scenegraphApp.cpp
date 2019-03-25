@@ -38,9 +38,12 @@ bool TestMode = false;
 std::string mothership = "localhost";
 double axisLen = 1000.0;
 double timeToDraw = 5.0f;
+int appkilltime = 1000; // default app kill time - 1000 seconds
+double minimumFPS = -1.0f;
+
 bool hasCalledGenerate = false;
-bool istestcasepassed = true;
-int appkilltime = 1000; // 1000 seconds
+bool hasTestPassed = true;
+
 std::string checkmodel = "";
 
 time_t lastRecordedTime;
@@ -94,6 +97,7 @@ public:
         {
             if (ea.getKey() == osgGA::GUIEventAdapter::KEY_F)
             {
+                // *(char *)0 = 0; // for testing this causes seg fault
                 _SceneGraphGenerator->generateScenegraph();
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
@@ -182,7 +186,7 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
                 if (checknode == NULL)
                 {
                     VIZ_LOG("Invalid Model File");
-                    istestcasepassed = false;
+                    hasTestPassed = false;
                     return ;
                 }
 
@@ -191,7 +195,7 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
                 }
                 else {
                     VIZ_LOG("Models are not same");
-                    istestcasepassed = false;
+                    hasTestPassed = false;
                 }
             }
             else {
@@ -200,7 +204,7 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
         }
         else {
             VIZ_LOG("Models loaded in TransViz has no children");
-            istestcasepassed = false;
+            hasTestPassed = false;
         }
     }
 };
@@ -215,9 +219,12 @@ int main(int argc, char* argv[])
     arguments.getApplicationUsage()->addCommandLineOption("--Axislength", "length of axislines drawn");
     arguments.getApplicationUsage()->addCommandLineOption("-t or --TestMode", "Set the Width of the Display in cm; with Vive Tracker units reported in cm");
     arguments.getApplicationUsage()->addCommandLineOption("-m or --mothership", "hostname or ip of mothership machine");
-    arguments.getApplicationUsage()->addCommandLineOption("--checkmodel", "path of model to compare for testing");
     arguments.getApplicationUsage()->addCommandLineOption("--appkilltime", "time after app is killed automatically");
+    arguments.getApplicationUsage()->addCommandLineOption("--ModelTest", "path of model to compare for testing");
+    arguments.getApplicationUsage()->addCommandLineOption("--PerformanceTest", "performace test: test fails if minimum the fps is lesser then given fps ");
     arguments.getApplicationUsage()->addCommandLineOption("-h or --help", "Press 'f' to get the model generated from transviz.This App is also used for testing purpose");
+
+    while (arguments.read("--PerformanceTest", minimumFPS)) {}
 
     if (arguments.read("-t") || arguments.read("--TestMode"))
     {
@@ -225,7 +232,7 @@ int main(int argc, char* argv[])
     }
 
     while (arguments.read("--Mothership", mothership)) {}
-    while (arguments.read("--checkmodel", checkmodel)) {}
+    while (arguments.read("--ModelTest", checkmodel)) {}
     while (arguments.read("-m", mothership)) {}
     while (arguments.read("--Axislength", axisLen)) {}
     while (arguments.read("--appkilltime", appkilltime)) {}
@@ -392,7 +399,6 @@ int main(int argc, char* argv[])
 
     double lowestfps = DBL_MAX;
     double highestfps = -1;
-    double averagefps = 0;
 
     time_t startTime = time(NULL);
     time_t startTimeFinal = time(NULL);
@@ -438,26 +444,29 @@ int main(int argc, char* argv[])
 	}
 
     time_t endTime = time(NULL);
-    double frameRate = (double)TotalNumOfFrame / (endTime - startTimeFinal);
-
+    double averagefps = (double)TotalNumOfFrame / (endTime - startTimeFinal);
+   
     VIZ_LOG("Lowest FPS - " << lowestfps);
     VIZ_LOG("Higest FPS - " << highestfps);
-    VIZ_LOG("Average FPS - " << frameRate);
+    VIZ_LOG("Average FPS - " << averagefps);
+    
+    if (averagefps < minimumFPS)
+    {
+        VIZ_LOG("Low fps: ave fps of " << averagefps << " is lower than needed fps of " << minimumFPS);
+        hasTestPassed = false;
+    }
 
     if (!SceneGraphGenerator->isConnected())
     {
         VIZ_LOG("TransViz was never connected");
-        return 1;
+        hasTestPassed = false;
     }
 
     if (cb.TransVizNode == nullptr)
     {
         VIZ_LOG("Nothing happend!");
-        return 1;
+        hasTestPassed = false;
     }
-
-    if (!istestcasepassed)
-        return 1;
         
-    return 0;
+    return !hasTestPassed;
 }
