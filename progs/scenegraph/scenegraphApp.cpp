@@ -9,6 +9,7 @@
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
+#include <osg/Material>
 #include <osg/LineWidth>
 
 #include <osgGA/FirstPersonManipulator>
@@ -154,6 +155,92 @@ public:
 	}
 };
 
+// A -> loaded model node 
+// B -> TransViz model nodeHDFC
+// TODO - > Need to compare each vertex / normal / color information instead of just count
+bool CompareNodes(osg::ref_ptr<osg::Group> nodeA, osg::ref_ptr<osg::Group> nodeB) 
+{
+
+    for (int i = 0; i < nodeA->getNumChildren(); ++i) 
+    {
+        osg::Geode* geodeA = dynamic_cast<osg::Geode*>(nodeA->getChild(i)->asGeode());
+        osg::Geode* geodeB = dynamic_cast<osg::Geode*>(nodeB->getChild(i)->asGeode());
+
+        if (geodeA == NULL || geodeB == NULL)
+        {
+            VIZ_LOG("Geode not found...");
+            return 0;
+        }
+
+        // every geode has just one geometry
+
+        //check vertex 
+        const osg::Geometry* geometryA = geodeA->getDrawable(0)->asGeometry();
+        const osg::Geometry* geometryB = geodeB->getDrawable(0)->asGeometry();
+
+        if (geometryA == NULL || geometryB == NULL)
+        {
+            VIZ_LOG("Geometry not found...");
+            return 0;
+        }
+
+        const osg::Array* vertexarrA = geometryA->getVertexArray();
+        const osg::Array* vertexarrB = geometryB->getVertexArray();
+
+        if (vertexarrA == NULL || vertexarrA == NULL)
+        {
+            VIZ_LOG("Vertex data not found...");
+            return 0;
+        }
+
+        if (vertexarrA->getNumElements() != vertexarrB->getNumElements())
+        {
+            VIZ_LOG("Vertex size is different");
+            return false;
+        }
+
+        const osg::Array* normalarrA = geometryA->getNormalArray();
+        const osg::Array* normalarrB = geometryB->getNormalArray();
+
+        if (normalarrA == NULL || normalarrB == NULL)
+        {
+            VIZ_LOG("Vertex data not found...");
+            return 0;
+        }
+
+        if (normalarrA->getNumElements() != normalarrB->getNumElements())
+        {
+            VIZ_LOG("normal size is different");
+            return false;
+        }
+
+        const osg::Array* colorarrA = geometryA->getColorArray();
+        const osg::Array* colorarrB = geometryB->getColorArray();
+
+        if (colorarrA->getNumElements() != colorarrB->getNumElements())
+        {
+            VIZ_LOG("color size is different");
+            return false;
+        }
+
+        osg::StateAttribute* stateAttributeA = geodeA->getOrCreateStateSet()->getAttribute(osg::StateAttribute::Type::MATERIAL);
+        osg::StateAttribute* stateAttributeB = geodeB->getOrCreateStateSet()->getAttribute(osg::StateAttribute::Type::MATERIAL);
+
+        if (stateAttributeA != NULL && stateAttributeB != NULL) {
+            const osg::Material* materialA = dynamic_cast<osg::Material*>(stateAttributeA);
+            const osg::Material* materialB = dynamic_cast<osg::Material*>(stateAttributeB);
+
+            if (materialA->compare(*materialB))
+            {
+                VIZ_LOG("materials are different");
+                return false;
+            }
+        }
+    }
+
+   return nodeA->getNumChildren() == nodeB->getNumChildren();
+}
+
 class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
 
     public:
@@ -162,7 +249,7 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
 
     void TransVizNodeCallBack(osg::ref_ptr<osg::Node> node)
     {
-        std::cout << "Model Updated!!!" << std::endl;
+        std::cout << "Updating TransViz Model . . . " << std::endl;
         if(TransVizNode != nullptr)
         {
             RootNode->removeChild(TransVizNode);
@@ -190,8 +277,8 @@ class TVizcallback : TransVizUtil::TransVizNodeUpdateCB {
                     return ;
                 }
 
-                if (node->asGroup()->getNumChildren() == checknode->asGroup()->getNumChildren()){
-                    VIZ_LOG("Models have same number of nodes");
+                if ( CompareNodes(checknode->asGroup(), node->asGroup()) ){
+                    VIZ_LOG("Models are same . . .");
                 }
                 else {
                     VIZ_LOG("Models are not same");

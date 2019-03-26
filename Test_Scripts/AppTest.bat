@@ -28,7 +28,7 @@ SET checkmodelpara=""
 SET selftest="" 
 
 IF NOT [%4]==[]  (
-	SET checkmodelpara=--checkmodel %testdir%\%4
+	SET checkmodelpara=--ModelTest %testdir%\%4
 ) 
 IF %2==0  (
 	SET selftest=-t --appkilltime 10
