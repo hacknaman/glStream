@@ -11,9 +11,10 @@ include_directories(${OSG_INCLUDE_DIR})
 add_executable(scenegraphApp  ${SOURCES})
 target_link_libraries(scenegraphApp ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} )
 
-target_link_libraries(scenegraphApp 
-	debug		${OSG_GA_LIBRARY_D} debug ${OSG_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D} debug ${OSGDB_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSGUTIL_LIBRARY_D} debug ${SERVER_CONTENT_API_LIBRARY_D}
+target_link_libraries(scenegraphApp
+	debug		${OSG_GA_LIBRARY_D} debug ${OSG_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D} debug ${OSGDB_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSGUTIL_LIBRARY_D} debug ${SERVER_CONTENT_API_LIBRARY_D} debug Dbghelp.lib
 	optimized	${OSG_GA_LIBRARY} optimized ${OSG_LIBRARY} optimized ${OSG_VIEWER_LIBRARY} optimized ${OSGDB_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSGUTIL_LIBRARY} optimized ${SERVER_CONTENT_API_LIBRARY}
+
 )
 
 target_link_libraries(scenegraphApp TransVizUtil)
