@@ -10,7 +10,6 @@
 #include "catiascenegraphspu.h"
 #include <stdio.h>
 #include <signal.h>
-#include "ServerContentNode.h"
 #ifndef WINDOWS
 #include <sys/time.h>
 #endif
@@ -25,32 +24,6 @@ static SPUFunctions print_functions = {
 
 CatiaSpu catia_spu;
 
-void CatiaSpufunc::getUpdatedScene()
-{
-    getUpdatedCatiaSceneSC(); 
-    Scenespufunc::getUpdatedScene();
-    catia_spu.adapter.shakeCamera();
-   
-}
-void CatiaSpufunc::resetClient()
-{
-    resetColors();
-}
-
-void CatiaSpufunc::changeScene()
-{
-    Scenespufunc::changeScene();
-}
-void CatiaSpufunc::generateContentTree(ServerAppContentApi::ServerContentNode* root)
-{
-    catia_spu.adapter.getServerContentTree(root);
-    crDebug("Server Content tree is created");
-}
-
-void CatiaSpufunc::funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
-{
-    Scenespufunc::funcNodeUpdate(pt2Func,context);
-}
 
 #ifndef WINDOWS
 static void printspu_signal_handler(int signum)
@@ -146,7 +119,19 @@ printSPUInit( int id, SPU *child, SPU *self,
 
 	catia_spu.id = id;
     catia_spu.superSpuState = getScenegraphSpuData();
-	printspuGatherConfiguration( child );
+    /*1.this is the code to set server_content_root and this server_content_node will point to object corresponding to current running server app.so here we know that catia app will be running so we get server_content_node pointed
+        to ServerAppContentApi's CatiaNode object that is designed to handle catia app content.
+      
+      2.Basically this server_content_node setting code will be removed from here in future because all serverapp content specific code is being shifted to scenegraphspu so catiascenegraphspu will not exist anymore as per current design of spu and server content api.
+
+      3.If this catiascenegraph spu will not exist then why we are using this code here because this place of code is the only way to know which server app got connected with transviz. as soon as we will find another way then this below line will be removed 
+      from here.
+
+      4. After testing serverappcontentapi design with all cad softwares,detection of current connected app will be done by asking mothership that will write name of app in connection object so in future this below line of code will be shifted in scenegraphspu's 
+         init function.
+    */
+    catia_spu.superSpuState->current_app_instance = ServerAppContentApi::AppContentApi::getAppContentInstance(ServerAppContentApi::AppNameEnum::TRANSVIZ_CATIA);
+    printspuGatherConfiguration( child );
 
 	// Interface class to call special fuctions
     CatiaSpufunc* func = new CatiaSpufunc();

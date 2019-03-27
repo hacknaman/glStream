@@ -40,7 +40,16 @@ void Scenespufunc::funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<os
 		funcNodeUpdateSC(pt2Func, context);
 }
 
+ void Scenespufunc::getContentTree(ServerAppContentApi::ServerContentNode* root)
+{
+    
+	scenegraph_spu_data.current_app_instance->createContentTree(root);
 
+}
+void Scenespufunc::resetClient()
+{
+    scenegraph_spu_data.current_app_instance->resetOriginalColors();
+}
 #ifndef WINDOWS
 static void printspu_signal_handler(int signum)
 {

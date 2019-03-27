@@ -55,11 +55,13 @@ typedef struct {
 	
      int g_ret_count;
    
-
+     ServerAppContentApi::AppContentApi* current_app_instance;
+     ServerAppContentApi::NameAndColorInfo* curr_node_color_info;
+     std::string curr_geode_name;
      bool isNormalNormalizationEnabled;
      bool isNormalRescaleEnabled;
 
-
+     osg::Matrix  g_camera_matrix;
      osg::ref_ptr<osg::Vec3Array> g_vertexArray;
      osg::ref_ptr<osg::Vec3Array> g_normalArray;
      osg::ref_ptr<osg::Vec3Array> g_colorArray;
@@ -110,7 +112,8 @@ public:
     OSGEXPORT void getUpdatedScene();
     OSGEXPORT void changeScene();
     OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
-    
+    OSGEXPORT void getContentTree(ServerAppContentApi::ServerContentNode*);
+    OSGEXPORT  void resetClient();
 };
 extern ScenegraphSpuData scenegraph_spu_data;
 extern OSGEXPORT ScenegraphSpuData* getScenegraphSpuData();

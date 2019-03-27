@@ -1,6 +1,5 @@
 #include <TransVizUtil.h>
 #include <cr_server.h>
-#include "ServerContentNode.h"
 #include <osgDB/Export>
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
@@ -67,7 +66,11 @@ namespace TransVizUtil{
     void TransVizUtil::getServerAppContentTree(ServerAppContentApi::ServerContentNode* root)
     {
        
-        iSPU->generateContentTree(root);
+        iSPU->getContentTree(root);
+    }
+    ServerAppContentApi::ServerContentNode* TransVizUtil::getContentNodeInTree(std::string &name)
+    {
+        return ServerAppContentApi::AppContentApi::getServerContentNodeInTree(name);
     }
     void TransVizUtil::updateNode(osg::ref_ptr<osg::Group> node)
     {

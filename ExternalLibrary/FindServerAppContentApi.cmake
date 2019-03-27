@@ -1,6 +1,6 @@
 # This module defines the binary to access server app content meta data
 
-FIND_PATH(SERVER_CONTENT_API_INCLUDE_DIR  ServerContentNode.h  
+FIND_PATH(SERVER_CONTENT_API_INCLUDE_DIR  AppContentApi.h  
 		$ENV{SERVER_CONTENT_API_DIR}/include
 		NO_DEFAULT_PATH    
 )
