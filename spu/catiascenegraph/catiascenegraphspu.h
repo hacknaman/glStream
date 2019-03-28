@@ -8,7 +8,6 @@
 #include "spu_dispatch_table.h"
 #include "cr_spu.h"
 #include "scenegraph\scenegraphspu.h"
-#include "CatiaLibCPPAdapter.h"
 #if defined(WINDOWS)
 #define PRINT_APIENTRY __stdcall
 #define OSGEXPORT __declspec(dllexport)
@@ -21,7 +20,6 @@
 typedef struct {
 	
     int id;
-    CatiaMetaDataApi::CatiaLibCPPAdapter adapter;
     SPUDispatchTable super;
     ScenegraphSpuData* superSpuState;//this will hold super spu global variable's states
     FILE *fp;
@@ -31,22 +29,8 @@ typedef struct {
 	char *marker_text;
 	void (*old_signal_handler)(int);
 } CatiaSpu;
-class CatiaSpufunc : public Scenespufunc
-{
-public:
-    void getUpdatedScene();
-
-
-    void changeScene();
-
-
-    void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
-
-    void resetClient();
-};
+class CatiaSpufunc : public Scenespufunc{};
 extern CatiaSpu catia_spu;
-extern void  resetColors();
-extern void getUpdatedCatiaSceneSC();
 extern void printspuGatherConfiguration( const SPU *child_spu );
 extern void scenegraphCatiaSPUReset();
 

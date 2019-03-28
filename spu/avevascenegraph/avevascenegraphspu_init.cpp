@@ -29,8 +29,8 @@ AvevaSpu aveva_spu;
 
 void Avevaspufunc::getUpdatedScene()
 {
+    
     getUpdatedAvevaSceneASC();
-    Scenespufunc::getUpdatedScene();
     if (aveva_spu.camerashakeapp.empty())
     {
         std::ifstream myfile("CameraShakeConfig.txt");
@@ -45,14 +45,6 @@ void Avevaspufunc::getUpdatedScene()
     {
         system(aveva_spu.camerashakeapp.c_str());
     }
-}
-void Avevaspufunc::changeScene()
-{
-
-}
-void Avevaspufunc::funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
-{
-    Scenespufunc::funcNodeUpdate(pt2Func, context);
 }
 void Avevaspufunc::resetClient()
 {
@@ -152,7 +144,8 @@ printSPUInit( int id, SPU *child, SPU *self,
 
 	aveva_spu.id = id;
     aveva_spu.superSpuState = getScenegraphSpuData();
-	printspuGatherConfiguration( child );
+    aveva_spu.superSpuState->current_app_instance = ServerAppContentApi::AppContentApi::getAppContentInstance(ServerAppContentApi::AppNameEnum::TRANSVIZ_AVEVA);
+    printspuGatherConfiguration( child );
 
 	Avevaspufunc* func = new Avevaspufunc();
 	self->privatePtr = (void*)func;

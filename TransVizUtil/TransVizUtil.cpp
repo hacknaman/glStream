@@ -1,10 +1,10 @@
 #include <TransVizUtil.h>
 #include <cr_server.h>
-
 #include <osgDB/Export>
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
+
 
 namespace TransVizUtil{
 
@@ -12,13 +12,13 @@ namespace TransVizUtil{
         static_cast<TransVizUtil*>(context)->updateNode(node);
     }
 
-	TransVizUtil::TransVizUtil() :
-		_rootNode(NULL),
-		_thread(NULL),
-		_oldNode(NULL),
-		_newNode(NULL),
-		_bIsNodeDirty(false),
-		_isconnected(false),
+    TransVizUtil::TransVizUtil() :
+        _rootNode(NULL),
+        _thread(NULL),
+        _oldNode(NULL),
+        _newNode(NULL),
+        _bIsNodeDirty(false),
+        _isconnected(false),
         _basePat(new osg::PositionAttitudeTransform),
         _TransVizNodeUpdateCB(NULL)
     {
@@ -63,7 +63,15 @@ namespace TransVizUtil{
         _bIsNodeDirty = false;
         iSPU->resetClient();
     }
-
+    void TransVizUtil::getServerAppContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode> root)
+    {
+       
+        iSPU->getContentTree(root);
+    }
+    ServerAppContentApi::ServerContentNode* TransVizUtil::getContentNodeInTree(std::string &name)
+    {
+        return ServerAppContentApi::AppContentApi::getServerContentNodeInTree(name);
+    }
     void TransVizUtil::updateNode(osg::ref_ptr<osg::Group> node)
     {
         _newNode = node;

@@ -12,88 +12,10 @@ See the file LICENSE.txt for information on redistributing this software. */
 #define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
 
-static CatiaMetaDataApi::CatiaGeomDetail* curr_catia_geom_detail = nullptr;
-static std::string geode_name = "";
-//#define DRAW_APPCAM_BEAM
-#ifdef DRAW_APPCAM_BEAM
-osg::Geode* mybeamGeode;
-#endif  
-osg::Matrix g_matcam; // default identity matrix
-/*here client may be catia,aveva or any other gl application which is going to send gl streams to this spu.*/
-void  resetColors()
-{
-    catia_spu.adapter.revertToCatiaOriginalColor();
 
-}
 void scenegraphCatiaSPUReset()
 {
    
-}
-
-std::string camerashakeapp;
-
-void getUpdatedCatiaSceneSC(){
-
-    double cameraPosition[3];
-    double cameraLookat[3];
-    double cameraUp[3]; 
-    catia_spu.adapter.getCameraTransform(cameraPosition, cameraLookat, cameraUp);
-    osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
-    osg::Vec3d endPoint_x = osg::Vec3d(cameraPosition[0] + cameraLookat[0]*100, cameraPosition[1] + cameraLookat[1]*100, cameraPosition[2] + cameraLookat[2]*100);
-   
-#ifdef DRAW_APPCAM_BEAM
-    osg::Vec3d endPoint_up = osg::Vec3d(cameraPosition[0] + cameraUp[0] * 100, cameraPosition[1] + cameraUp[1] * 100, cameraPosition[2] + cameraUp[2] * 100);
-    osg::Geode* beamGeode = new osg::Geode;
-    osg::Geometry* beam_x = new osg::Geometry;
-    osg::Geometry* beam_up = new osg::Geometry;
-    osg::Vec3Array* linePoints_x = new osg::Vec3Array;
-    osg::Vec3Array* linePoints_up = new osg::Vec3Array;
-    linePoints_x->push_back(startPoint);
-    linePoints_x->push_back(endPoint_x);
-    linePoints_up->push_back(startPoint);
-    linePoints_up->push_back(endPoint_up);
-    osg::Vec4Array* color_x = new osg::Vec4Array;
-    osg::Vec4Array* color_up = new osg::Vec4Array;
-    color_x->push_back(osg::Vec4(1.0, 0.0, 0, 1.0));
-    color_x->push_back(osg::Vec4(0.0, 0.0, 1.0, 1.0));
-    color_up->push_back(osg::Vec4(0.0, 1.0, 0, 1.0));
-    color_up->push_back(osg::Vec4(0.0, 1.0, 0.0, 1.0));
-    beam_x->setVertexArray(linePoints_x);
-    beam_up->setVertexArray(linePoints_up);
-    beam_x->setColorArray(color_x);
-    beam_up->setColorArray(color_up);
-    beam_x->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    beam_up->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
-    beam_up->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
-    osg::StateSet* state = beam_x->getOrCreateStateSet();
-    osg::StateSet* state_up = beam_up->getOrCreateStateSet();
-    state->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    state_up->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    osg::LineWidth* linewidth_x = new osg::LineWidth();
-    osg::LineWidth* linewidth_up = new osg::LineWidth();
-    linewidth_x->setWidth(2.0f);
-    linewidth_up->setWidth(2.0f);
-    state->setAttributeAndModes(linewidth_x, osg::StateAttribute::OVERRIDE);
-    state_up->setAttributeAndModes(linewidth_up, osg::StateAttribute::OVERRIDE);
-    //beam_x->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, 2));
-    state->setMode(GL_BLEND, osg::StateAttribute::ON);
-    state->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
-    state_up->setMode(GL_BLEND, osg::StateAttribute::ON);
-    state_up->setMode(GL_LINE_SMOOTH, osg::StateAttribute::ON);
-    beamGeode->addChild(beam_x);
-    beamGeode->addChild(beam_up);
-    mybeamGeode = beamGeode;
-#endif
-
-
-   
-    osg::ref_ptr<osg::Camera> catiacam = new osg::Camera();
-    catiacam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(cameraUp[0], cameraUp[1], cameraUp[2]));
-    g_matcam = catiacam->getInverseViewMatrix();
-  
-    catia_spu.adapter.modifyCatiaColors();
-     
 }
 
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
@@ -594,78 +516,79 @@ static void PRINT_APIENTRY printEnableVertexAttribArrayARB(GLuint index)
 
 static void PRINT_APIENTRY printEnd(void)
 {
-    
-    if (catia_spu.superSpuState->g_isReading)
-	{
-        catia_spu.superSpuState->g_geom = new osg::Geometry();
-        
-		// create a g_geode and add it to the pat
-        if (catia_spu.superSpuState->g_vertexArray->size() > 0)
-		{
-            catia_spu.superSpuState->g_geom->addPrimitiveSet(new osg::DrawArrays(catia_spu.superSpuState->g_geometryMode, 0, catia_spu.superSpuState->g_vertexArray->size()));
-            catia_spu.superSpuState->g_geom->setVertexArray(catia_spu.superSpuState->g_vertexArray);
-            catia_spu.superSpuState->g_geom->setColorArray(catia_spu.superSpuState->g_colorArray, osg::Array::BIND_PER_VERTEX);
-            catia_spu.superSpuState->g_geom->setNormalArray(catia_spu.superSpuState->g_normalArray, osg::Array::BIND_PER_VERTEX);
-
-            if (catia_spu.superSpuState->g_state != NULL)
-			{
-                catia_spu.superSpuState->g_geom->setStateSet(new osg::StateSet(*(catia_spu.superSpuState->g_state), osg::CopyOp::DEEP_COPY_ALL));
-			}
-            catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
-
-#ifdef ENABLE_MATERIAL
-            if (catia_spu.superSpuState->g_material != NULL)
-            {
-                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
-            }
-#endif
-		}
-
-        if (catia_spu.superSpuState->g_geode){
-            if (!geode_name.empty())
-            {
-               
-                catia_spu.superSpuState->g_geode->setName(geode_name);
-                geode_name.clear();
-            }
-		}
-	}
-
-    if (catia_spu.superSpuState->g_isDisplayList)
-	{
-        catia_spu.superSpuState->g_geom = new osg::Geometry();
-		// create a g_geode and add it to the pat
-        if (catia_spu.superSpuState->g_vertexArray->size() > 0)
-		{
-            catia_spu.superSpuState->g_geom->addPrimitiveSet(new osg::DrawArrays(catia_spu.superSpuState->g_geometryMode, 0, catia_spu.superSpuState->g_vertexArray->size()));
-            catia_spu.superSpuState->g_geom->setVertexArray(catia_spu.superSpuState->g_vertexArray);
-            catia_spu.superSpuState->g_geom->setColorArray(catia_spu.superSpuState->g_colorArray, osg::Array::BIND_PER_VERTEX);
-            catia_spu.superSpuState->g_geom->setNormalArray(catia_spu.superSpuState->g_normalArray, osg::Array::BIND_PER_VERTEX);
-            if (catia_spu.superSpuState->g_state != NULL)
-			{
-                catia_spu.superSpuState->g_geom->setStateSet(new osg::StateSet(*(catia_spu.superSpuState->g_state), osg::CopyOp::DEEP_COPY_ALL));
-			}
-            catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
-
-#ifdef ENABLE_MATERIAL
-            if (catia_spu.superSpuState->g_material != NULL)
-            {
-                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
-            }
-#endif
-		}
-
-        if (catia_spu.superSpuState->g_geode) {
-            catia_spu.superSpuState->g_PatArrayDisplayList.back()->addChild(catia_spu.superSpuState->g_geode);
-            if (!geode_name.empty())
-            {
-               
-                catia_spu.superSpuState->g_geode->setName(geode_name);
-                geode_name.clear();
-              
-            }
-		}
-	}
+  
+    catia_spu.super.End();
+//    if (catia_spu.superSpuState->g_isReading)
+//	{
+//        catia_spu.superSpuState->g_geom = new osg::Geometry();
+//        
+//		// create a g_geode and add it to the pat
+//        if (catia_spu.superSpuState->g_vertexArray->size() > 0)
+//		{
+//            catia_spu.superSpuState->g_geom->addPrimitiveSet(new osg::DrawArrays(catia_spu.superSpuState->g_geometryMode, 0, catia_spu.superSpuState->g_vertexArray->size()));
+//            catia_spu.superSpuState->g_geom->setVertexArray(catia_spu.superSpuState->g_vertexArray);
+//            catia_spu.superSpuState->g_geom->setColorArray(catia_spu.superSpuState->g_colorArray, osg::Array::BIND_PER_VERTEX);
+//            catia_spu.superSpuState->g_geom->setNormalArray(catia_spu.superSpuState->g_normalArray, osg::Array::BIND_PER_VERTEX);
+//
+//            if (catia_spu.superSpuState->g_state != NULL)
+//			{
+//                catia_spu.superSpuState->g_geom->setStateSet(new osg::StateSet(*(catia_spu.superSpuState->g_state), osg::CopyOp::DEEP_COPY_ALL));
+//			}
+//            catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
+//
+//#ifdef ENABLE_MATERIAL
+//            if (catia_spu.superSpuState->g_material != NULL)
+//            {
+//                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+//            }
+//#endif
+//		}
+//
+//        if (catia_spu.superSpuState->g_geode){
+//            if (!geode_name.empty())
+//            {
+//               
+//                catia_spu.superSpuState->g_geode->setName(geode_name);
+//                geode_name.clear();
+//            }
+//		}
+//	}
+//
+//    if (catia_spu.superSpuState->g_isDisplayList)
+//	{
+//        catia_spu.superSpuState->g_geom = new osg::Geometry();
+//		// create a g_geode and add it to the pat
+//        if (catia_spu.superSpuState->g_vertexArray->size() > 0)
+//		{
+//            catia_spu.superSpuState->g_geom->addPrimitiveSet(new osg::DrawArrays(catia_spu.superSpuState->g_geometryMode, 0, catia_spu.superSpuState->g_vertexArray->size()));
+//            catia_spu.superSpuState->g_geom->setVertexArray(catia_spu.superSpuState->g_vertexArray);
+//            catia_spu.superSpuState->g_geom->setColorArray(catia_spu.superSpuState->g_colorArray, osg::Array::BIND_PER_VERTEX);
+//            catia_spu.superSpuState->g_geom->setNormalArray(catia_spu.superSpuState->g_normalArray, osg::Array::BIND_PER_VERTEX);
+//            if (catia_spu.superSpuState->g_state != NULL)
+//			{
+//                catia_spu.superSpuState->g_geom->setStateSet(new osg::StateSet(*(catia_spu.superSpuState->g_state), osg::CopyOp::DEEP_COPY_ALL));
+//			}
+//            catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
+//
+//#ifdef ENABLE_MATERIAL
+//            if (catia_spu.superSpuState->g_material != NULL)
+//            {
+//                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+//            }
+//#endif
+//		}
+//
+//        if (catia_spu.superSpuState->g_geode) {
+//            catia_spu.superSpuState->g_PatArrayDisplayList.back()->addChild(catia_spu.superSpuState->g_geode);
+//            if (!geode_name.empty())
+//            {
+//               
+//                catia_spu.superSpuState->g_geode->setName(geode_name);
+//                geode_name.clear();
+//              
+//            }
+//		}
+//	}
 }
 
 static void PRINT_APIENTRY printEndList(void)
@@ -2364,13 +2287,14 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
-    
+    catia_spu.super.Vertex3d(x, y, z);
    
-    if ((catia_spu.superSpuState->g_isReading || catia_spu.superSpuState->g_isDisplayList) && catia_spu.superSpuState->g_vertexArray)
-    {
+    
+    //if ((catia_spu.superSpuState->g_isReading || catia_spu.superSpuState->g_isDisplayList) && catia_spu.superSpuState->g_vertexArray)
+    //{
        
         // Math to transfrom vertex and normal to matrix mode
-        osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
+        /*osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
         osg::Matrix matFinal = mat * catia_spu.superSpuState->g_CurrentMatrix * g_matcam;
         osg::Vec3 vertexPoint = matFinal.getTrans();
 
@@ -2381,9 +2305,9 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         osg::Vec3 normalPoint = NormalmatFinal.getTrans();
 
         catia_spu.superSpuState->g_vertexArray->push_back(vertexPoint);
-        catia_spu.superSpuState->g_normalArray->push_back(normalPoint);
+        catia_spu.superSpuState->g_normalArray->push_back(normalPoint);*/
         //getting original color of catia part vertex
-        curr_catia_geom_detail = catia_spu.adapter.getPartData(catia_spu.superSpuState->g_CurrentColor.x(), catia_spu.superSpuState->g_CurrentColor.y(), catia_spu.superSpuState->g_CurrentColor.z());
+        /*curr_catia_geom_detail = catia_spu.adapter.getPartData(catia_spu.superSpuState->g_CurrentColor.x(), catia_spu.superSpuState->g_CurrentColor.y(), catia_spu.superSpuState->g_CurrentColor.z());
         if (curr_catia_geom_detail != nullptr)
         {
 
@@ -2400,7 +2324,7 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         {
             catia_spu.superSpuState->g_colorArray->push_back(catia_spu.superSpuState->g_CurrentColor);
         }
-    }
+    }*/
 }
 
 static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)

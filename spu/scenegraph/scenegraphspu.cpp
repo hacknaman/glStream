@@ -8,6 +8,8 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "cr_spu.h"
 #include "scenegraphspu.h"
 #include <osgUtil\Optimizer>
+
+
 // This is enabled for part selection in aveva
 #define GEODE_WITH_LM
 
@@ -30,7 +32,9 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 
     scenegraph_spu_data.g_PatArrayDisplayList.clear();
 
-
+    scenegraph_spu_data.curr_node_color_info = NULL;
+    scenegraph_spu_data.curr_geode_name = "";
+    scenegraph_spu_data.current_app_instance = NULL;
     scenegraph_spu_data.g_spuRootGroup = new osg::Group;
     scenegraph_spu_data.g_state = new osg::StateSet;
 
@@ -51,9 +55,22 @@ std::string camerashakeapp;
 
 extern void getUpdatedSceneSC(){
 
+    //this is the code to set up server content as per our convenient so that we can set part name to osg nodes
+    if (scenegraph_spu_data.current_app_instance)
+    {
+        double cameraPosition[3];
+        double cameraLookat[3];
+        double cameraUp[3];
+        scenegraph_spu_data.current_app_instance->getCameraTransform(cameraPosition, cameraLookat, cameraUp);
+        osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+        osg::Vec3d endPoint_x = osg::Vec3d(cameraPosition[0] + cameraLookat[0] * 100, cameraPosition[1] + cameraLookat[1] * 100, cameraPosition[2] + cameraLookat[2] * 100);
+        osg::ref_ptr<osg::Camera> camera = new osg::Camera();
+        camera->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(cameraUp[0], cameraUp[1], cameraUp[2]));
+        scenegraph_spu_data.g_camera_matrix = camera->getInverseViewMatrix();
+        scenegraph_spu_data.current_app_instance->setFakeColors();
+        scenegraph_spu_data.current_app_instance->shakeCamera();
+    }
     scenegraph_spu_data.g_shouldStartReading = true;
-
-
     if (camerashakeapp.empty())
     {
         std::ifstream myfile("CameraShakeConfig.txt");
@@ -738,8 +755,16 @@ static void PRINT_APIENTRY printEnd(void)
             scenegraph_spu_data.g_geode->addDrawable(scenegraph_spu_data.g_geom);
         }
 
-        if (scenegraph_spu_data.g_geode) {
-            // Display list isn't working
+       
+    }
+
+    if (scenegraph_spu_data.g_geode) 
+    {
+        if (!scenegraph_spu_data.curr_geode_name.empty())
+        {
+
+            scenegraph_spu_data.g_geode->setName(scenegraph_spu_data.curr_geode_name);
+            scenegraph_spu_data.curr_geode_name.clear();
         }
     }
 }
@@ -2562,9 +2587,9 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
     if ((scenegraph_spu_data.g_isReading || scenegraph_spu_data.g_isDisplayList) && scenegraph_spu_data.g_vertexArray){
         // Math to transfrom vertex and normal to matrix mode
         osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
-        osg::Matrix matFinal = mat *  scenegraph_spu_data.g_CurrentMatrix;
+        osg::Matrix matFinal = mat *  scenegraph_spu_data.g_CurrentMatrix * scenegraph_spu_data.g_camera_matrix;
         osg::Vec3 vertexPoint = matFinal.getTrans();
-
+         
         osg::Matrix Normalmat = osg::Matrix::translate(scenegraph_spu_data.g_CurrentNormal);
         osg::Matrix CurrentMatrixNew =  scenegraph_spu_data.g_CurrentMatrix;
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
@@ -2601,9 +2626,31 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         }
         scenegraph_spu_data.g_vertexArray->push_back(vertexPoint);
         scenegraph_spu_data.g_normalArray->push_back(normalPoint);
-        scenegraph_spu_data.g_colorArray->push_back(scenegraph_spu_data.g_CurrentColor);
+        
+        if (scenegraph_spu_data.current_app_instance)
+        {
+            scenegraph_spu_data.curr_node_color_info = scenegraph_spu_data.current_app_instance->getPartNameAndRealColor(scenegraph_spu_data.g_CurrentColor.x(), scenegraph_spu_data.g_CurrentColor.y(), scenegraph_spu_data.g_CurrentColor.z());
+            if (scenegraph_spu_data.curr_node_color_info != nullptr)
+            {
 
-
+                double red = scenegraph_spu_data.curr_node_color_info->r / 255.0;
+                double green = scenegraph_spu_data.curr_node_color_info->g / 255.0;
+                double blue = scenegraph_spu_data.curr_node_color_info->b / 255.0;
+                scenegraph_spu_data.g_colorArray->push_back(osg::Vec3(red, green, blue));
+                if (scenegraph_spu_data.curr_geode_name.empty())
+                {
+                    scenegraph_spu_data.curr_geode_name = scenegraph_spu_data.curr_node_color_info->name;
+                }
+            }
+            else
+            {
+                scenegraph_spu_data.g_colorArray->push_back(scenegraph_spu_data.g_CurrentColor);
+            }
+        }
+        else
+        {
+            scenegraph_spu_data.g_colorArray->push_back(scenegraph_spu_data.g_CurrentColor);
+        }
     }
 }
 

@@ -10,7 +10,7 @@
 #include "spu_dispatch_table.h"
 #include "cr_spu.h"
 #include "scenegraph\scenegraphspu.h"
-#include <ReviewCpp.h>
+#include "AvevaApi.h"
 #if defined(WINDOWS)
 #define PRINT_APIENTRY __stdcall
 #define OSGEXPORT __declspec(dllexport)
@@ -23,9 +23,8 @@
 
 typedef struct {
 	int id;
-    ReviewCppWrapper::ReviewCppAPI rapi;
-    ReviewCppWrapper::Element RootElement;
-    std::vector<ReviewCppWrapper::Element*> ElementSequence;
+    ServerAppContentApi::Element RootElement;
+    std::vector<ServerAppContentApi::Element*> ElementSequence;
     std::vector<osg::ref_ptr<osg::Group> > g_spuGroupMap;
     int sequence_index;
     int depth_value;
@@ -44,15 +43,15 @@ class Avevaspufunc : public Scenespufunc
 {
 public:
     void getUpdatedScene();
-    void changeScene();
-    void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
+   
     void resetClient();
+   
     
 };
 extern AvevaSpu aveva_spu;
 
 extern void getUpdatedAvevaSceneASC();
-extern  void resetClientASC();
 extern void printspuGatherConfiguration(const SPU *child_spu);
 
 extern void avevaSPUReset();
+extern void resetClientASC();

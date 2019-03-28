@@ -20,18 +20,12 @@ set GLUT_BIN=%GLUT_DIR%/bin\x64
 :: set libjpeg libraries
 set LIBJPEG_DIR=%OSSROOT%/libjpeg-turbo64
 set LIBJPEG_BIN=%LIBJPEG_DIR%/bin
-
-:: set Review API libraries
-set REVIEW_DIR=%OSSROOT%/ReviewApi
-set REVIEW_BIN=%REVIEW_DIR%/bin
-
-:: set Catia API libraries
-set CatiaCppApi_DIR=%OSSROOT%/CatiaCppApi
-set CatiaCppApi_BIN=%CatiaCppApi_DIR%/bin
-
+::set ServerContent Api libraries
+set SERVER_CONTENT_API_DIR=%OSSROOT%/ServerAppContentApi
+set SERVER_CONTENT_API_BIN = %SERVER_CONTENT_API_DIR%/bin
 :: add external DLLs to the PATH
 :: dynamic libs paths
-set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%REVIEW_BIN%;%CatiaCppApi_BIN%;%PATH%
+set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%SERVER_CONTENT_API_BIN%;%PATH%
 
 :: set development mode
 :: This is used for licensing

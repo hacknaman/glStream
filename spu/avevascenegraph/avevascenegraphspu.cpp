@@ -25,10 +25,10 @@ osg::Geode* mybeamGeode;
 
 osg::Matrix g_matcam; // default identity matrix
 
-void FillSequenceGroupRep(ReviewCppWrapper::Element& Element)
+void FillSequenceGroupRep(ServerAppContentApi::Element& Element)
 {
     // color id set by api to find elements who were colored
-    if (Element.colorid == ReviewCppWrapper::FirstColorid || Element.colorid == ReviewCppWrapper::SecondColorid)
+    if (Element.colorid == FirstColorid || Element.colorid == SecondColorid)
     {
         aveva_spu.g_spuGroupMap.push_back(new osg::Group());
         aveva_spu.g_spuGroupMap.back()->setName(Element.name);
@@ -46,8 +46,10 @@ extern void changeSceneASC() {
 }
 
 extern void resetClientASC() {
-    if (aveva_spu.rapi.IsConnected())
-        aveva_spu.rapi.ResetMaterials();
+    
+   
+    if (((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->IsConnected())
+        ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->ResetMaterials();
 }
 
 extern void getUpdatedAvevaSceneASC(){
@@ -55,14 +57,14 @@ extern void getUpdatedAvevaSceneASC(){
 #ifdef DRAW_APPCAM
     std::string hostname = "localhost";
 
-    if (!aveva_spu.rapi.IsConnected())
-        aveva_spu.rapi.Connect(hostname);
+    if (!((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->IsConnected())
+        ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->Connect(hostname);
 
     double cameraPosition[3];
     double cameraLookat[3];
 	double cameraRoll;
 
-    aveva_spu.rapi.getCamera(cameraPosition, cameraLookat, cameraRoll);
+    ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->getCamera(cameraPosition, cameraLookat, cameraRoll);
 
     osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
     osg::Vec3d endPoint_x = osg::Vec3d(cameraLookat[0], cameraLookat[1], cameraLookat[2]);
@@ -96,8 +98,8 @@ extern void getUpdatedAvevaSceneASC(){
     reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
     g_matcam = reviewcam->getInverseViewMatrix();
 
-    aveva_spu.rapi.GetElementList(aveva_spu.RootElement);
-    aveva_spu.rapi.SetMaterialOnNodeNew(aveva_spu.RootElement, aveva_spu.depth_value);
+    ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->GetElementList(aveva_spu.RootElement);
+    ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->SetMaterialOnNodeNew(aveva_spu.RootElement, aveva_spu.depth_value);
     aveva_spu.ElementSequence.clear();
     aveva_spu.g_spuGroupMap.clear();
     FillSequenceGroupRep(aveva_spu.RootElement); // This fills ElementSequnce and g_spuGroupMap. Both stores element that were colored using the api
@@ -320,7 +322,7 @@ static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue
     aveva_spu.superSpuState->g_CurrentColor = osg::Vec3(red, green, blue);
    
     int FakeColor = int(aveva_spu.superSpuState->g_CurrentColor[0] * 1000000) + int(aveva_spu.superSpuState->g_CurrentColor[1] * 10000) + int(aveva_spu.superSpuState->g_CurrentColor[2] * 100);
-    if (FakeColor == ReviewCppWrapper::FirstColor || FakeColor == ReviewCppWrapper::SecondColor)
+    if (FakeColor == FirstColor || FakeColor == SecondColor)
     {
         aveva_spu.sequence_index++;
         // bounding box check, to see if the geometry is present in the group we are about to get the

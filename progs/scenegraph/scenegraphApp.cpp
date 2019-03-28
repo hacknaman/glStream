@@ -59,8 +59,8 @@ public:
     SCAppEventHandler(osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator) {
         _SceneGraphGenerator = SceneGraphGenerator;
         _isPartIdentificationEnabled = true;
+       
     }
-
 	bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
 	{
 		osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>(&aa);
@@ -100,6 +100,10 @@ public:
             {
                 // *(char *)0 = 0; // for testing this causes seg fault
                 _SceneGraphGenerator->generateScenegraph();
+                std::cout << "get server app tree" << std::endl;
+                std::shared_ptr<ServerAppContentApi::CatiaNode> _content_root_node = std::make_shared<ServerAppContentApi::CatiaNode>();
+                _SceneGraphGenerator->getServerAppContentTree( _content_root_node);
+                std::cout << "server app content tree is created" << std::endl;
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
             {
@@ -150,6 +154,21 @@ public:
 				std::string intersectedGeodeName = intersectedNode->asGeode()->getName();
 
 				std::cout << "This is the node we have pressed - " << intersectedGeodeName << std::endl;
+                ServerAppContentApi::ServerContentNode *selected_node = _SceneGraphGenerator->getContentNodeInTree(intersectedGeodeName);
+                
+                if (!selected_node)
+                    return;
+                std::cout << "part meta data is given below-" << std::endl;
+                std::cout << "mass:" << ((ServerAppContentApi::CatiaNode*)selected_node)->mass << std::endl;
+                std::cout << "volume:" << ((ServerAppContentApi::CatiaNode*)selected_node)->volume << std::endl;
+                std::cout << "wetAera:" << ((ServerAppContentApi::CatiaNode*)selected_node)->wetArea << std::endl;
+                std::cout << "gravity center:" << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[0] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[1] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[2] << std::endl;
+                //std::cout << "extents:" << part_info.extents[0] << "," << part_info.extents[1] << "," << part_info.extents[2] << part_info.extents[3] << "," << part_info.extents[4] << "," << part_info.extents[5] << std::endl;
+
+                std::cout << "definition:" << ((ServerAppContentApi::CatiaNode*)selected_node)->definition << std::endl;
+                std::cout << "Descrption:" << ((ServerAppContentApi::CatiaNode*)selected_node)->partDescription << std::endl; 
+                
+
 			}
 		}
 	}
@@ -341,7 +360,6 @@ int main(int argc, char* argv[])
     SceneGraphGenerator->setNodeUpdateCallBack((TransVizUtil::TransVizNodeUpdateCB*)&cb);
 
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer();
-
     viewer->addEventHandler(new SCAppEventHandler(SceneGraphGenerator));
 
     // draw axis beam

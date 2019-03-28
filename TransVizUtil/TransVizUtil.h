@@ -19,7 +19,7 @@
 #include <OpenThreads/Thread>
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
-
+#include "AppContentApi.h"  
 
 class ISpufunc
 {
@@ -27,7 +27,8 @@ public:
     virtual void getUpdatedScene() = 0;
     virtual void changeScene() = 0;
     virtual void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context) = 0;
-    virtual void resetClient(){};
+    virtual void resetClient() = 0;
+    virtual void getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode>) = 0;
 };
 
 namespace TransVizUtil{
@@ -52,6 +53,7 @@ namespace TransVizUtil{
     };
 
     class TRANSVIZ_UTIL_DLL_EXPORT TransVizUtil : public osg::Referenced{
+       
     public:
         TransVizUtil();
         ~TransVizUtil();
@@ -61,7 +63,9 @@ namespace TransVizUtil{
         // set or returns the root Node from the scene
         osg::ref_ptr<osg::Group> getLastGeneratedNode();
         void generateScenegraph();
-
+        //it will be called from vr play to get root_node of server app content tree and then vrplay will be able to access part name,meta data of part .
+        void getServerAppContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode>);
+        ServerAppContentApi::ServerContentNode* getContentNodeInTree(std::string &name);
         void updateNode(osg::ref_ptr<osg::Group> node);
         void update();
 
