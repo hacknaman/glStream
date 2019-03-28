@@ -25,7 +25,7 @@ set SERVER_CONTENT_API_DIR=%OSSROOT%/ServerAppContentApi
 set SERVER_CONTENT_API_BIN = %SERVER_CONTENT_API_DIR%/bin
 :: add external DLLs to the PATH
 :: dynamic libs paths
-set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%PATH%
+set PATH=%OSG_BIN%;%OSG_PLUGIN_DIR%;%FLEXERA_BIN%;%GLUT_BIN%;%LIBJPEG_BIN%;%SERVER_CONTENT_API_BIN%;%PATH%
 
 :: set development mode
 :: This is used for licensing

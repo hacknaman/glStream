@@ -63,7 +63,7 @@ namespace TransVizUtil{
         _bIsNodeDirty = false;
         iSPU->resetClient();
     }
-    void TransVizUtil::getServerAppContentTree(ServerAppContentApi::ServerContentNode* root)
+    void TransVizUtil::getServerAppContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode> root)
     {
        
         iSPU->getContentTree(root);

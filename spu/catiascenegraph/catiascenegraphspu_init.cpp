@@ -119,10 +119,10 @@ printSPUInit( int id, SPU *child, SPU *self,
 
 	catia_spu.id = id;
     catia_spu.superSpuState = getScenegraphSpuData();
-    /*1.this is the code to set server_content_root and this server_content_node will point to object corresponding to current running server app.so here we know that catia app will be running so we get server_content_node pointed
-        to ServerAppContentApi's CatiaNode object that is designed to handle catia app content.
+    /*1.this is the code to set current_app_instance and this current_app_instance will point to object corresponding to current running server app.so here we know that catia app will be running so we get current_app_instance pointed
+        to ServerAppContentApi's CatiaApi object that is designed to handle catia app content.
       
-      2.Basically this server_content_node setting code will be removed from here in future because all serverapp content specific code is being shifted to scenegraphspu so catiascenegraphspu will not exist anymore as per current design of spu and server content api.
+      2.Basically this current_app_instance setting code will be removed from here in future because all serverapp content specific code is being shifted to scenegraphspu so catiascenegraphspu will not exist anymore as per current design of spu and server content api.
 
       3.If this catiascenegraph spu will not exist then why we are using this code here because this place of code is the only way to know which server app got connected with transviz. as soon as we will find another way then this below line will be removed 
       from here.

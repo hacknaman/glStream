@@ -54,15 +54,13 @@ class SCAppEventHandler : public osgGA::GUIEventHandler
 {
     osg::ref_ptr<TransVizUtil::TransVizUtil> _SceneGraphGenerator;
     bool _isPartIdentificationEnabled;
-    ServerAppContentApi::ServerContentNode *_content_root_node;
 public:
 
     SCAppEventHandler(osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator) {
         _SceneGraphGenerator = SceneGraphGenerator;
         _isPartIdentificationEnabled = true;
-        _content_root_node = new  ServerAppContentApi::CatiaNode();
+       
     }
-
 	bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
 	{
 		osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>(&aa);
@@ -103,7 +101,9 @@ public:
                 // *(char *)0 = 0; // for testing this causes seg fault
                 _SceneGraphGenerator->generateScenegraph();
                 std::cout << "get server app tree" << std::endl;
+                std::shared_ptr<ServerAppContentApi::CatiaNode> _content_root_node = std::make_shared<ServerAppContentApi::CatiaNode>();
                 _SceneGraphGenerator->getServerAppContentTree( _content_root_node);
+                std::cout << "server app content tree is created" << std::endl;
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
             {
@@ -156,6 +156,8 @@ public:
 				std::cout << "This is the node we have pressed - " << intersectedGeodeName << std::endl;
                 ServerAppContentApi::ServerContentNode *selected_node = _SceneGraphGenerator->getContentNodeInTree(intersectedGeodeName);
                 
+                if (!selected_node)
+                    return;
                 std::cout << "part meta data is given below-" << std::endl;
                 std::cout << "mass:" << ((ServerAppContentApi::CatiaNode*)selected_node)->mass << std::endl;
                 std::cout << "volume:" << ((ServerAppContentApi::CatiaNode*)selected_node)->volume << std::endl;

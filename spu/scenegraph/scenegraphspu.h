@@ -112,7 +112,7 @@ public:
     OSGEXPORT void getUpdatedScene();
     OSGEXPORT void changeScene();
     OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
-    OSGEXPORT void getContentTree(ServerAppContentApi::ServerContentNode*);
+    OSGEXPORT void getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode>);
     OSGEXPORT  void resetClient();
 };
 extern ScenegraphSpuData scenegraph_spu_data;
