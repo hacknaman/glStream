@@ -28,11 +28,9 @@ namespace TransVizUtil{
     }
 
     TransVizUtil::~TransVizUtil(){}
-    void TransVizUtil::setPartIdentification(bool flag)
+    void TransVizUtil::setPartSelectionFlag(bool flag)
     {
-        crServerSetHeadSPU(flag);
-        SPU *spu = crServerHeadSPU();
-        iSPU = (ISpufunc*)spu->privatePtr;
+        iSPU->setPartSelectionFlag(flag);
         
 
     }
@@ -67,6 +65,13 @@ namespace TransVizUtil{
     {
        
         iSPU->getContentTree(root);
+    }
+    void TransVizUtil::saveModel()
+    {
+        // Save the model
+        osgDB::writeNodeFile(*(_oldNode.get()), "tranviz.ive");
+        osgDB::writeNodeFile(*(_oldNode.get()), "tranviz.osgt");
+        std::cout << "Model saved as osgt and ive" << std::endl;
     }
     ServerAppContentApi::ServerContentNode* TransVizUtil::getContentNodeInTree(std::string &name)
     {

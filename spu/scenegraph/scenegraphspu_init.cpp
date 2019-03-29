@@ -49,8 +49,13 @@ void Scenespufunc::getContentTree(std::shared_ptr<ServerAppContentApi::ServerCon
 }
 void Scenespufunc::resetClient()
 {
-    if (scenegraph_spu_data.current_app_instance)
+    if (scenegraph_spu_data.current_app_instance && scenegraph_spu_data.isPartSelectionEnabled)
         scenegraph_spu_data.current_app_instance->resetOriginalColors();
+}
+
+void Scenespufunc::setPartSelectionFlag(bool flag)
+{
+    scenegraph_spu_data.isPartSelectionEnabled = flag;
 }
 #ifndef WINDOWS
 static void printspu_signal_handler(int signum)

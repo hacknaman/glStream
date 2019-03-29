@@ -29,6 +29,7 @@ public:
     virtual void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context) = 0;
     virtual void resetClient() = 0;
     virtual void getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode>) = 0;
+    virtual void setPartSelectionFlag(bool flag) = 0;
 };
 
 namespace TransVizUtil{
@@ -59,7 +60,7 @@ namespace TransVizUtil{
         ~TransVizUtil();
 
         //this API switched between head spu of crserver and super spu of head spu.this is designed to switch between scenegraph and avevascenegraph or catiascenegraph specially
-        void setPartIdentification(bool flag);
+        void setPartSelectionFlag(bool flag);
         // set or returns the root Node from the scene
         osg::ref_ptr<osg::Group> getLastGeneratedNode();
         void generateScenegraph();
@@ -68,7 +69,7 @@ namespace TransVizUtil{
         ServerAppContentApi::ServerContentNode* getContentNodeInTree(std::string &name);
         void updateNode(osg::ref_ptr<osg::Group> node);
         void update();
-
+        void saveModel();
 		bool isConnected(){ return _isconnected; }
 
         void setMothership(std::string hostname){ _hostname = hostname; }
