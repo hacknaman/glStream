@@ -60,7 +60,7 @@ typedef struct {
      std::string curr_geode_name;
      bool isNormalNormalizationEnabled;
      bool isNormalRescaleEnabled;
-
+     bool isPartSelectionEnabled;
      osg::Matrix  g_camera_matrix;
      osg::ref_ptr<osg::Vec3Array> g_vertexArray;
      osg::ref_ptr<osg::Vec3Array> g_normalArray;
@@ -112,6 +112,7 @@ public:
     OSGEXPORT void getUpdatedScene();
     OSGEXPORT void changeScene();
     OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
+    OSGEXPORT void setPartSelectionFlag(bool flag);
     OSGEXPORT void getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode>);
     OSGEXPORT  void resetClient();
 };

@@ -31,7 +31,7 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
 #endif
 
     scenegraph_spu_data.g_PatArrayDisplayList.clear();
-
+    scenegraph_spu_data.isPartSelectionEnabled = true;
     scenegraph_spu_data.curr_node_color_info = NULL;
     scenegraph_spu_data.curr_geode_name = "";
     scenegraph_spu_data.current_app_instance = NULL;
@@ -67,7 +67,8 @@ extern void getUpdatedSceneSC(){
         osg::ref_ptr<osg::Camera> camera = new osg::Camera();
         camera->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(cameraUp[0], cameraUp[1], cameraUp[2]));
         scenegraph_spu_data.g_camera_matrix = camera->getInverseViewMatrix();
-        scenegraph_spu_data.current_app_instance->setFakeColors();
+        if (scenegraph_spu_data.isPartSelectionEnabled)
+            scenegraph_spu_data.current_app_instance->setFakeColors();
         scenegraph_spu_data.current_app_instance->shakeCamera();
     }
     scenegraph_spu_data.g_shouldStartReading = true;
@@ -2627,7 +2628,7 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         scenegraph_spu_data.g_vertexArray->push_back(vertexPoint);
         scenegraph_spu_data.g_normalArray->push_back(normalPoint);
         
-        if (scenegraph_spu_data.current_app_instance)
+        if (scenegraph_spu_data.current_app_instance && scenegraph_spu_data.isPartSelectionEnabled)
         {
             scenegraph_spu_data.curr_node_color_info = scenegraph_spu_data.current_app_instance->getPartNameAndRealColor(scenegraph_spu_data.g_CurrentColor.x(), scenegraph_spu_data.g_CurrentColor.y(), scenegraph_spu_data.g_CurrentColor.z());
             if (scenegraph_spu_data.curr_node_color_info != nullptr)

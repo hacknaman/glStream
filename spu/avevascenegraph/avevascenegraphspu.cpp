@@ -48,7 +48,7 @@ extern void changeSceneASC() {
 extern void resetClientASC() {
     
    
-    if (((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->IsConnected())
+    if (((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->IsConnected() && aveva_spu.superSpuState->isPartSelectionEnabled)
         ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->ResetMaterials();
 }
 
@@ -98,12 +98,15 @@ extern void getUpdatedAvevaSceneASC(){
     reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
     g_matcam = reviewcam->getInverseViewMatrix();
 
-    ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->GetElementList(aveva_spu.RootElement);
-    ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->SetMaterialOnNodeNew(aveva_spu.RootElement, aveva_spu.depth_value);
-    aveva_spu.ElementSequence.clear();
-    aveva_spu.g_spuGroupMap.clear();
-    FillSequenceGroupRep(aveva_spu.RootElement); // This fills ElementSequnce and g_spuGroupMap. Both stores element that were colored using the api
-    aveva_spu.sequence_index = -1;
+    if (aveva_spu.superSpuState->isPartSelectionEnabled)
+    {
+        ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->GetElementList(aveva_spu.RootElement);
+        ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->SetMaterialOnNodeNew(aveva_spu.RootElement, aveva_spu.depth_value);
+        aveva_spu.ElementSequence.clear();
+        aveva_spu.g_spuGroupMap.clear();
+        FillSequenceGroupRep(aveva_spu.RootElement); // This fills ElementSequnce and g_spuGroupMap. Both stores element that were colored using the api
+        aveva_spu.sequence_index = -1;
+    }
 
 #endif
 
@@ -321,26 +324,29 @@ static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue
 
     aveva_spu.superSpuState->g_CurrentColor = osg::Vec3(red, green, blue);
    
-    int FakeColor = int(aveva_spu.superSpuState->g_CurrentColor[0] * 1000000) + int(aveva_spu.superSpuState->g_CurrentColor[1] * 10000) + int(aveva_spu.superSpuState->g_CurrentColor[2] * 100);
-    if (FakeColor == FirstColor || FakeColor == SecondColor)
+    if (aveva_spu.superSpuState->isPartSelectionEnabled)
     {
-        aveva_spu.sequence_index++;
-        // bounding box check, to see if the geometry is present in the group we are about to get the
-        // gl calls for else we move ahead
-        for (int i = aveva_spu.sequence_index; aveva_spu.sequence_index < aveva_spu.ElementSequence.size(); i++)
+        int FakeColor = int(aveva_spu.superSpuState->g_CurrentColor[0] * 1000000) + int(aveva_spu.superSpuState->g_CurrentColor[1] * 10000) + int(aveva_spu.superSpuState->g_CurrentColor[2] * 100);
+        if (FakeColor == FirstColor || FakeColor == SecondColor)
         {
-            if (aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[0] - aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[3] == 0
-                && aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[1] - aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[4] == 0
-                && aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[2] - aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[5] == 0)
+            aveva_spu.sequence_index++;
+            // bounding box check, to see if the geometry is present in the group we are about to get the
+            // gl calls for else we move ahead
+            for (int i = aveva_spu.sequence_index; aveva_spu.sequence_index < aveva_spu.ElementSequence.size(); i++)
             {
-                aveva_spu.sequence_index++;
+                if (aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[0] - aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[3] == 0
+                    && aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[1] - aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[4] == 0
+                    && aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[2] - aveva_spu.ElementSequence[aveva_spu.sequence_index]->extents[5] == 0)
+                {
+                    aveva_spu.sequence_index++;
+                }
+                else
+                {
+                    break;
+                }
             }
-            else
-            {
-                break;
-            }
-        }
 
+        }
     }
 }
 
@@ -710,7 +716,7 @@ static void PRINT_APIENTRY printEnd(void)
 #endif
         }
 
-        if (aveva_spu.superSpuState->g_geode){
+        if (aveva_spu.superSpuState->g_geode && aveva_spu.superSpuState->isPartSelectionEnabled){
            // g_PatArray.back()->addChild(g_geode);
            // int Index = int(g_CurrentColor[0]*1000000) + int(g_CurrentColor[1]*10000) + int(g_CurrentColor[2]*100);
             osg::ref_ptr<osg::Group> currentgroup = aveva_spu.g_spuGroupMap[aveva_spu.sequence_index];

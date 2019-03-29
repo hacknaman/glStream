@@ -58,7 +58,7 @@ public:
 
     SCAppEventHandler(osg::ref_ptr<TransVizUtil::TransVizUtil> SceneGraphGenerator) {
         _SceneGraphGenerator = SceneGraphGenerator;
-        _isPartIdentificationEnabled = true;
+        _isPartIdentificationEnabled = false;
        
     }
 	bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa)
@@ -107,14 +107,13 @@ public:
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
             {
-                // Save the model
-                osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.ive");
-                osgDB::writeNodeFile(*(_SceneGraphGenerator->getLastGeneratedNode().get()), "tranviz.osgt");
-                std::cout << "Model saved as osgt and ive" << std::endl;
+                
+                _SceneGraphGenerator->saveModel();
+               
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_T)
             {
-                _SceneGraphGenerator->setPartIdentification(_isPartIdentificationEnabled);
+                _SceneGraphGenerator->setPartSelectionFlag(_isPartIdentificationEnabled);
                 _isPartIdentificationEnabled = (! _isPartIdentificationEnabled);
             }
             return false;
