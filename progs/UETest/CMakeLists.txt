@@ -10,7 +10,7 @@ include_directories(${OSG_INCLUDE_DIR})
 add_executable(UETestApp  ${SOURCES})
 target_link_libraries(UETestApp ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} )
 
-target_link_libraries(scenegraphApp 
+target_link_libraries(UETestApp 
 	debug ${OPENTHREADS_LIBRARY_D} 
 	optimized ${OPENTHREADS_LIBRARY} 
 )

@@ -1,7 +1,7 @@
 :: OSS ROOT PATH IS SET FROM TEAMCITY CLIENT
 
 call FetchExternalDeps.bat
-set OSSROOT=E:\agent\BuildAgent\work\TransViz\ExternalLibrary
+set OSSROOT=%cd%\ExternalLibrary
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4

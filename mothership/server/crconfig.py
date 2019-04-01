@@ -11,4 +11,3 @@ except KeyError:
    
 crbindir = os.path.join(crdir,'bin/')
 crlibdir = os.path.join(crdir,'lib/')
-
