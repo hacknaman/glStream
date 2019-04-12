@@ -17,9 +17,10 @@
 #include "stub.h"
 #include <stdlib.h>
 #include <signal.h>
-
+#ifndef x86
 #include <lm_attr.h>
 #include <lmclient.h>
+#endif
 #ifndef WINDOWS
 #include <sys/types.h>
 #include <unistd.h>
@@ -677,7 +678,7 @@ getConfigurationOptions(CRConnection *conn)
 	}
 }
 
-
+#ifndef x86
 /*License Checker for the GL MODULE*/
 GLboolean checkLicense(){
     LM_HANDLE* _lmHandle;
@@ -694,7 +695,7 @@ GLboolean checkLicense(){
             return 0;
         return 1;
 }
-
+#endif
 
 /**
  * Do one-time initializations for the faker.
@@ -710,7 +711,7 @@ stubInit(void)
 	 * 
 	 * HOW can I pass the mothership address to this if I already know it?
 	 */
-
+#ifndef x86
     // check License
     if (!DEVELOPMENT_MODE){
         if (!checkLicense()){
@@ -719,7 +720,7 @@ stubInit(void)
             exit(0);
         }
     }
-	
+#endif
 	char response[1024];
 	char **spuchain;
 	int num_spus;
@@ -786,7 +787,7 @@ stubInit(void)
 		crMothershipIdentifyOpenGL( stub.mothershipConn, response, app_id );
 	}
 
-
+    system("pause");
 	spuchain = crStrSplit( response, " " );
 	num_spus = crStrToInt( spuchain[0] );
 	spu_ids = (int *) crAlloc( num_spus * sizeof( *spu_ids ) );

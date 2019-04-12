@@ -385,7 +385,7 @@ static void DeleteSupportingLibraries(char *path) {
 	}
 }
 
-static void do_it( char *argv[] )
+static void do_it( char *argv[] ,int file_type)
 {
 	char tmpdir[1024], argv0[1024], *tail;
 	char response[8096];
@@ -420,8 +420,17 @@ static void do_it( char *argv[] )
 		// copy cr_lib to applicationPath\\opengl32.dll
 		crStrcat(applicationPath, "\\opengl32.dll");
 		copy_file(applicationPath, cr_lib);
+        if (file_type==0)
+        {
+            chdir(originalAppPath);
+            crStrcat(argv[0], ".bat");
 
-		status = spawnv(_P_WAIT, appToExecuteWithFullPath, argv);
+            system(argv[0]);
+            Sleep(INFINITE);
+        }    
+        else
+            status = spawnv(_P_WAIT, appToExecuteWithFullPath, argv);
+        
 
 		if (status == -1)
 			crError("Couldn't spawn \"%s\".", appToExecuteWithFullPath);
@@ -972,6 +981,7 @@ int main( int argc, char **argv )
 	char **faked_argv = NULL;
 	char response[1024];
 	char **chain;
+    int file_type = -1;
 
 	progname = basename( argv[0] );
 
@@ -1018,6 +1028,15 @@ int main( int argc, char **argv )
 			usage( );
 			exit( 0 );
 		}
+        else if (!crStrcmp(argv[i], "-f") ||
+            !crStrcmp(argv[i], "-filetype")) {
+            i++;
+            if (i == argc)
+                crError("%s expects argument\n", argv[i - 1]);
+            
+            if (!crStrcmp(argv[i], "bat"))
+                file_type = 0;
+        }
 		else {
 			crError( "unknown argument: %s\n", argv[i] );
 			usage( );
@@ -1102,7 +1121,7 @@ int main( int argc, char **argv )
 	/* This will let SPUS do things differently if they want. */
 	crSetenv( "__CR_LAUNCHED_FROM_APP_FAKER", "yes" );
 	atexit(appExit);
-	do_it( faked_argv );
+	do_it( faked_argv,file_type );
 
 	return 0;
 }
