@@ -9,10 +9,9 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "scenegraphspu.h"
 #include <osgUtil\Optimizer>
 
-
+#define DISABLE_TRANSFORM_MULT_WITH_VERTICES
 // This is enabled for part selection in aveva
 #define GEODE_WITH_LM
-
 #define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
 
@@ -37,9 +36,11 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
     scenegraph_spu_data.current_app_instance = NULL;
     scenegraph_spu_data.g_spuRootGroup = new osg::Group;
     scenegraph_spu_data.g_state = new osg::StateSet;
-
+#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+    scenegraph_spu_data.g_current_transform = NULL;
+#endif
     scenegraph_spu_data.g_geometryMode = -1;
-
+    scenegraph_spu_data.g_CurrentMatrix = osg::Matrix();
     scenegraph_spu_data.g_startReading = false;
     scenegraph_spu_data.g_isReading = false;
     scenegraph_spu_data.g_hasDrawnSomething = false;
@@ -266,8 +267,19 @@ void CreateNewGeode()
 {
     if (scenegraph_spu_data.g_hasDrawnSomething)
     {
+
+
+        #ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+            scenegraph_spu_data.g_current_transform->addChild(scenegraph_spu_data.g_geode);
+            scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_current_transform);
+            scenegraph_spu_data.g_current_transform = new osg::MatrixTransform;
+        #else
+        
         scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
+        
+        #endif
         scenegraph_spu_data.g_geode = new osg::Geode();
+        
         scenegraph_spu_data.g_hasDrawnSomething = false;
     }
 }
@@ -725,6 +737,9 @@ static void PRINT_APIENTRY printEnd(void)
 
 #endif
             scenegraph_spu_data.g_geode->addDrawable(scenegraph_spu_data.g_geom);
+#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+            scenegraph_spu_data.g_current_transform->setMatrix(scenegraph_spu_data.g_CurrentMatrix);
+#endif
         }
 
     }
@@ -756,7 +771,7 @@ static void PRINT_APIENTRY printEnd(void)
             scenegraph_spu_data.g_geode->addDrawable(scenegraph_spu_data.g_geom);
         }
 
-       
+
     }
 
     if (scenegraph_spu_data.g_geode) 
@@ -1398,15 +1413,19 @@ static void PRINT_APIENTRY printLoadIdentity(void)
 {
     if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-     scenegraph_spu_data.g_CurrentMatrix = osg::Matrix();
+
+    scenegraph_spu_data.g_CurrentMatrix.makeIdentity();
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
+	if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+        return;
 #ifdef GEODE_WITH_LM
     CreateNewGeode();
-#endif
-    scenegraph_spu_data.g_CurrentMatrix.set(m);
+#endif 
+   scenegraph_spu_data.g_CurrentMatrix.set(m);
+
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
@@ -1415,7 +1434,9 @@ static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
         return;
 #ifdef GEODE_WITH_LM
     CreateNewGeode();
-#endif
+#endif 
+
+
 
     scenegraph_spu_data.g_CurrentMatrix.set(m);
 
@@ -1429,8 +1450,8 @@ static void PRINT_APIENTRY printPushMatrix(void)
 #ifdef GEODE_WITH_LM
     CreateNewGeode();
 #endif
-    scenegraph_spu_data.g_matrix_stack.push_back(scenegraph_spu_data.g_CurrentMatrix);
-   
+   scenegraph_spu_data.g_matrix_stack.push_back(scenegraph_spu_data.g_CurrentMatrix);
+
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -2305,6 +2326,9 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     {
         scenegraph_spu_data.g_spuRootGroup = new osg::Group;
         scenegraph_spu_data.g_geode = new osg::Geode;
+        #ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+            scenegraph_spu_data.g_current_transform = new osg::MatrixTransform;
+        #endif
 
 #ifdef ENABLE_MATERIAL
         scenegraph_spu_data.g_material = new osg::Material();
@@ -2586,7 +2610,11 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
     if ((scenegraph_spu_data.g_isReading || scenegraph_spu_data.g_isDisplayList) && scenegraph_spu_data.g_vertexArray){
-        // Math to transfrom vertex and normal to matrix mode
+#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+        osg::Vec3 vertexPoint = osg::Vec3(x, y, z);
+        osg::Vec3 normalPoint = scenegraph_spu_data.g_CurrentNormal;
+#else
+// Math to transfrom vertex and normal to matrix mode
         osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
         osg::Matrix matFinal = mat *  scenegraph_spu_data.g_CurrentMatrix * scenegraph_spu_data.g_camera_matrix;
         osg::Vec3 vertexPoint = matFinal.getTrans();
@@ -2596,7 +2624,7 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
         osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
         osg::Vec3 normalPoint = NormalmatFinal.getTrans();
-
+#endif
         if (scenegraph_spu_data.isNormalRescaleEnabled)
         {
             double x = normalPoint.x();

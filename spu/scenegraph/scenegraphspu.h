@@ -18,7 +18,7 @@
 #include <osg/Geometry>
 #include <osg/Polygonmode>
 #include <osg/Material>
-#include <osg/PositionAttitudeTransform>
+#include <osg/MatrixTransform>
 #include <osg/PolygonStipple>
 #include <OpenThreads/Mutex>
 #include <osgDB/Export>
@@ -72,7 +72,7 @@ typedef struct {
 
      osg::ref_ptr<osg::Geometry> g_geom;
      osg::ref_ptr<osg::Geode> g_geode;
-     
+     osg::ref_ptr<osg::MatrixTransform> g_current_transform;
      std::vector<osg::Matrix> g_matrix_stack;
 
      std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
