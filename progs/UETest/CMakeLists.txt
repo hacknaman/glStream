@@ -5,15 +5,9 @@ set(SOURCES
 )
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
-include_directories(${OSG_INCLUDE_DIR})
 
 add_executable(UETestApp  ${SOURCES})
 target_link_libraries(UETestApp ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} )
-
-target_link_libraries(UETestApp 
-	debug ${OPENTHREADS_LIBRARY_D} 
-	optimized ${OPENTHREADS_LIBRARY} 
-)
 
 target_link_libraries(UETestApp TransVizUtilUE)
 target_link_libraries(UETestApp ${EXTRA_LIBS})

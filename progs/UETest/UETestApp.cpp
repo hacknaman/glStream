@@ -5,7 +5,8 @@
 
 class UECallBack : public TransVizUtilUE::ITransVizCallBack
 {
-    void GeomObj(std::vector<std::vector<TransVizUtilUE::TransVizPoint> >& VertexHolder){
+    void GeomObj(const TransVizUtilUE::TransVizGeom& tvgeom){
+		std::vector<TransVizUtilUE::TransVizPoint> _VertexHolder = tvgeom.VertexHolder[0].second;
         return;
     }
 };

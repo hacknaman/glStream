@@ -1,18 +1,14 @@
 #include <TransVizUtilUE.h>
 #include <cr_server.h>
-
-#include <osgDB/Export>
-#include <osgDB/Registry>
-#include <osgDB/ReadFile>
-#include <osgDB/Writefile>
+#include <thread>
 
 #define DEV_MODE 
 
 namespace TransVizUtilUE{
 
 
-    void forwarder(void* context, std::vector<std::vector<TransVizPoint> >& VertexHolder) {
-        static_cast<TransVizUtilUE*>(context)->update(VertexHolder);
+    void forwarder(void* context, const TransVizGeom& tvgeom) {
+        static_cast<TransVizUtilUE*>(context)->update(tvgeom);
     }
 
     TransVizUtilUE::TransVizUtilUE() :
@@ -30,11 +26,11 @@ namespace TransVizUtilUE{
         iSPU->getUpdatedScene();
     }
 
-    void TransVizUtilUE::update(std::vector<std::vector<TransVizPoint> >& VertexHolder)
+    void TransVizUtilUE::update(const TransVizGeom& tvgeomr)
     {
         if (_cb)
         {
-            _cb->GeomObj(VertexHolder);
+            _cb->GeomObj(tvgeomr);
         }
         return;
     }
@@ -62,7 +58,6 @@ namespace TransVizUtilUE{
         _util(util)
     {
 
-
     }
 
     void TransVizServerThreadUE::run() {
@@ -86,8 +81,13 @@ namespace TransVizUtilUE{
         }
     }
 
+    void TransVizServerThreadUE::start() {
+        std::thread th(&TransVizServerThreadUE::run, this);
+        th.detach();
+    }
+
     int TransVizServerThreadUE::cancel(){
-        return OpenThreads::Thread::cancel();
+        return true;
     }
 
 }

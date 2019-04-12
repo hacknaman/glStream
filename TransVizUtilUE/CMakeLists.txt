@@ -1,5 +1,4 @@
 include_directories(.)
-include_directories(${OSG_INCLUDE_DIR})
 
 SET(LIB_HEADERS
 	TransVizUtilUE.h
@@ -12,11 +11,6 @@ SET(LIB_SOURCES
 ADD_LIBRARY(TransVizUtilUE SHARED
     ${LIB_HEADERS}
     ${LIB_SOURCES}
-)
-
-target_link_libraries(TransVizUtilUE
-   debug ${OPENTHREADS_LIBRARY_D}   
-   optimized ${OPENTHREADS_LIBRARY} 
 )
 
 target_link_libraries(TransVizUtilUE crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)

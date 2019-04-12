@@ -18,8 +18,6 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include <lm_attr.h>
-#include <lmclient.h>
 #ifndef WINDOWS
 #include <sys/types.h>
 #include <unistd.h>
@@ -680,19 +678,7 @@ getConfigurationOptions(CRConnection *conn)
 
 /*License Checker for the GL MODULE*/
 GLboolean checkLicense(){
-    LM_HANDLE* _lmHandle;
-
-        VENDORCODE code;
-        lc_new_job(NULL, lc_new_job_arg2, &code, &_lmHandle);
-
-        char* licensePath = "../../../Licenses";
-        lc_set_attr(_lmHandle, LM_A_LICENSE_DEFAULT, (LM_A_VAL_TYPE)licensePath);
-
-        char* featureName1 = "TRANSVIZ_GL_MODULE";
-
-        if (lc_checkout(_lmHandle, (LM_CHAR_PTR)featureName1, "1.0", 1, LM_CO_NOWAIT, &code, LM_DUP_NONE))
-            return 0;
-        return 1;
+    return 1;
 }
 
 

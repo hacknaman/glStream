@@ -7,6 +7,8 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "cr_error.h"
 #include "cr_spu.h"
 #include "UnrealEnginespu.h"
+#include "matrix.h"
+
 #include <vector>
 
 #include <ctime>
@@ -25,9 +27,13 @@ int g_calledreadFromApp = false;
 int g_hasTouchedBegin = false;
 
 int g_isDisplayList = false;
+
 std::time_t g_time = std::time(0);
 
-std::vector<std::vector<TransVizUtilUE::TransVizPoint> > g_VertexHolder;
+TransVizUtilUE::TransVizPoint g_NormalPoint;
+TransVizUtilUE::TransVizGeom g_tvgeom;
+
+std::vector<linalg::aliases::double4x4> g_CurrentMatrix;
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
@@ -63,10 +69,10 @@ extern OSGEXPORT void getUpdatedSceneUE(){
     }
 }
 
-void(*g_pt2Func)(void * context, std::vector<std::vector<TransVizUtilUE::TransVizPoint> >&) = NULL;
+void(*g_pt2Func)(void * context, const TransVizUtilUE::TransVizGeom &) = NULL;
 void *g_context = NULL;
 
-extern OSGEXPORT void funcNodeUpdateUE(void(*pt2Func)(void * context, std::vector<std::vector<TransVizUtilUE::TransVizPoint> >& VertexHolder), void *context){
+extern OSGEXPORT void funcNodeUpdateUE(void(*pt2Func)(void * context, const TransVizUtilUE::TransVizGeom& tvgeom), void *context){
     g_pt2Func = pt2Func;
     g_context = context;
 }
@@ -119,7 +125,9 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 		g_geometryMode = mode;
 
         std::vector<TransVizUtilUE::TransVizPoint> vec;
-        g_VertexHolder.push_back(vec);
+		std::vector<TransVizUtilUE::TransVizPoint> vecN;
+        g_tvgeom.VertexHolder.push_back(std::make_pair(mode,vec));
+		g_tvgeom.NormalHolder.push_back(vecN);
 	}
 
 	if (g_isDisplayList)
@@ -1095,10 +1103,7 @@ static void PRINT_APIENTRY printLightModeliv(GLenum pname, const GLint * params)
 
 static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param)
 {
-    if (!g_isReading)
-    {
-        return;
-    }
+   
 }
 
 static void PRINT_APIENTRY printLighti(GLenum light, GLenum pname, GLint param)
@@ -1119,23 +1124,41 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-}
-
-static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
-{
-}
-
-static void PRINT_APIENTRY printPushMatrix(void)
-{
-    if (g_isReading)
-    {
-
-    }
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
+	{
+		g_CurrentMatrix.pop_back();
+		g_CurrentMatrix.push_back(linalg::identity);
+	}
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
+	{
+		g_CurrentMatrix.pop_back();
+		g_CurrentMatrix.push_back(linalg::aliases::double4x4(m));
+	}
 }
+
+static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
+{
+	GLdouble *dmat = new GLdouble[4 * 4];
+
+	for (int i = 0; i < (4 * 4); ++i) {
+		dmat[i] = m[i];
+	}
+
+	printLoadMatrixd(dmat);
+}
+
+static void PRINT_APIENTRY printPushMatrix(void)
+{
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
+    {
+		g_CurrentMatrix.push_back(g_CurrentMatrix.back()); 
+    }
+}
+
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
 {
@@ -1214,12 +1237,27 @@ static void PRINT_APIENTRY printMatrixMode(GLenum mode)
 static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 {
 }
-static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
-{
-}
 
 static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
 {
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
+	{
+		linalg::aliases::double4x4 MatCurrent = g_CurrentMatrix.back();
+		MatCurrent = linalg::mul(MatCurrent, linalg::aliases::double4x4(m));
+		g_CurrentMatrix.pop_back();
+		g_CurrentMatrix.push_back(MatCurrent);
+	}
+}
+
+static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
+{
+	GLdouble *dmat = new GLdouble[4 * 4];
+
+	for (int i = 0; i < (4 * 4); ++i) {
+		dmat[i] = m[i];
+	}
+
+	printMultMatrixd(dmat);
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -1366,44 +1404,59 @@ static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 {
 }
 
-static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
-{
-}
-
-static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
-{
-}
-
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
+	if (g_isReading)
+	{
+		g_NormalPoint.x = nx;
+		g_NormalPoint.y = ny;
+		g_NormalPoint.z = nz;
+	}
 }
 
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
+	printNormal3d(v[0], v[1], v[2]);
+}
+
+static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
+{
+	printNormal3d(nx, ny, nz);
+}
+
+static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
+{
+	printNormal3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
+	printNormal3d(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
+	printNormal3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
+	printNormal3d(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
+	printNormal3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
+	printNormal3d(nx,ny,nz);
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
+	printNormal3d(v[0],v[1],v[2]);
 }
 
 static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -1492,6 +1545,10 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 
 static void PRINT_APIENTRY printPopMatrix(void)
 {
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
+	{
+		g_CurrentMatrix.pop_back();
+	}
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -1737,16 +1794,21 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading)
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
 	{
+		/*
+		linalg::aliases::double4x4 Mat(linalg::rotation_matrix(linalg::rotation_quat(linalg::aliases::double3(x, y, z), angle )));
+		linalg::aliases::double4x4 MatCurrent = g_CurrentMatrix.back();
+		Mat = linalg::mul(Mat, MatCurrent);
+		g_CurrentMatrix.pop_back();
+		g_CurrentMatrix.push_back(Mat);
+		*/
 	}
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading)
-	{
-	}
+	printRotated(angle,x,y,z);
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -1755,8 +1817,13 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading)
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
 	{
+		linalg::aliases::double4x4 Mat(linalg::scaling_matrix(linalg::aliases::double3(x, y, z)));
+		linalg::aliases::double4x4 MatCurrent = g_CurrentMatrix.back();
+		MatCurrent = linalg::mul(MatCurrent, Mat);
+		g_CurrentMatrix.pop_back();
+		g_CurrentMatrix.push_back(MatCurrent);
 	}
 }
 
@@ -1771,6 +1838,7 @@ static void PRINT_APIENTRY printScissor(GLint x, GLint y, GLsizei width, GLsizei
 
 static void PRINT_APIENTRY printSecondaryColor3bEXT(GLbyte red, GLbyte green, GLbyte blue)
 {
+		
 }
 
 static void PRINT_APIENTRY printSecondaryColor3bvEXT(const GLbyte * v)
@@ -1896,13 +1964,15 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         }
         g_isReading = false;
 
-        g_pt2Func(g_context, g_VertexHolder);
+        g_pt2Func(g_context, g_tvgeom);
 	}
 
 	if (g_calledreadFromApp)
 	{
-    
-        g_VertexHolder.clear();
+		g_CurrentMatrix.clear();
+		g_currentMatrixMode = -1;
+		g_CurrentMatrix.push_back(linalg::aliases::double4x4(linalg::identity));
+		g_tvgeom.clearr();
 		g_calledreadFromApp = false;
 		g_startReading = true;
 		g_isReading = true;
@@ -2126,18 +2196,19 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading)
+	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
 	{
-
+		linalg::aliases::double4x4 Mat(linalg::translation_matrix(linalg::aliases::double3(x, y, z)));
+		linalg::aliases::double4x4 MatCurrent = g_CurrentMatrix.back();
+		MatCurrent = linalg::mul(MatCurrent ,Mat);
+		g_CurrentMatrix.pop_back();
+		g_CurrentMatrix.push_back(MatCurrent);
 	}
 }
 
 static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading )
-	{
-
-	}
+	printTranslated(x,y,z);
 }
 
 static GLboolean PRINT_APIENTRY printUnmapBufferARB(GLenum target)
@@ -2180,7 +2251,15 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
 	if (g_isReading || g_isDisplayList){
-        g_VertexHolder.back().push_back(TransVizUtilUE::TransVizPoint(x, y, z));
+		linalg::aliases::double4x4 Mat(linalg::translation_matrix(linalg::aliases::double3(x, y, z)));
+		linalg::aliases::double4x4 MatCurrent = g_CurrentMatrix.back();
+		Mat = linalg::mul(MatCurrent, Mat);
+        g_tvgeom.VertexHolder.back().second.push_back(TransVizUtilUE::TransVizPoint(Mat[3][0], Mat[3][1], Mat[3][2]));
+
+		linalg::aliases::double4x4 MatNormal(linalg::translation_matrix(linalg::aliases::double3(g_NormalPoint.x, g_NormalPoint.y, g_NormalPoint.z)));
+		MatCurrent[3][0] = MatCurrent[3][1] = MatCurrent[3][2] = 0.0;
+		MatNormal = linalg::mul(MatCurrent, MatNormal);
+		g_tvgeom.NormalHolder.back().push_back(TransVizUtilUE::TransVizPoint(MatNormal[3][0], MatNormal[3][1], MatNormal[3][2]));
 	}
 }
 
@@ -2256,6 +2335,7 @@ static void PRINT_APIENTRY printVertex4s(GLshort x, GLshort y, GLshort z, GLshor
 
 static void PRINT_APIENTRY printVertex4sv(const GLshort * v)
 {
+	printVertex3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printg_vertexArrayRangeNV(GLsizei length, const GLvoid * pointer)

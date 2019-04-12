@@ -35,7 +35,7 @@ typedef struct {
 extern PrintSpu print_spu;
 
 extern OSGEXPORT void getUpdatedSceneUE();
-extern OSGEXPORT void funcNodeUpdateUE(void(*pt2Func)(void * context, std::vector<std::vector<TransVizUtilUE::TransVizPoint> >& VertexHolder), void *context);
+extern OSGEXPORT void funcNodeUpdateUE(void(*pt2Func)(void * context, const TransVizUtilUE::TransVizGeom& tvgeom), void *context);
 
 extern void printspuGatherConfiguration( const SPU *child_spu );
 extern const char *printspuEnumToStr( GLenum e );

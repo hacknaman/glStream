@@ -1,5 +1,4 @@
 include_directories(.)
-include_directories(${OSG_INCLUDE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/TransVizUtilUE)
 
 set(SOURCES
@@ -19,7 +18,6 @@ set(SOURCES
 add_library(UnrealEnginespu SHARED ${SOURCES})
 
 target_link_libraries(UnrealEnginespu crutil crmothership spuload)
-target_link_libraries(UnrealEnginespu debug ${OPENTHREADS_LIBRARY_D}  optimized ${OPENTHREADS_LIBRARY}  )
 target_link_libraries(UnrealEnginespu ${EXTRA_LIBS})
 
 install(TARGETS UnrealEnginespu

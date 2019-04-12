@@ -1,6 +1,6 @@
 include_directories(.)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${FLEXERA_INCLUDE_DIR})
+
 set(GENERATED
 	server_dispatch.h
 	server_dispatch.c
@@ -76,8 +76,8 @@ add_custom_command(OUTPUT server_simpleget.c
 	VERBATIM
 	DEPENDS ${GENERATION_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/server_simpleget.py ${CMAKE_CURRENT_SOURCE_DIR}/get_sizes.py)
 
-add_library(crserverlib STATIC ${SOURCES} ${FLEXERA_TARGET_OBJ})
-target_link_libraries(crserverlib ${FLEXERA_LIBRARIES} ${EXTRA_LIBS})
+add_library(crserverlib STATIC ${SOURCES} )
+target_link_libraries(crserverlib ${EXTRA_LIBS})
 install(TARGETS crserverlib
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev

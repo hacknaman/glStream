@@ -45,7 +45,7 @@ public:
 
     }
 
-    void funcNodeUpdate(void(*pt2Func)(void * context, std::vector<std::vector<TransVizUtilUE::TransVizPoint> >& VertexHolder), void *context)
+    void funcNodeUpdate(void(*pt2Func)(void * context, const TransVizUtilUE::TransVizGeom & VertexHolder), void *context)
     {
         funcNodeUpdateUE(pt2Func, context);
     }

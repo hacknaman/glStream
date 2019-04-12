@@ -15,98 +15,117 @@
  *****************************************************************************/
 
 #include <ueexport.h>
-#include <OpenThreads/Thread>
 #include <string>
 #include <vector>
 
-// Move this to another file
+ // Move this to another file
 
-namespace TransVizUtilUE{
+namespace TransVizUtilUE {
 
-    typedef struct TransVizPoint {
+	typedef struct TransVizPoint {
 
-        TransVizPoint(double x, double y, double z) {
-            this->x = x;
-            this->y = y;
-            this->z = z;
-        }
+		TransVizPoint() {
+			this->x = 0.0;
+			this->y = 1.0;
+			this->z = 0.0;
+		}
 
-        double x;
-        double y;
-        double z;
+		TransVizPoint(double x, double y, double z) {
+			this->x = x;
+			this->y = y;
+			this->z = z;
+		}
 
-    } TransVizPoint;
+		double x;
+		double y;
+		double z;
 
-    class ISpufuncUE
-    {
-    public:
-        virtual void getUpdatedScene() = 0;
-        virtual void changeScene() = 0;
-        virtual void funcNodeUpdate(void(*pt2Func)(void * context, std::vector<std::vector<TransVizPoint> >& VertexHolder), void *context) = 0;
-        virtual void preProcessClient() {};
-    };
+	} TransVizPoint;
 
-    //forward declaration
-    class TransVizUtilUE;
+	typedef struct TransVizGeom {
 
-    class ITransVizCallBack {
-    public:
-        virtual void GeomObj(std::vector<std::vector<TransVizPoint> >& VertexHolder) = 0;
-    };
+		std::vector<std::pair<int, std::vector<TransVizPoint>> > VertexHolder;
+		std::vector<std::vector<TransVizPoint> > NormalHolder;
 
-    class TransVizServerThreadUE : public OpenThreads::Thread
-    {
-        TransVizUtilUE* _util;
-    public:
-        TransVizServerThreadUE(TransVizUtilUE* util);
-        void run();
-        int cancel();
-    protected:
-    };
+		void clearr() {
+			VertexHolder.clear();
+			NormalHolder.clear();
+		}
 
-    class TRANSVIZUE_UTIL_DLL_EXPORT TransVizUtilUE {
-    public:
-        TransVizUtilUE();
-        ~TransVizUtilUE();
+	} TransVizGeom;
 
-        // set or returns the root Node from the scene
-        void generateScenegraph();
-        void update(std::vector<std::vector<TransVizPoint> >& VertexHolder);
-        bool isConnected();
+	class ISpufuncUE
+	{
+	public:
+		virtual void getUpdatedScene() = 0;
+		virtual void changeScene() = 0;
+		virtual void funcNodeUpdate(void(*pt2Func)(void * context, const TransVizGeom& tvgeom), void *context) = 0;
+		virtual void preProcessClient() {};
+	};
 
-        void setMothership(const std::string& hostname);
-        std::string getMothership();
+	//forward declaration
+	class TransVizUtilUE;
 
-        void setPort(const std::string& port);
-        std::string getPort();
-        void setCallBackClass(ITransVizCallBack* cb) {
-            _cb = cb;
-        }
+	class ITransVizCallBack {
+	public:
+		virtual void GeomObj(const TransVizGeom& tvgeom) = 0;
+	};
+
+	class TransVizServerThreadUE
+	{
+		TransVizUtilUE* _util;
+	public:
+		TransVizServerThreadUE(TransVizUtilUE* util);
+		/// \brief: runs of different thread
+		void start();
+		void run();
+		int cancel();
+	protected:
+	};
+
+	class TRANSVIZUE_UTIL_DLL_EXPORT TransVizUtilUE {
+	public:
+		TransVizUtilUE();
+		~TransVizUtilUE();
+
+		// set or returns the root Node from the scene
+		void generateScenegraph();
+		void update(const TransVizGeom& tvgeom);
+		bool isConnected();
+
+		void setMothership(const std::string& hostname);
+		std::string getMothership();
+
+		void setPort(const std::string& port);
+		std::string getPort();
+		void setCallBackClass(ITransVizCallBack* cb) {
+			_cb = cb;
+		}
 
 		bool _isconnected;
 
-        // start crServer and attach node callback to the root group
-        void run();
+		// start crServer and attach node callback to the root group
+		void run();
 
-        ISpufuncUE* iSPU;
+		ISpufuncUE* iSPU;
 
-        // return the version of TransViz API
-        std::string getTransvizVersion();
+		// return the version of TransViz API
+		std::string getTransvizVersion();
 
-      
-    private:
 
-        // root Node for the Scene , This Root Node will be used by GraphicsWindowViewer as the sceneData
-        // the same node will be used in SceneGraphApp for the updation of the Scene
-        bool _bIsNodeDirty;
+	private:
 
-        TransVizServerThreadUE* _thread;
-        ITransVizCallBack* _cb;
+		// root Node for the Scene , This Root Node will be used by GraphicsWindowViewer as the sceneData
+		// the same node will be used in SceneGraphApp for the updation of the Scene
+		bool _bIsNodeDirty;
 
-        std::string _hhostname;
-        std::string _pport;
+		TransVizServerThreadUE* _thread;
+		ITransVizCallBack* _cb;
 
-    };// class TransVizUtilUE
+		std::string _hhostname;
+		std::string _pport;
+
+	};// class TransVizUtilUE
 } // nameSpace TransVizUtilUE
 
 #endif //TRANSVIZ_UTIL_UE
