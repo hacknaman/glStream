@@ -787,7 +787,7 @@ stubInit(void)
 		crMothershipIdentifyOpenGL( stub.mothershipConn, response, app_id );
 	}
 
-    system("pause");
+   
 	spuchain = crStrSplit( response, " " );
 	num_spus = crStrToInt( spuchain[0] );
 	spu_ids = (int *) crAlloc( num_spus * sizeof( *spu_ids ) );
