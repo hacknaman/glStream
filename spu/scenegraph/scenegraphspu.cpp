@@ -23,7 +23,7 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
     scenegraph_spu_data.g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
 #ifdef ENABLE_LIGHTS
-    for (auto light : g_light)
+    for (auto light : scenegraph_spu_data.g_light)
     {
         scenegraph_spu_data.light = NULL;
     }
@@ -683,9 +683,9 @@ static void PRINT_APIENTRY printEnable(GLenum cap)
 #ifdef ENABLE_LIGHTS
     if (cap >= GL_LIGHT0 && cap <= GL_LIGHT7)
     {
-        if (g_light[cap - GL_LIGHT0] == NULL)
+        if (scenegraph_spu_data.g_light[cap - GL_LIGHT0] == NULL)
         {
-            g_light[cap - GL_LIGHT0] = new osg::LightSource();
+            scenegraph_spu_data.g_light[cap - GL_LIGHT0] = new osg::LightSource();
         }
     }
 #endif
@@ -732,6 +732,7 @@ static void PRINT_APIENTRY printEnd(void)
 
             if (scenegraph_spu_data.g_material != NULL)
             {
+ 
                 scenegraph_spu_data.g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(scenegraph_spu_data.g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
             }
 
@@ -1008,9 +1009,9 @@ static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloa
 {
 #ifdef ENABLE_LIGHTS
 
-    if (g_light[light - GL_LIGHT0] == NULL)
+    if (scenegraph_spu_data.g_light[light - GL_LIGHT0] == NULL)
     {
-        g_light[light - GL_LIGHT0] = new osg::LightSource();
+        scenegraph_spu_data.g_light[light - GL_LIGHT0] = new osg::LightSource();
     }
 
     switch (pname)
@@ -1018,26 +1019,26 @@ static void PRINT_APIENTRY printLightfv(GLenum light, GLenum pname, const GLfloa
 
     case GL_AMBIENT:
     {
-        g_light[light - GL_LIGHT0]->getLight()->setAmbient(osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_light[light - GL_LIGHT0]->getLight()->setAmbient(osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     }
     case GL_DIFFUSE:
     {
-        g_light[light - GL_LIGHT0]->getLight()->setDiffuse(osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_light[light - GL_LIGHT0]->getLight()->setDiffuse(osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     }
     case GL_SPECULAR:
     {
-        g_light[light - GL_LIGHT0]->getLight()->setSpecular(osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_light[light - GL_LIGHT0]->getLight()->setSpecular(osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     }
     case GL_POSITION:
     {
         osg::Matrix mat = osg::Matrix::translate(osg::Vec3(params[0], params[1], params[2]));
-        osg::Matrix matFinal = mat * g_CurrentMatrix;
+        osg::Matrix matFinal = mat * scenegraph_spu_data.g_CurrentMatrix;
         osg::Vec3 vertexPoint = matFinal.getTrans();
 
-        g_light[light - GL_LIGHT0]->getLight()->setPosition(osg::Vec4(vertexPoint[0], vertexPoint[1], vertexPoint[2], params[3]));
+        scenegraph_spu_data.g_light[light - GL_LIGHT0]->getLight()->setPosition(osg::Vec4(vertexPoint[0], vertexPoint[1], vertexPoint[2], params[3]));
         break;
     }
 
@@ -1346,7 +1347,7 @@ static void PRINT_APIENTRY printLightModelfv(GLenum pname, const GLfloat * param
         {
             osg::ref_ptr<osg::LightModel> lm = new osg::LightModel();
             lm->setAmbientIntensity(osg::Vec4d(params[0], params[0], params[0], params[0]));
-            g_state->setAttribute(lm);
+            scenegraph_spu_data.g_state->setAttribute(lm);
             break;
         }
 
@@ -1371,20 +1372,20 @@ static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param
     }
 
 #ifdef ENABLE_LIGHTS
-    if (g_light[light - GL_LIGHT0] == NULL){
-        g_light[light - GL_LIGHT0] = new osg::LightSource();
+    if (scenegraph_spu_data.g_light[light - GL_LIGHT0] == NULL){
+        scenegraph_spu_data.g_light[light - GL_LIGHT0] = new osg::LightSource();
     }
 
     switch (pname)
     {
     case GL_SPOT_EXPONENT:
     {
-        g_light[light - GL_LIGHT0]->getLight()->setSpotExponent(param);
+        scenegraph_spu_data.g_light[light - GL_LIGHT0]->getLight()->setSpotExponent(param);
         break;
     }
     case GL_SPOT_CUTOFF:
     {
-        g_light[light - GL_LIGHT0]->getLight()->setSpotCutoff(param);
+        scenegraph_spu_data.g_light[light - GL_LIGHT0]->getLight()->setSpotCutoff(param);
         break;
     }
 
@@ -2300,8 +2301,8 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 #ifdef ENABLE_LIGHTS
             for (int i = GL_LIGHT0; i <= GL_LIGHT7; ++i)
             {
-                if (g_light[i - GL_LIGHT0] != NULL){
-                    g_spuRootGroup->addChild(g_light[i - GL_LIGHT0]);
+                if (scenegraph_spu_data.g_light[i - GL_LIGHT0] != NULL){
+                    scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_light[i - GL_LIGHT0]);
                 }
             }
 #endif
@@ -3098,18 +3099,30 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
     case GL_AMBIENT:
         CreateNewGeode();
         scenegraph_spu_data.g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
         break;
     case GL_DIFFUSE:
         CreateNewGeode();
         scenegraph_spu_data.g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::DIFFUSE);
         break;
     case GL_SPECULAR:
         CreateNewGeode();
         scenegraph_spu_data.g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::SPECULAR);
         break;
     case GL_AMBIENT_AND_DIFFUSE:
         CreateNewGeode();
         scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
+        break;
+    case GL_EMISSION:
+        CreateNewGeode();
+        scenegraph_spu_data.g_material->setEmission(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::EMISSION);
+        break;
+    case GL_SHININESS:
+        CreateNewGeode();
+        scenegraph_spu_data.g_material->setShininess(osgface, params[0]);
         break;
     }
 

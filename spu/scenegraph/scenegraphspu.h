@@ -78,6 +78,7 @@ typedef struct {
      std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
 
      osg::ref_ptr<osg::StateSet> g_state;
+     osg::ref_ptr<osg::Light> light;
 
      osg::ref_ptr<osg::Material> g_material;
      osg::ref_ptr<osg::LightSource> g_light[8];

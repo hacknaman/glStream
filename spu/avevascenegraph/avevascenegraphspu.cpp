@@ -917,10 +917,10 @@ static void PRINT_APIENTRY printGenTextures(GLsizei n, GLuint * textures)
 {
 
 }
-static void printGetBooleanv(GLenum pname, GLboolean * params)
-{
-
-}
+//static void printGetBooleanv(GLenum pname, GLboolean * params)
+//{
+//
+//}
 static void PRINT_APIENTRY printGetBufferParameterivARB(GLenum target, GLenum pname, GLint * params)
 {
 }
@@ -3227,7 +3227,7 @@ SPUNamedFunctionTable _cr_print_table[] = {
     { "GenProgramsNV", (SPUGenericFunction)printGenProgramsNV },
     { "GenQueriesARB", (SPUGenericFunction)printGenQueriesARB },
     { "GenTextures", (SPUGenericFunction)printGenTextures },
-    { "GetBooleanv", (SPUGenericFunction)printGetBooleanv },
+    //{ "GetBooleanv", (SPUGenericFunction)printGetBooleanv },
     { "GetBufferParameterivARB", (SPUGenericFunction)printGetBufferParameterivARB },
     { "GetBufferPointervARB", (SPUGenericFunction)printGetBufferPointervARB },
     { "GetBufferSubDataARB", (SPUGenericFunction)printGetBufferSubDataARB },

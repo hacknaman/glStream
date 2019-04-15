@@ -14,9 +14,10 @@
 #include "cr_hash.h"
 #include <signal.h>
 #include <stdlib.h>
-
+#ifndef x86
 #include <lm_attr.h>
 #include <lmclient.h>
+#endif
 #define DEBUG_FP_EXCEPTIONS 0
 
 #define DEVELOPMENT_MDOE 1
@@ -174,7 +175,7 @@ crPrintHelp(void)
 /**
  check License to execute crserver
 */
-
+#ifndef x86
 GLboolean checkLicense(){
     LM_HANDLE* _lmHandle;
 
@@ -190,13 +191,14 @@ GLboolean checkLicense(){
             return 0;
         return 1;
 }
-
+#endif
 /**
 * Do CRServer initializations.  After this, we can begin servicing clients.
 */
 int
 crServerInitNew(const char* hostname, const char *port)
 {
+#ifndef x86
     // check for the license
     if (!DEVELOPMENT_MDOE){
         if (!checkLicense()){
@@ -204,13 +206,14 @@ crServerInitNew(const char* hostname, const char *port)
             exit(0);
         }
     }
-
+#endif
     int i;
     char *mothership = NULL;
     CRMuralInfo *defaultMural;
-
+#ifndef x86
     windowIDreset();
     contextIDreset();
+#endif
 
     if (hostname != NULL)
     {
@@ -285,20 +288,21 @@ void
 crServerInit(int argc, char *argv[])
 {
     // check for the license
-
+#ifndef x86
     if (!DEVELOPMENT_MDOE){
         if (!checkLicense()){
             crError("LICENSE FILE IS NOT VALID");
             exit(0);
         }
     }
+#endif
 	int i;
 	char *mothership = NULL;
 	CRMuralInfo *defaultMural;
-
+#ifndef x86
 	windowIDreset();
 	contextIDreset();
-
+#endif
 	for (i = 1 ; i < argc ; i++)
 	{
 		if (!crStrcmp( argv[i], "-mothership" ))
