@@ -15,11 +15,11 @@
 #include <signal.h>
 #include <stdlib.h>
 
-// use this library if we are using visual studio version older than vs17
 #ifndef x86 
 #include <lm_attr.h>
 #include <lmclient.h>
 #endif
+
 #define DEBUG_FP_EXCEPTIONS 0
 
 #define DEVELOPMENT_MDOE 1
