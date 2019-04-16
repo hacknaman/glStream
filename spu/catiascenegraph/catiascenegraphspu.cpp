@@ -7,143 +7,15 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "cr_error.h"
 #include "cr_spu.h"
 #include "catiascenegraphspu.h"
-#include <vector>
-#include <osg/LineWidth>
-#include <osg/BlendFunc>
-#include <osg/Group>
-#include <osg/Geode>
-#include <osg/Node>
-#include <osg/Geometry>
-#include <osg/Polygonmode>
-#include <osg/Material>
-#include <osg/PositionAttitudeTransform>
-#include <osg/PolygonStipple>
-#include <OpenThreads/Mutex>
-#include <osgDB/Export>
-#include <osgDB/Registry>
-#include <osgDB/ReadFile>
-#include <osgDB/Writefile>
-
-#include <osg/LightSource>
-#include <osg/LightModel>
-#include <osg/Light>
-
-#include <ctime>
-#include "CatiaLibCPPAdapter.h"
-#define PRINT_UNUSED(x) ((void)x)
-static int g_ret_count = 2000;
-
-// comment out this code to disable material / lights
-#define ENABLE_MATERIAL
-#define ENABLE_LIGHTS
-
-osg::ref_ptr<osg::Vec3Array> g_vertexArray;
-osg::ref_ptr<osg::Vec3Array> g_normalArray;
-osg::ref_ptr<osg::Vec3Array> g_colorArray;
 //global object
-CatiaMetaDataApi::CatiaLibCPPAdapter adapter;
-CatiaMetaDataApi::CatiaGeomDetail* curr_catia_geom_detail = nullptr;
-std::string geode_name ="";
-osg::Vec3 g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-osg::Vec3 g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
 
-osg::Matrix g_CurrentMatrix;
+#define ENABLE_MATERIAL
+//#define ENABLE_LIGHTS
 
-osg::ref_ptr<osg::Geometry> g_geom;
-osg::ref_ptr<osg::Geode> g_geode;
 
-std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArray;
-std::vector<osg::Matrix> g_matrix_stack;
-
-std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
-
-osg::ref_ptr<osg::StateSet> g_state = new osg::StateSet;
-
-#ifdef ENABLE_MATERIAL
-osg::ref_ptr<osg::Material> g_material;
-#endif
-
-#ifdef ENABLE_LIGHTS
-osg::ref_ptr<osg::LightSource> g_light = new osg::LightSource;
-#endif
-
-static osg::ref_ptr<osg::Group> g_spuRootGroup = new osg::Group;
-
-int g_geometryMode = -1;
-int g_currentMatrixMode = -1;
-
-int g_startReading = false;
-int g_isReading = false;
-int g_canAdd = false;
-
-int g_calledreadFromApp = false;
-int g_hasTouchedBegin = false;
-
-int g_isDisplayList = false;
-std::time_t g_time = std::time(0);
-/*here client may be catia,aveva or any other gl application which is going to send gl streams to this spu.*/
-extern void OSGEXPORT preProcessCatia()
+void scenegraphCatiaSPUReset()
 {
-    adapter.modifyCatiaColors();
-
-}
-extern void PRINT_APIENTRY scenegraphSPUReset()
-{
-	g_ret_count = 2000;
-
-	g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-	g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
-
-	g_PatArray.clear();
-	g_PatArrayDisplayList.clear();
-
-	g_spuRootGroup = new osg::Group;
-
-	g_geometryMode = -1;
-
-	g_startReading = false;
-	g_isReading = false;
-	g_canAdd = false;
-
-	g_calledreadFromApp = false;
-	g_hasTouchedBegin = false;
-
-	g_isDisplayList = false;
-
-	g_time = std::time(0);
-}
-
-std::string camerashakeapp;
-
-extern OSGEXPORT void getUpdatedSceneSC(){
-
-	g_calledreadFromApp = true;
-    
    
-    if (camerashakeapp.empty())
-    {
-        std::ifstream myfile("CameraShakeConfig.txt");
-        if (myfile.is_open())
-        {
-            getline(myfile, camerashakeapp);
-            myfile.close();
-        }
-    }
-
-    if (!camerashakeapp.empty())
-    {
-        system(camerashakeapp.c_str());
-    }
-    adapter.revertToCatiaOriginalColor();
-}
-
-void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>) = NULL;
-void *g_context = NULL;
-
-extern OSGEXPORT void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
-
-	g_pt2Func = pt2Func;
-	g_context = context;
 }
 
 static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
@@ -188,27 +60,7 @@ static void PRINT_APIENTRY printBarrierExecCR(GLuint name)
 
 static void PRINT_APIENTRY printBegin(GLenum mode)
 {
-	if (g_isReading)
-	{
-        
-        g_hasTouchedBegin = true;
-		g_geometryMode = mode;
-		g_geode = new osg::Geode();
-        
-		g_vertexArray = new osg::Vec3Array();
-		g_normalArray = new osg::Vec3Array();	
-		g_colorArray = new osg::Vec3Array();
-	}
-
-	if (g_isDisplayList)
-	{
-        g_geometryMode = mode;
-		g_geode = new osg::Geode();
-       
-		g_vertexArray = new osg::Vec3Array();
-		g_normalArray = new osg::Vec3Array();
-		g_colorArray = new osg::Vec3Array();
-	}
+    catia_spu.super.Begin(mode);
 }
 
 static void PRINT_APIENTRY printBeginQueryARB(GLenum target, GLuint id)
@@ -265,10 +117,18 @@ static void PRINT_APIENTRY printBufferSubDataARB(GLenum target, GLintptrARB offs
 
 static void PRINT_APIENTRY printCallList(GLuint list)
 {
-	if (g_isReading) {
-		g_hasTouchedBegin = true;
-		g_PatArray.back()->addChild(g_PatArrayDisplayList[list-1].get());
-	}
+
+   catia_spu.super.CallList(list);
+}
+static void PRINT_APIENTRY printCallLists(GLsizei n, GLenum type, const GLvoid * lists)
+{
+}
+static void PRINT_APIENTRY printChromiumParameteriCR(GLenum target, GLint value)
+{
+}
+static void PRINT_APIENTRY printChromiumParametervCR(GLenum target, GLenum type, GLsizei count, const GLvoid *values)
+{
+
 }
 
 static void PRINT_APIENTRY printChromiumParameterfCR(GLenum target, GLfloat value)
@@ -325,39 +185,38 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
-	
-  
-    g_CurrentColor = osg::Vec3(red, green, blue);
+        catia_spu.super.Color3f(red, green, blue);
+
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
-{
+{   
     
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    catia_spu.super.Color3fv(v);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 {
+    catia_spu.super.Color3i(red, green, blue);
     
-    g_CurrentColor = osg::Vec3(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-	
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+        catia_spu.super.Color3iv(v);
+       
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
 {
-   
-    g_CurrentColor = osg::Vec3(red, green, blue);
+        catia_spu.super.Color3s(red, green, blue);
+        
 }
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
    
-    g_CurrentColor = osg::Vec3(v[0], v[1], v[2]);
+    catia_spu.super.Color3sv(v);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -548,7 +407,7 @@ static void PRINT_APIENTRY printCopyTexSubImage3D(GLenum target, GLint level, GL
 
 static GLint PRINT_APIENTRY printCreateContext(const char * dpyName, GLint visual, GLint shareCtx)
 {
-	return g_ret_count++;
+    return catia_spu.super.CreateContext(dpyName, visual, shareCtx);
 }
 
 static void PRINT_APIENTRY printCullFace(GLenum mode)
@@ -597,9 +456,8 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
-	if (GL_POLYGON_STIPPLE){
-		g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
-	}
+    catia_spu.super.Disable(cap);
+    
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -644,10 +502,7 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
-	if (g_isReading && cap == GL_POLYGON_STIPPLE) {
-		osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
-		g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-	}
+    catia_spu.super.Enable(cap);
 }
 
 static void PRINT_APIENTRY printEnableClientState(GLenum array)
@@ -658,86 +513,88 @@ static void PRINT_APIENTRY printEnableVertexAttribArrayARB(GLuint index)
 {
 }
 
-// 
+
 static void PRINT_APIENTRY printEnd(void)
 {
-	if (g_isReading)
-	{
-		g_geom = new osg::Geometry();
-        
-		// create a g_geode and add it to the pat
-		if (g_vertexArray->size() > 0)
-		{
-			g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
-			g_geom->setVertexArray(g_vertexArray);
-			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
-			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
-
-			if (g_state != NULL)
-			{
-				g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
-			}
-			g_geode->addDrawable(g_geom);
-
-#ifdef ENABLE_MATERIAL
-            if (g_material != NULL)
-            {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
-            }
-#endif
-		}
-
-		if (g_geode){
-			g_PatArray.back()->addChild(g_geode);
-            if (!geode_name.empty())
-            {
-               
-                g_geode->setName(geode_name);
-                geode_name.clear();
-            }
-		}
-	}
-
-	if (g_isDisplayList)
-	{
-		g_geom = new osg::Geometry();
-		// create a g_geode and add it to the pat
-		if (g_vertexArray->size() > 0)
-		{
-			g_geom->addPrimitiveSet(new osg::DrawArrays(g_geometryMode, 0, g_vertexArray->size()));
-			g_geom->setVertexArray(g_vertexArray);
-			g_geom->setColorArray(g_colorArray, osg::Array::BIND_PER_VERTEX);
-			g_geom->setNormalArray(g_normalArray, osg::Array::BIND_PER_VERTEX);
-			if (g_state != NULL)
-			{
-                g_geom->setStateSet(new osg::StateSet(*g_state, osg::CopyOp::DEEP_COPY_ALL));
-			}
-			g_geode->addDrawable(g_geom);
-
-#ifdef ENABLE_MATERIAL
-            if (g_material != NULL)
-            {
-                g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
-            }
-#endif
-		}
-
-		if (g_geode) {
-			g_PatArrayDisplayList.back()->addChild(g_geode);
-            if (!geode_name.empty())
-            {
-               
-                g_geode->setName(geode_name);
-                geode_name.clear();
-              
-            }
-		}
-	}
+  
+    catia_spu.super.End();
+//    if (catia_spu.superSpuState->g_isReading)
+//	{
+//        catia_spu.superSpuState->g_geom = new osg::Geometry();
+//        
+//		// create a g_geode and add it to the pat
+//        if (catia_spu.superSpuState->g_vertexArray->size() > 0)
+//		{
+//            catia_spu.superSpuState->g_geom->addPrimitiveSet(new osg::DrawArrays(catia_spu.superSpuState->g_geometryMode, 0, catia_spu.superSpuState->g_vertexArray->size()));
+//            catia_spu.superSpuState->g_geom->setVertexArray(catia_spu.superSpuState->g_vertexArray);
+//            catia_spu.superSpuState->g_geom->setColorArray(catia_spu.superSpuState->g_colorArray, osg::Array::BIND_PER_VERTEX);
+//            catia_spu.superSpuState->g_geom->setNormalArray(catia_spu.superSpuState->g_normalArray, osg::Array::BIND_PER_VERTEX);
+//
+//            if (catia_spu.superSpuState->g_state != NULL)
+//			{
+//                catia_spu.superSpuState->g_geom->setStateSet(new osg::StateSet(*(catia_spu.superSpuState->g_state), osg::CopyOp::DEEP_COPY_ALL));
+//			}
+//            catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
+//
+//#ifdef ENABLE_MATERIAL
+//            if (catia_spu.superSpuState->g_material != NULL)
+//            {
+//                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+//            }
+//#endif
+//		}
+//
+//        if (catia_spu.superSpuState->g_geode){
+//            if (!geode_name.empty())
+//            {
+//               
+//                catia_spu.superSpuState->g_geode->setName(geode_name);
+//                geode_name.clear();
+//            }
+//		}
+//	}
+//
+//    if (catia_spu.superSpuState->g_isDisplayList)
+//	{
+//        catia_spu.superSpuState->g_geom = new osg::Geometry();
+//		// create a g_geode and add it to the pat
+//        if (catia_spu.superSpuState->g_vertexArray->size() > 0)
+//		{
+//            catia_spu.superSpuState->g_geom->addPrimitiveSet(new osg::DrawArrays(catia_spu.superSpuState->g_geometryMode, 0, catia_spu.superSpuState->g_vertexArray->size()));
+//            catia_spu.superSpuState->g_geom->setVertexArray(catia_spu.superSpuState->g_vertexArray);
+//            catia_spu.superSpuState->g_geom->setColorArray(catia_spu.superSpuState->g_colorArray, osg::Array::BIND_PER_VERTEX);
+//            catia_spu.superSpuState->g_geom->setNormalArray(catia_spu.superSpuState->g_normalArray, osg::Array::BIND_PER_VERTEX);
+//            if (catia_spu.superSpuState->g_state != NULL)
+//			{
+//                catia_spu.superSpuState->g_geom->setStateSet(new osg::StateSet(*(catia_spu.superSpuState->g_state), osg::CopyOp::DEEP_COPY_ALL));
+//			}
+//            catia_spu.superSpuState->g_geode->addDrawable(catia_spu.superSpuState->g_geom);
+//
+//#ifdef ENABLE_MATERIAL
+//            if (catia_spu.superSpuState->g_material != NULL)
+//            {
+//                catia_spu.superSpuState->g_geode->getOrCreateStateSet()->setAttributeAndModes(new osg::Material(*(catia_spu.superSpuState->g_material.get()), osg::CopyOp::DEEP_COPY_ALL), osg::StateAttribute::ON);
+//            }
+//#endif
+//		}
+//
+//        if (catia_spu.superSpuState->g_geode) {
+//            catia_spu.superSpuState->g_PatArrayDisplayList.back()->addChild(catia_spu.superSpuState->g_geode);
+//            if (!geode_name.empty())
+//            {
+//               
+//                catia_spu.superSpuState->g_geode->setName(geode_name);
+//                geode_name.clear();
+//              
+//            }
+//		}
+//	}
 }
 
 static void PRINT_APIENTRY printEndList(void)
 {
-	g_isDisplayList = false;
+    catia_spu.super.EndList();
+    
 }
 
 static void PRINT_APIENTRY printEndQueryARB(GLenum target)
@@ -874,7 +731,7 @@ static void PRINT_APIENTRY printGenFencesNV(GLsizei n, GLuint * fences)
 
 static GLuint PRINT_APIENTRY printGenLists(GLsizei range)
 {
-	return g_ret_count++;
+    return catia_spu.super.GenLists(range);
 }
 
 static void PRINT_APIENTRY printGenProgramsARB(GLsizei n, GLuint * programs)
@@ -888,7 +745,14 @@ static void PRINT_APIENTRY printGenProgramsNV(GLsizei n, GLuint * ids)
 static void PRINT_APIENTRY printGenQueriesARB(GLsizei n, GLuint * ids)
 {
 }
+static void PRINT_APIENTRY printGenTextures(GLsizei n, GLuint * textures)
+{
 
+}
+static void PRINT_APIENTRY printGetBooleanv(GLenum pname, GLboolean *params)
+{
+
+}
 static void PRINT_APIENTRY printGetBufferParameterivARB(GLenum target, GLenum pname, GLint * params)
 {
 }
@@ -932,7 +796,10 @@ static void PRINT_APIENTRY printGetCombinerStageParameterfvNV(GLenum stage, GLen
 static void PRINT_APIENTRY printGetCompressedTexImageARB(GLenum target, GLint level, GLvoid * img)
 {
 }
+static void PRINT_APIENTRY printGetDoublev(GLenum pname, GLdouble *params)
+{
 
+}
 static GLenum PRINT_APIENTRY printGetError(void)
 {
 	return false;
@@ -948,6 +815,14 @@ static void PRINT_APIENTRY printGetFinalCombinerInputParameterfvNV(GLenum variab
 
 static void PRINT_APIENTRY printGetFinalCombinerInputParameterivNV(GLenum variable, GLenum pname, GLint * params)
 {
+}
+static void PRINT_APIENTRY printGetFloatv(GLenum pname, GLfloat *params)
+{
+
+}
+static void PRINT_APIENTRY printGetIntegerv(GLenum pname, GLint *params)
+{
+
 }
 
 static void PRINT_APIENTRY printLightiv(GLenum light, GLenum pname, const GLint *params)
@@ -1291,32 +1166,9 @@ static void PRINT_APIENTRY printLightModeliv(GLenum pname, const GLint * params)
 
 static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param)
 {
-    if (!g_isReading)
-    {
-        return;
-    }
-
-#ifdef ENABLE_LIGHTS
-
-    if (light == GL_LIGHT1)
-    {
-        switch (pname)
-        {
-        case GL_SPOT_EXPONENT:
-        {
-            g_light->getLight()->setSpotExponent(param);
-            break;
-        }
-        case GL_SPOT_CUTOFF:
-        {
-            g_light->getLight()->setSpotCutoff(param);
-            break;
-        }
-
-        }
-
-    }
-#endif
+   
+    catia_spu.super.Lightf(light, pname, param);
+   
 }
 
 static void PRINT_APIENTRY printLighti(GLenum light, GLenum pname, GLint param)
@@ -1337,30 +1189,29 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-    g_CurrentMatrix = osg::Matrix();
+    catia_spu.super.LoadIdentity();
+    
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-    g_CurrentMatrix.set(m);
+    catia_spu.super.LoadMatrixf(m);
+   
+    
+    
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
-    if (g_isReading)
-    {
-        // create a pat node
-		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-		g_PatArray.back()->addChild(pat);
-        g_PatArray.push_back(pat);
-    }
-    //pushing current matrix in stack
-    g_matrix_stack.push_back(g_CurrentMatrix);
+    catia_spu.super.PushMatrix();
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-    g_CurrentMatrix.set(m);    
+    catia_spu.super.LoadMatrixd(m);
+   
+    
+  
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1429,17 +1280,17 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
 
 #ifdef ENABLE_MATERIAL
 
-    if (g_material == NULL)
+    if (catia_spu.superSpuState->g_material == NULL)
     {
-        g_material = new osg::Material();
+        catia_spu.superSpuState->g_material = new osg::Material();
     }
 
-    g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
+    catia_spu.superSpuState->g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
 
     switch (pname)
     {
     case GL_SHININESS:
-        g_material->setShininess(osg::Material::Face::FRONT_AND_BACK, param);
+        catia_spu.superSpuState->g_material->setShininess(osg::Material::Face::FRONT_AND_BACK, param);
         break;
     }
 
@@ -1450,10 +1301,14 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
 static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param)
 {
 }
+static void PRINT_APIENTRY printMaterialiv(GLenum face, GLenum mode, const GLint *params)
+{
 
+}
 static void PRINT_APIENTRY printMatrixMode(GLenum mode)
 {
-    g_currentMatrixMode = mode;
+    catia_spu.super.MatrixMode(mode);
+   
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
@@ -1461,16 +1316,19 @@ static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 }
 static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
 {
-    osg::Matrix mat = osg::Matrix();
-    mat.set(m);
-    g_CurrentMatrix = mat * g_CurrentMatrix;
+    catia_spu.super.MultMatrixf(m);
+  
+    
+    
+    
 }
 
 static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
 {
-    osg::Matrix mat = osg::Matrix();
-    mat.set(m);
-    g_CurrentMatrix = mat * g_CurrentMatrix;
+    catia_spu.super.MultMatrixd(m);
+    
+   
+    
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -1615,59 +1473,62 @@ static void PRINT_APIENTRY printMultiTexCoord4svARB(GLenum texture, const GLshor
 
 static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 {
-	g_isDisplayList = true;
-	osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform();
-	g_PatArrayDisplayList.push_back(pat);
+    catia_spu.super.NewList(list, mode);
+   
 }
 
 static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    catia_spu.super.Normal3b(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    catia_spu.super.Normal3bv(v);
 }
 
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    catia_spu.super.Normal3d(nx, ny, nz);
+    
 }
 
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    catia_spu.super.Normal3f(nx, ny, nz);
+   
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+    catia_spu.super.Normal3i(nx, ny, nz);
+    
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+    catia_spu.super.Normal3iv(v);
+    
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
-	g_CurrentNormal = osg::Vec3(nx, ny, nz);
+	
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
-	g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
+	
 }
 
 static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -1676,7 +1537,7 @@ static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const
 
 static void PRINT_APIENTRY printOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
-    //g_CurrentprojectionMatrix.makeOrtho(left,right,bottom,top,zNear,zFar);
+   
 }
 
 static void PRINT_APIENTRY printPassThrough(GLfloat token)
@@ -1757,16 +1618,8 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 
 static void PRINT_APIENTRY printPopMatrix(void)
 {
-    if (g_isReading)
-    {
-        g_PatArray.pop_back();
-    }
-        
-    osg::Matrix top_mat = g_matrix_stack.back();
-    g_matrix_stack.pop_back();
-    g_CurrentMatrix = top_mat;
-
-	
+    catia_spu.super.PopMatrix();
+    	
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -2005,7 +1858,7 @@ static void PRINT_APIENTRY printRectsv(const GLshort * v1, const GLshort * v2)
 
 static GLint PRINT_APIENTRY printRenderMode(GLenum mode)
 {
-	return g_ret_count++;
+    return catia_spu.super.RenderMode(mode);//g_ret_count++;
 }
 
 static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuint * ids)
@@ -2014,18 +1867,14 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading)
-	{
-		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
-	}
+    catia_spu.super.Rotated(angle, x, y, z);
+  
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading)
-	{
-		//g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
-	}
+    catia_spu.super.Rotatef(angle, x, y, z);
+ 
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -2034,10 +1883,9 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading)
-	{
-		g_PatArray.back()->setScale(osg::Vec3( x, y, z));
-	}
+	
+    catia_spu.super.Scaled(x, y, z);
+    
 }
 
 static void PRINT_APIENTRY printScalef(GLfloat x, GLfloat y, GLfloat z)
@@ -2160,48 +2008,8 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
 
-	if (g_isReading)
-	{
-		g_startReading = false;
-		g_spuRootGroup->addChild(g_PatArray.back());
-		g_PatArray.pop_back();
-
-		if (g_hasTouchedBegin == false)
-		{
-			g_calledreadFromApp = true;
-		}
-
-		g_isReading = false;
-		g_pt2Func(g_context, g_spuRootGroup.get());
-       
-	}
-
-	if (g_calledreadFromApp)
-	{
-		g_calledreadFromApp = false;
-		g_startReading = true;
-		g_isReading = true;
-		g_hasTouchedBegin = false;
-	}
-
-	if (g_startReading)
-	{
-		g_spuRootGroup = new osg::Group;
-
-#ifdef ENABLE_LIGHTS
-        g_light = new osg::LightSource();
-        g_spuRootGroup->addChild(g_light.get());
-#endif
-
-#ifdef ENABLE_MATERIAL
-        g_material = new osg::Material();
-#endif
-
-		osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-
-		g_PatArray.push_back(pat);
-		g_startReading = false;
-	}
+    catia_spu.super.SwapBuffers(window, flags);
+	
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
@@ -2340,7 +2148,22 @@ static void PRINT_APIENTRY printTexCoord4sv(const GLshort * v)
 static void PRINT_APIENTRY printTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * pointer)
 {
 }
+static void PRINT_APIENTRY printTexEnvf(GLenum target, GLenum pname, GLfloat param)
+{
 
+}
+static void PRINT_APIENTRY printTexEnvfv(GLenum target, GLenum pname, const GLfloat * params)
+{
+
+}
+static void PRINT_APIENTRY printTexEnvi(GLenum target, GLenum pname, GLint param)
+{
+
+}
+static void PRINT_APIENTRY printTexEnviv(GLenum target, GLenum pname, const GLint * params)
+{
+
+}
 static void PRINT_APIENTRY printTexGend(GLenum coord, GLenum pname, GLdouble param)
 {
 }
@@ -2415,18 +2238,14 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
-	if (g_isReading && g_PatArray.size() > 1)
-	{
-		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-	}
+    catia_spu.super.Translated(x, y, z);
+   
 }
 
 static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
-	if (g_isReading && g_PatArray.size() > 1)
-	{
-		g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-	}
+    printTranslated(x, y, z);
+   
 }
 
 static GLboolean PRINT_APIENTRY printUnmapBufferARB(GLenum target)
@@ -2468,39 +2287,44 @@ static void PRINT_APIENTRY printVertex2sv(const GLshort * v)
 
 static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 {
-	if ((g_isReading || g_isDisplayList) && g_vertexArray){
-		// Math to transfrom vertex and normal to matrix mode
-		osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
-		osg::Matrix matFinal = mat * g_CurrentMatrix;
-		osg::Vec3 vertexPoint = matFinal.getTrans();
+    catia_spu.super.Vertex3d(x, y, z);
+   
+    
+    //if ((catia_spu.superSpuState->g_isReading || catia_spu.superSpuState->g_isDisplayList) && catia_spu.superSpuState->g_vertexArray)
+    //{
+       
+        // Math to transfrom vertex and normal to matrix mode
+        /*osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
+        osg::Matrix matFinal = mat * catia_spu.superSpuState->g_CurrentMatrix * g_matcam;
+        osg::Vec3 vertexPoint = matFinal.getTrans();
 
-		osg::Matrix Normalmat = osg::Matrix::translate(g_CurrentNormal);
-		osg::Matrix CurrentMatrixNew = g_CurrentMatrix;
-		CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
-		osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
-		osg::Vec3 normalPoint = NormalmatFinal.getTrans();
+        osg::Matrix Normalmat = osg::Matrix::translate(catia_spu.superSpuState->g_CurrentNormal);
+        osg::Matrix CurrentMatrixNew = catia_spu.superSpuState->g_CurrentMatrix;
+        CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
+        osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
+        osg::Vec3 normalPoint = NormalmatFinal.getTrans();
 
-		g_vertexArray->push_back(vertexPoint);
-		g_normalArray->push_back(normalPoint);
+        catia_spu.superSpuState->g_vertexArray->push_back(vertexPoint);
+        catia_spu.superSpuState->g_normalArray->push_back(normalPoint);*/
         //getting original color of catia part vertex
-        curr_catia_geom_detail = adapter.getPartData(g_CurrentColor.x(), g_CurrentColor.y(), g_CurrentColor.z());
+        /*curr_catia_geom_detail = catia_spu.adapter.getPartData(catia_spu.superSpuState->g_CurrentColor.x(), catia_spu.superSpuState->g_CurrentColor.y(), catia_spu.superSpuState->g_CurrentColor.z());
         if (curr_catia_geom_detail != nullptr)
         {
-            
+
             double red = curr_catia_geom_detail->r / 255.0;
             double green = curr_catia_geom_detail->g / 255.0;
             double blue = curr_catia_geom_detail->b / 255.0;
-            g_colorArray->push_back(osg::Vec3(red, green, blue));
+            catia_spu.superSpuState->g_colorArray->push_back(osg::Vec3(red, green, blue));
             if (geode_name.empty())
             {
                 geode_name = curr_catia_geom_detail->name;
             }
-         }
+        }
         else
         {
-            g_colorArray->push_back(g_CurrentColor);
+            catia_spu.superSpuState->g_colorArray->push_back(catia_spu.superSpuState->g_CurrentColor);
         }
-	}
+    }*/
 }
 
 static void PRINT_APIENTRY printVertex3dv(const GLdouble * v)
@@ -2796,7 +2620,7 @@ static void PRINT_APIENTRY printViewport(GLint x, GLint y, GLsizei width, GLsize
 
 static GLint PRINT_APIENTRY printWindowCreate(const char * dpyName, GLint visBits)
 {
-	return g_ret_count++;
+    return catia_spu.super.WindowCreate(dpyName, visBits);
 }
 
 static void PRINT_APIENTRY printWindowDestroy(GLint window)
@@ -2891,35 +2715,8 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 
-	if (face == GL_FRONT && mode == GL_AMBIENT_AND_DIFFUSE) {
-		g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
-        return;
-	}
-
-#ifdef ENABLE_MATERIAL
-
-    if (g_material == NULL)
-    {
-        g_material = new osg::Material();
-    }
-
-    g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
-
-    switch (mode)
-    {
-    case GL_AMBIENT:
-        g_material->setAmbient(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
-        break;
-    case GL_DIFFUSE:
-        g_material->setDiffuse(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
-        break;
-    case GL_SPECULAR:
-        g_material->setSpecular(osg::Material::Face::FRONT_AND_BACK, osg::Vec4(params[0], params[1], params[2], params[3]));
-        break;
-    }
-
-#endif
-
+    catia_spu.super.Materialfv(face, mode, params);
+    
 }
 
 SPUNamedFunctionTable _cr_print_table[] = {

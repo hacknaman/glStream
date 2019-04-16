@@ -13,4 +13,5 @@ endif()
 install(TARGETS EXT_separate_specular_color
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
+	RUNTIME DESTINATION apps COMPONENT runtime)
+SET_TARGET_PROPERTIES(EXT_separate_specular_color PROPERTIES FOLDER "Programs")

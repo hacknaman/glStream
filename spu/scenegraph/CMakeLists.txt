@@ -1,7 +1,7 @@
 include_directories(.)
 include_directories(${OSG_INCLUDE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/TransVizUtil)
-
+include_directories(${SERVER_CONTENT_API_INCLUDE_DIR})
 set(SOURCES
 	scenegraphspu_config.cpp
 	scenegraphspu_enums.cpp
@@ -23,8 +23,8 @@ set(SOURCES
 add_library(scenegraphspu SHARED ${SOURCES})
 target_link_libraries(scenegraphspu crutil crmothership spuload)
 target_link_libraries(scenegraphspu 
-	debug		${OSG_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D}   debug ${OSGDB_LIBRARY_D}
-	optimized	${OSG_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSG_VIEWER_LIBRARY} optimized ${OSGDB_LIBRARY}
+	debug		${OSG_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D}   debug ${OSGDB_LIBRARY_D} debug ${OSGUTIL_LIBRARY_D} debug ${SERVER_CONTENT_API_LIBRARY_D} 
+	optimized	${OSG_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSG_VIEWER_LIBRARY} optimized ${OSGDB_LIBRARY} optimized ${OSGUTIL_LIBRARY} optimized ${SERVER_CONTENT_API_LIBRARY}
  )
 target_link_libraries(scenegraphspu ${EXTRA_LIBS})
 install(TARGETS scenegraphspu

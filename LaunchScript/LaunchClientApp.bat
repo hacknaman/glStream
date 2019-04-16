@@ -1,6 +1,10 @@
 SET OSSROOT=C:/Project/TransViz/ExternalLibrary
-SET TrasVizPath=C:/Project/TransViz/build/
 SET SERVER_HOSTNAME=localhost
+
+cd ..
+SET TransVizPath=%cd%
+cd LaunchScript
+echo %TransVizPath%
 
 :: set OSG Directories
 set OSG_DIR=%OSSROOT%\osg-3.4

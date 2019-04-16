@@ -8,5 +8,5 @@ target_link_libraries(threadtest ${EXTRA_LIBS})
 install(TARGETS threadtest
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
+	RUNTIME DESTINATION apps COMPONENT runtime)
 	SET_TARGET_PROPERTIES(threadtest PROPERTIES FOLDER "Programs")

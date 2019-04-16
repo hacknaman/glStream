@@ -42,24 +42,25 @@ mkdir build
 :: This is used for licensing
 set Development=false
 
-if "%1" EQU "Debug" set DBG=1
+::if "%1" EQU "Debug" set DBG=1
+::set BUILDENV=Release
+::if DEFINED DBG set BUILDENV=Debug
+::set buildType=Release
+::if DEFINED DBG set buildType=Debug
 
-set BUILDENV=Release
-if DEFINED DBG set BUILDENV=Debug
-
-set buildType=Release
-if DEFINED DBG set buildType=Debug
+set BUILDENV=%1
+set buildType=%1
 
 call GenerateSolution.bat
 call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
-msbuild "TransViz.sln" /p:configuration=%buildType%
+msbuild "TransViz.sln" /p:configuration=%buildType% 
+IF %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
-cmake --build . --config Release --target INSTALL
+:: This should be moved to package code
+cmake --build . --config %buildType% --target INSTALL
 cd ..
 
-:: copy osg plugins
-robocopy %OSSROOT%\osg-3.4\bin .\build\bin *.dll /MT:25
-robocopy %OSSROOT%\osg-3.4\bin\osgPlugins-3.4.2 .\build\bin *.dll /MT:25
+call copyDeps.bat
 
-:: copy glut
-robocopy %OSSROOT%\glut\bin\x64 .\build\bin *.dll /MT:25
+:: build ok
+exit /b 0

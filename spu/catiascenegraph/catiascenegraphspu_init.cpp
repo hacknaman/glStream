@@ -10,9 +10,6 @@
 #include "catiascenegraphspu.h"
 #include <stdio.h>
 #include <signal.h>
-
-#include <TransVizUtil.h>
-
 #ifndef WINDOWS
 #include <sys/time.h>
 #endif
@@ -25,37 +22,15 @@ static SPUFunctions print_functions = {
 	_cr_print_table /* THE ACTUAL FUNCTIONS */
 };
 
-PrintSpu print_spu;
+CatiaSpu catia_spu;
 
-class Scenespufunc : public ISpufunc
-{
-public:
-	void getUpdatedScene()
-	{
-		getUpdatedSceneSC();
-	}
-
-	void changeScene()
-	{
-		
-	}
-
-	void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
-	{
-		funcNodeUpdateSC(pt2Func, context);
-	}
-    void preProcessClient()
-    {
-        preProcessCatia();
-    }
-};
 
 #ifndef WINDOWS
 static void printspu_signal_handler(int signum)
 {
 	/* If we receive a signal here, we should issue a marker. */
-	if (print_spu.fp != NULL && print_spu.marker_text != NULL) {
-		char *text = print_spu.marker_text;
+	if (catia_spu.fp != NULL && catia_spu.marker_text != NULL) {
+		char *text = catia_spu.marker_text;
 		char *nextVariable = crStrchr(text, '$');
 
 		/* Some of the variables will need this information */
@@ -70,14 +45,14 @@ static void printspu_signal_handler(int signum)
 		while (nextVariable != NULL) {
 			/* Print the constant text up to the variable. */
 			if (nextVariable > text) {
-				fprintf(print_spu.fp, "%.*s", (int) (nextVariable - text), text);
+				fprintf(catia_spu.fp, "%.*s", (int) (nextVariable - text), text);
 				text = nextVariable;
 			}
 
 			/* Make sure the '$' introduces a variable marker */
 			if (nextVariable[1] != '(') {
 				/* Not a variable marker at all */
-				fprintf(print_spu.fp, "%c", '$');
+				fprintf(catia_spu.fp, "%c", '$');
 				text = nextVariable + 1;
 				nextVariable = crStrchr(text, '$');
 			}
@@ -96,18 +71,18 @@ static void printspu_signal_handler(int signum)
 					int variableLength = endOfVariable - nextVariable - 3 + 1;
 
 					if (crStrncmp(variableName, "signal", variableLength) == 0) {
-						fprintf(print_spu.fp, "%d", signum);
+						fprintf(catia_spu.fp, "%d", signum);
 					}
 					else if (crStrncmp(variableName, "date", variableLength) == 0) {
-						fprintf(print_spu.fp, "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+						fprintf(catia_spu.fp, "%d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 
 					}
 					else if (crStrncmp(variableName, "time", variableLength) == 0) {
-						fprintf(print_spu.fp, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
+						fprintf(catia_spu.fp, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
 					}
 					else {
 					    /* Unknown variable.  Print it verbatim. */
-					    fprintf(print_spu.fp, "%.*s", (int) (endOfVariable - nextVariable + 1), nextVariable);
+					    fprintf(catia_spu.fp, "%.*s", (int) (endOfVariable - nextVariable + 1), nextVariable);
 					}
 					
 					/* In all cases, advance our internal text pointer to after the endOfVariable indicator */
@@ -120,14 +95,14 @@ static void printspu_signal_handler(int signum)
 		} /* end of processing a variable */
 
 		/* Print out any remaining text, even if it's an empty string, and the terminal newline */
-		fprintf(print_spu.fp, "%s\n", text);
+		fprintf(catia_spu.fp, "%s\n", text);
 
-		fflush(print_spu.fp);
+		fflush(catia_spu.fp);
 	}
 
 	/* Pass the signal through to the old signal handler, if any. */
-	if (print_spu.old_signal_handler != NULL) {
-		(*print_spu.old_signal_handler)(signum);
+	if (catia_spu.old_signal_handler != NULL) {
+		(*catia_spu.old_signal_handler)(signum);
 	}
 }
 #endif
@@ -142,20 +117,33 @@ printSPUInit( int id, SPU *child, SPU *self,
 	(void) num_contexts;
 	(void) child;
 
-	print_spu.id = id;
-	printspuGatherConfiguration( child );
+	catia_spu.id = id;
+    catia_spu.superSpuState = getScenegraphSpuData();
+    /*1.this is the code to set current_app_instance and this current_app_instance will point to object corresponding to current running server app.so here we know that catia app will be running so we get current_app_instance pointed
+        to ServerAppContentApi's CatiaApi object that is designed to handle catia app content.
+      
+      2.Basically this current_app_instance setting code will be removed from here in future because all serverapp content specific code is being shifted to scenegraphspu so catiascenegraphspu will not exist anymore as per current design of spu and server content api.
+
+      3.If this catiascenegraph spu will not exist then why we are using this code here because this place of code is the only way to know which server app got connected with transviz. as soon as we will find another way then this below line will be removed 
+      from here.
+
+      4. After testing serverappcontentapi design with all cad softwares,detection of current connected app will be done by asking mothership that will write name of app in connection object so in future this below line of code will be shifted in scenegraphspu's 
+         init function.
+    */
+    catia_spu.superSpuState->current_app_instance = ServerAppContentApi::AppContentApi::getAppContentInstance(ServerAppContentApi::AppNameEnum::TRANSVIZ_CATIA);
+    printspuGatherConfiguration( child );
 
 	// Interface class to call special fuctions
-	Scenespufunc* func = new Scenespufunc();
+    CatiaSpufunc* func = new CatiaSpufunc();
 	self->privatePtr = (void*)func;
 
-	crSPUInitDispatchTable( &(print_spu.passthrough) );
-	crSPUCopyDispatchTable( &(print_spu.passthrough), &(self->superSPU->dispatch_table) );
+	crSPUInitDispatchTable( &(catia_spu.super) );
+	crSPUCopyDispatchTable( &(catia_spu.super), &(self->superSPU->dispatch_table) );
 
 #ifndef WINDOWS
 	/* If we were given a marker signal, install our signal handler. */
-	if (print_spu.marker_signal) {
-		print_spu.old_signal_handler = signal(print_spu.marker_signal, printspu_signal_handler);
+	if (catia_spu.marker_signal) {
+		catia_spu.old_signal_handler = signal(catia_spu.marker_signal, printspu_signal_handler);
 	}
 #endif
 	return &print_functions;
@@ -170,8 +158,8 @@ printSPUSelfDispatch(SPUDispatchTable *parent)
 static int
 printSPUCleanup(void)
 {
-	if (print_spu.fp != stderr || print_spu.fp != stdout)
-		fclose(print_spu.fp);
+	if (catia_spu.fp != stderr || catia_spu.fp != stdout)
+		fclose(catia_spu.fp);
 	return 1;
 }
 
@@ -181,13 +169,13 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUSelfDispatchFuncPtr *self, SPUCleanupFuncPtr *cleanup,
 	     SPUOptionsPtr *options, int *flags )
 {
-	*name = "scenegraph";
-	*super = NULL;
+	*name = "catiascenegraph";
+	*super = "scenegraph";
 	*init = printSPUInit;
 	*self = printSPUSelfDispatch;
 	*cleanup = printSPUCleanup;
 	*options = printSPUOptions;
 	*flags = (SPU_NO_PACKER|SPU_IS_TERMINAL|SPU_MAX_SERVERS_ZERO);
-	scenegraphSPUReset();
+	scenegraphCatiaSPUReset();
 	return 1;
 }

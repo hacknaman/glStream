@@ -8,5 +8,5 @@ target_link_libraries(psubmit_crut ${EXTRA_LIBS})
 install(TARGETS psubmit_crut
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
+	RUNTIME DESTINATION apps COMPONENT runtime)
 	SET_TARGET_PROPERTIES(psubmit_crut PROPERTIES FOLDER "Programs")

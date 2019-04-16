@@ -17,7 +17,10 @@
 #include "stub.h"
 #include <stdlib.h>
 #include <signal.h>
-
+#ifndef x86
+#include <lm_attr.h>
+#include <lmclient.h>
+#endif
 #ifndef WINDOWS
 #include <sys/types.h>
 #include <unistd.h>
@@ -675,12 +678,24 @@ getConfigurationOptions(CRConnection *conn)
 	}
 }
 
-
+#ifndef x86
 /*License Checker for the GL MODULE*/
 GLboolean checkLicense(){
+    LM_HANDLE* _lmHandle;
+
+    VENDORCODE code;
+    lc_new_job(NULL, lc_new_job_arg2, &code, &_lmHandle);
+
+    char* licensePath = "../../../Licenses";
+    lc_set_attr(_lmHandle, LM_A_LICENSE_DEFAULT, (LM_A_VAL_TYPE)licensePath);
+
+    char* featureName1 = "TRANSVIZ_GL_MODULE";
+
+    if (lc_checkout(_lmHandle, (LM_CHAR_PTR)featureName1, "1.0", 1, LM_CO_NOWAIT, &code, LM_DUP_NONE))
+        return 0;
     return 1;
 }
-
+#endif
 
 /**
  * Do one-time initializations for the faker.
@@ -696,7 +711,7 @@ stubInit(void)
 	 * 
 	 * HOW can I pass the mothership address to this if I already know it?
 	 */
-
+#ifndef x86
     // check License
     if (!DEVELOPMENT_MODE){
         if (!checkLicense()){
@@ -705,7 +720,7 @@ stubInit(void)
             exit(0);
         }
     }
-	
+#endif
 	char response[1024];
 	char **spuchain;
 	int num_spus;
@@ -772,7 +787,7 @@ stubInit(void)
 		crMothershipIdentifyOpenGL( stub.mothershipConn, response, app_id );
 	}
 
-
+   
 	spuchain = crStrSplit( response, " " );
 	num_spus = crStrToInt( spuchain[0] );
 	spu_ids = (int *) crAlloc( num_spus * sizeof( *spu_ids ) );

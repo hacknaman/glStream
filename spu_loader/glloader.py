@@ -334,7 +334,11 @@ useful_wgl_functions = [
 	"wglChoosePixelFormatEXT",
 	"wglGetPixelFormatAttribivEXT",
 	"wglGetPixelFormatAttribfvEXT",
-	"glGetString"
+	"glGetString",
+	"wglUseFontBitmapsA",
+	"wglUseFontBitmapsW",
+	"wglUseFontOutlinesA",
+	"wglUseFontOutlinesW"
 ]
 useful_agl_functions = [
 	"aglCreateContext",

@@ -13,21 +13,21 @@
 
 static void __setDefaults( void )
 {
-	print_spu.fp = stderr;
+	catia_spu.fp = stderr;
 }
 
 static void set_marker_text( void *foo, const char *response )
 {
-	print_spu.marker_text = crStrdup(response);
+	catia_spu.marker_text = crStrdup(response);
 }
 static void set_marker_signal( void *foo, const char *response )
 {
-	print_spu.marker_signal = crStrToInt(response);
+	catia_spu.marker_signal = crStrToInt(response);
 }
 
 static void set_log_file( void *foo, const char *response )
 {
-	print_spu.fp = stdout;
+	catia_spu.fp = stdout;
 }
 
 
@@ -63,9 +63,9 @@ void printspuGatherConfiguration( const SPU *child_spu )
 		/* defaults are fine. */
 		return;
 	}
-	crMothershipIdentifySPU( conn, print_spu.id );
+	crMothershipIdentifySPU( conn, catia_spu.id );
 
-	crSPUGetMothershipParams( conn, &print_spu, printSPUOptions );
+	crSPUGetMothershipParams( conn, &catia_spu, printSPUOptions );
 
 	crMothershipDisconnect( conn );
 }

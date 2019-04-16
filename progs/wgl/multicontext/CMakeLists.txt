@@ -10,5 +10,5 @@ target_link_libraries(multicontext ${EXTRA_LIBS})
 install(TARGETS multicontext
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
+	RUNTIME DESTINATION apps COMPONENT runtime)
 	SET_TARGET_PROPERTIES(multicontext PROPERTIES FOLDER "Programs")

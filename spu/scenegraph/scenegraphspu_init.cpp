@@ -10,9 +10,6 @@
 #include "scenegraphspu.h"
 #include <stdio.h>
 #include <signal.h>
-
-#include <TransVizUtil.h>
-
 #ifndef WINDOWS
 #include <sys/time.h>
 #endif
@@ -25,27 +22,41 @@ static SPUFunctions print_functions = {
 	_cr_print_table /* THE ACTUAL FUNCTIONS */
 };
 
-PrintSpu print_spu;
+ScenegraphSpuData scenegraph_spu_data;
 
-class Scenespufunc : public ISpufunc
+
+void Scenespufunc::getUpdatedScene()
 {
-public:
-	void getUpdatedScene()
-	{
 		getUpdatedSceneSC();
-	}
+}
 
-	void changeScene()
-	{
+void Scenespufunc::changeScene()
+{
 		
-	}
+}
 
-	void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
-	{
+void Scenespufunc::funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
+{
 		funcNodeUpdateSC(pt2Func, context);
-	}
-};
+}
 
+void Scenespufunc::getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode> root)
+{
+    
+    if (scenegraph_spu_data.current_app_instance)
+        scenegraph_spu_data.current_app_instance->createContentTree(root);
+
+}
+void Scenespufunc::resetClient()
+{
+    if (scenegraph_spu_data.current_app_instance && scenegraph_spu_data.isPartSelectionEnabled)
+        scenegraph_spu_data.current_app_instance->resetOriginalColors();
+}
+
+void Scenespufunc::setPartSelectionFlag(bool flag)
+{
+    scenegraph_spu_data.isPartSelectionEnabled = flag;
+}
 #ifndef WINDOWS
 static void printspu_signal_handler(int signum)
 {
@@ -138,15 +149,15 @@ printSPUInit( int id, SPU *child, SPU *self,
 	(void) num_contexts;
 	(void) child;
 
-	print_spu.id = id;
+    scenegraph_spu_data.id = id;
 	printspuGatherConfiguration( child );
 
 	// Interface class to call special fuctions
 	Scenespufunc* func = new Scenespufunc();
 	self->privatePtr = (void*)func;
 
-	crSPUInitDispatchTable( &(print_spu.passthrough) );
-	crSPUCopyDispatchTable( &(print_spu.passthrough), &(self->superSPU->dispatch_table) );
+    crSPUInitDispatchTable(&(scenegraph_spu_data.super));
+    crSPUCopyDispatchTable(&(scenegraph_spu_data.super), &(self->superSPU->dispatch_table));
 
 #ifndef WINDOWS
 	/* If we were given a marker signal, install our signal handler. */
@@ -166,8 +177,8 @@ printSPUSelfDispatch(SPUDispatchTable *parent)
 static int
 printSPUCleanup(void)
 {
-	if (print_spu.fp != stderr || print_spu.fp != stdout)
-		fclose(print_spu.fp);
+    if (scenegraph_spu_data.fp != stderr || scenegraph_spu_data.fp != stdout)
+        fclose(scenegraph_spu_data.fp);
 	return 1;
 }
 

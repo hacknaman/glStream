@@ -68,3 +68,9 @@ install(TARGETS injectorspu_crunpacker_copy
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
 	RUNTIME DESTINATION bin COMPONENT runtime)
+
+SET_TARGET_PROPERTIES(crunpacker  PROPERTIES FOLDER "Unpacker")
+SET_TARGET_PROPERTIES(crserver_crunpacker_copy  PROPERTIES FOLDER "Unpacker")
+SET_TARGET_PROPERTIES(archsplitspu_crunpacker_copy  PROPERTIES FOLDER "Unpacker")
+SET_TARGET_PROPERTIES(hiddenlinespu_crunpacker_copy  PROPERTIES FOLDER "Unpacker")
+SET_TARGET_PROPERTIES(injectorspu_crunpacker_copy  PROPERTIES FOLDER "Unpacker")

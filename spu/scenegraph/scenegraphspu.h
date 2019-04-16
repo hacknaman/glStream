@@ -9,7 +9,38 @@
 
 #include "spu_dispatch_table.h"
 #include "cr_spu.h"
+#include <vector>
+#include <osg/LineWidth>
+#include <osg/BlendFunc>
+#include <osg/Group>
+#include <osg/Geode>
+#include <osg/Node>
+#include <osg/Geometry>
+#include <osg/Polygonmode>
+#include <osg/Material>
+#include <osg/MatrixTransform>
+#include <osg/PolygonStipple>
+#include <OpenThreads/Mutex>
+#include <osgDB/Export>
+#include <osgDB/Registry>
+#include <osgDB/ReadFile>
+#include <osgDB/Writefile>
 
+#include <osg/LightSource>
+#include <osg/LightModel>
+#include <osg/Light>
+#include <TransVizUtil.h>
+#include <ctime>
+#define PRINT_UNUSED(x) ((void)x)
+// comment out this code to disable material / lights
+
+//(127-(-128)) where 127 is max value for signed byte and -128 is minimum value
+
+#define BYTEMINMAXDIFF 255
+//32-bit signed integer is considered
+#define INTMAXMINDIFF  4294967295
+//16 bit is considered
+#define SHORTMAXMINDIFF 65535
 #if defined(WINDOWS)
 #define PRINT_APIENTRY __stdcall
 #define OSGEXPORT __declspec(dllexport)
@@ -21,20 +52,75 @@
 #include <osg/Group>
 
 typedef struct {
-	int id;
-	SPUDispatchTable passthrough;
+	
+     int g_ret_count;
+   
+     ServerAppContentApi::AppContentApi* current_app_instance;
+     ServerAppContentApi::NameAndColorInfo* curr_node_color_info;
+     std::string curr_geode_name;
+     bool isNormalNormalizationEnabled;
+     bool isNormalRescaleEnabled;
+     bool isPartSelectionEnabled;
+     osg::Matrix  g_camera_matrix;
+     osg::ref_ptr<osg::Vec3Array> g_vertexArray;
+     osg::ref_ptr<osg::Vec3Array> g_normalArray;
+     osg::ref_ptr<osg::Vec3Array> g_colorArray;
+
+     osg::Vec3 g_CurrentNormal;
+     osg::Vec3 g_CurrentColor;
+     osg::Matrix g_CurrentMatrix;
+
+     osg::ref_ptr<osg::Geometry> g_geom;
+     osg::ref_ptr<osg::Geode> g_geode;
+     osg::ref_ptr<osg::MatrixTransform> g_current_transform;
+     std::vector<osg::Matrix> g_matrix_stack;
+
+     std::vector< osg::ref_ptr<osg::PositionAttitudeTransform> > g_PatArrayDisplayList;
+
+     osg::ref_ptr<osg::StateSet> g_state;
+     osg::ref_ptr<osg::Light> light;
+
+     osg::ref_ptr<osg::Material> g_material;
+     osg::ref_ptr<osg::LightSource> g_light[8];
+
+     osg::ref_ptr<osg::Group> g_spuRootGroup;
+
+     int g_geometryMode;
+     int g_currentMatrixMode;
+
+     int g_startReading;
+     int g_isReading;
+     int g_shouldStartReading;
+     int g_hasTouchedBegin;
+     int g_hasDrawnSomething;
+
+     int g_isDisplayList;
+     std::time_t g_time;
+     void(*g_pt2Func)(void * context, osg::ref_ptr<osg::Group>);
+     void *g_context;    
+     int id;
+	SPUDispatchTable super;
 	FILE *fp;
 
 	/* These handle marker signals */
 	int marker_signal;
 	char *marker_text;
 	void (*old_signal_handler)(int);
-} PrintSpu;
-
-extern PrintSpu print_spu;
-
-extern OSGEXPORT void getUpdatedSceneSC();
-extern OSGEXPORT void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
+} ScenegraphSpuData;
+class Scenespufunc : public ISpufunc
+{
+public:
+    OSGEXPORT void getUpdatedScene();
+    OSGEXPORT void changeScene();
+    OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
+    OSGEXPORT void setPartSelectionFlag(bool flag);
+    OSGEXPORT void getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode>);
+    OSGEXPORT  void resetClient();
+};
+extern ScenegraphSpuData scenegraph_spu_data;
+extern OSGEXPORT ScenegraphSpuData* getScenegraphSpuData();
+extern  void getUpdatedSceneSC();
+extern void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
 
 extern void printspuGatherConfiguration( const SPU *child_spu );
 extern const char *printspuEnumToStr( GLenum e );

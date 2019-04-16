@@ -19,7 +19,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 #define CR_MAX_WINDOWS 100
 #define CR_MAX_CLIENTS 20
 
@@ -110,7 +109,6 @@ typedef struct {
 	int mtu;
 	int buffer_size;
 	char protocol[1024];
-
 	SPU *head_spu;
 	SPUDispatchTable dispatch;
 
@@ -183,10 +181,8 @@ typedef struct {
 
 	GLuint currentSerialNo;
 } CRServer;
-
-
 extern void crServerInit( int argc, char *argv[] );
-extern void crServerInitNew( const char* hostname, const char* port);
+extern int crServerInitNew( const char* hostname, const char* port);
 
 extern int CRServerMain( int argc, char *argv[] );
 extern void crServerServiceClients(void);

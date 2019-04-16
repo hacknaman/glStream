@@ -147,6 +147,10 @@ typedef BOOL (WGL_APIENTRY *wglGetPixelFormatAttribivEXTFunc_t)(HDC, int, int, U
 typedef BOOL (WGL_APIENTRY *wglGetPixelFormatAttribfvEXTFunc_t)(HDC, int, int, UINT, int *, int *);
 typedef const GLubyte *(WGL_APIENTRY *glGetStringFunc_t)( GLenum );
 typedef const GLubyte *(WGL_APIENTRY *wglGetExtensionsStringEXTFunc_t)( HDC );
+typedef BOOL (WGL_APIENTRY *wglUseFontBitmapsWFunc_t)(HDC,DWORD ,DWORD ,DWORD);
+typedef BOOL(WGL_APIENTRY *wglUseFontBitmapsAFunc_t)(HDC, DWORD, DWORD, DWORD);
+typedef BOOL(WGL_APIENTRY *wglUseFontOutlinesAFunc_t)(HDC, DWORD, DWORD, DWORD, FLOAT, FLOAT, int, LPGLYPHMETRICSFLOAT);
+typedef BOOL(WGL_APIENTRY *wglUseFontOutlinesWFunc_t)(HDC, DWORD, DWORD, DWORD, FLOAT, FLOAT, int, LPGLYPHMETRICSFLOAT);
 /*@}*/
 #elif defined(DARWIN)
 /**
@@ -323,6 +327,10 @@ typedef struct {
 	wglGetPixelFormatAttribivEXTFunc_t wglGetPixelFormatAttribivEXT;
 	wglGetPixelFormatAttribfvEXTFunc_t wglGetPixelFormatAttribfvEXT;
 	wglGetExtensionsStringEXTFunc_t wglGetExtensionsStringEXT;
+    wglUseFontBitmapsAFunc_t wglUseFontBitmapsA;
+    wglUseFontBitmapsWFunc_t wglUseFontBitmapsW;
+    wglUseFontOutlinesAFunc_t  wglUseFontOutlinesA;
+    wglUseFontOutlinesWFunc_t wglUseFontOutlinesW;
 #elif defined(DARWIN)
 	aglCreateContextFunc_t			aglCreateContext;
 	aglDestroyContextFunc_t			aglDestroyContext;

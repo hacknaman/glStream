@@ -8,7 +8,7 @@ target_link_libraries(statecopytest ${EXTRA_LIBS})
 install(TARGETS statecopytest
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
+	RUNTIME DESTINATION apps COMPONENT runtime)
 if(WIN32)
 	set(TRACKS_STATE 1) #TODO - what did this do in the makefile?
 else()

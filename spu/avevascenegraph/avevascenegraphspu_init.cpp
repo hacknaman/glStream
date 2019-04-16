@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-#include <TransVizUtil.h>
+
 
 #ifndef WINDOWS
 #include <sys/time.h>
@@ -19,32 +19,37 @@
 
 extern SPUNamedFunctionTable _cr_print_table[];
 
-static SPUFunctions print_functions = {
-	NULL, /* CHILD COPY */
-	NULL, /* DATA */
-	_cr_print_table /* THE ACTUAL FUNCTIONS */
-};
+ static SPUFunctions print_functions = {
+	 NULL, /* CHILD COPY */
+	 NULL, /* DATA */
+	 _cr_print_table /* THE ACTUAL FUNCTIONS */
+ };
 
 AvevaSpu aveva_spu;
 
-class Avevaspufunc : public ISpufunc
+void Avevaspufunc::getUpdatedScene()
 {
-public:
-	void getUpdatedScene()
-	{
-		getUpdatedSceneASC();
-	}
+    
+    getUpdatedAvevaSceneASC();
+    if (aveva_spu.camerashakeapp.empty())
+    {
+        std::ifstream myfile("CameraShakeConfig.txt");
+        if (myfile.is_open())
+        {
+            getline(myfile, aveva_spu.camerashakeapp);
+            myfile.close();
+        }
+    }
 
-	void changeScene()
-	{
-		changeSceneASC();
-	}
-
-	void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context)
-	{
-		funcNodeUpdateASC(pt2Func, context);
-	}
-};
+    if (!aveva_spu.camerashakeapp.empty())
+    {
+        system(aveva_spu.camerashakeapp.c_str());
+    }
+}
+void Avevaspufunc::resetClient()
+{
+    resetClientASC();
+}
 
 #ifndef WINDOWS
 static void printspu_signal_handler(int signum)
@@ -138,13 +143,15 @@ printSPUInit( int id, SPU *child, SPU *self,
 	(void) child;
 
 	aveva_spu.id = id;
-	printspuGatherConfiguration( child );
+    aveva_spu.superSpuState = getScenegraphSpuData();
+    aveva_spu.superSpuState->current_app_instance = ServerAppContentApi::AppContentApi::getAppContentInstance(ServerAppContentApi::AppNameEnum::TRANSVIZ_AVEVA);
+    printspuGatherConfiguration( child );
 
 	Avevaspufunc* func = new Avevaspufunc();
 	self->privatePtr = (void*)func;
 
-	crSPUInitDispatchTable(&(aveva_spu.passthrough));
-	crSPUCopyDispatchTable(&(aveva_spu.passthrough), &(self->superSPU->dispatch_table));
+	crSPUInitDispatchTable(&(aveva_spu.super));
+	crSPUCopyDispatchTable(&(aveva_spu.super), &(self->superSPU->dispatch_table));
 
 #ifndef WINDOWS
 	/* If we were given a marker signal, install our signal handler. */
@@ -174,12 +181,12 @@ int SPULoad( char **name, char **super, SPUInitFuncPtr *init,
 	     SPUOptionsPtr *options, int *flags )
 {
 	*name = "avevascenegraph";
-	*super = NULL;
+	*super = "scenegraph";
 	*init = printSPUInit;
 	*self = printSPUSelfDispatch;
 	*cleanup = printSPUCleanup;
 	*options = printSPUOptions;
 	*flags = (SPU_NO_PACKER|SPU_IS_TERMINAL|SPU_MAX_SERVERS_ZERO);
-	scenegraphSPUReset();
+	avevaSPUReset();
 	return 1;
 }

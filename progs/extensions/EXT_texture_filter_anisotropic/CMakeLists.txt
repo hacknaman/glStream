@@ -13,4 +13,5 @@ endif()
 install(TARGETS EXT_texture_filter_anisotropic
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev
-	RUNTIME DESTINATION bin COMPONENT runtime)
+	RUNTIME DESTINATION apps COMPONENT runtime)
+SET_TARGET_PROPERTIES(EXT_texture_filter_anisotropic PROPERTIES FOLDER "Programs")
