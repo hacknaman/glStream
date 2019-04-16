@@ -24,7 +24,7 @@ add_subdirectory(viewports)
 add_subdirectory(threadtest)
 add_subdirectory(gears)
 add_subdirectory(simpleapp)
-#add_subdirectory(scenegraph)
+add_subdirectory(scenegraph)
 add_subdirectory(UETest)
 
 if(WIN32)
