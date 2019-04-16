@@ -32,6 +32,7 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include ${PROJECT_BINARY_DIR}/include/
 include_directories(include ${PROJECT_BINARY_DIR}/include)
 
 include(generate.cmake)
+add_definitions(/D$ENV{BUILD_ARCH})
 
 add_subdirectory(util)
 add_subdirectory(unpacker)
@@ -50,8 +51,9 @@ add_subdirectory(crutclientapi)
 add_subdirectory(crutproxy)
 add_subdirectory(crutserver)
 add_subdirectory(progs)
-add_subdirectory(TransVizUtil)
 
+add_subdirectory(TransVizUtil)
+add_subdirectory(TransVizUtilUE)
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/
 	DESTINATION include
