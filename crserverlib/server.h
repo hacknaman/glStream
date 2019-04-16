@@ -72,4 +72,7 @@ int crServerGetCurrentEye(void);
 
 GLint crServerSPUWindowID(GLint serverWindow);
 
+void windowIDreset(void);
+void contextIDreset(void);
+
 #endif /* CR_SERVER_H */

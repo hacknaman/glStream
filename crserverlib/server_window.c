@@ -16,7 +16,7 @@
 
 static GLint freeID = 1;
 
-void SERVER_DISPATCH_APIENTRY
+void 
 windowIDreset(void)
 {
 	freeID = 1;

@@ -14,7 +14,9 @@
 #include "cr_hash.h"
 #include <signal.h>
 #include <stdlib.h>
-#ifndef x86
+
+// use this library if we are using visual studio version older than vs17
+#ifndef x86 
 #include <lm_attr.h>
 #include <lmclient.h>
 #endif
@@ -26,6 +28,8 @@
 #include <fpu_control.h>
 #include <math.h>
 #endif
+
+
 
 /**
  * \mainpage CrServerLib 
@@ -159,8 +163,6 @@ crServerSetPort(int port)
 	cr_server.tcpip_port = port;
 }
 
-
-
 static void
 crPrintHelp(void)
 {
@@ -175,8 +177,9 @@ crPrintHelp(void)
 /**
  check License to execute crserver
 */
-#ifndef x86
 GLboolean checkLicense(){
+
+#ifndef x86 
     LM_HANDLE* _lmHandle;
 
     VENDORCODE code;
@@ -189,16 +192,17 @@ GLboolean checkLicense(){
 
     if (lc_checkout(_lmHandle, (LM_CHAR_PTR)featureName1, "1.0", 1, LM_CO_NOWAIT, &code, LM_DUP_NONE))
         return 0;
-        return 1;
-}
 #endif
+
+    return 1;
+}
+
 /**
 * Do CRServer initializations.  After this, we can begin servicing clients.
 */
 int
 crServerInitNew(const char* hostname, const char *port)
 {
-#ifndef x86
     // check for the license
     if (!DEVELOPMENT_MDOE){
         if (!checkLicense()){
@@ -206,7 +210,6 @@ crServerInitNew(const char* hostname, const char *port)
             exit(0);
         }
     }
-#endif
     int i;
     char *mothership = NULL;
     CRMuralInfo *defaultMural;
@@ -287,14 +290,12 @@ void
 crServerInit(int argc, char *argv[])
 {
     // check for the license
-#ifndef x86
     if (!DEVELOPMENT_MDOE){
         if (!checkLicense()){
             crError("LICENSE FILE IS NOT VALID");
             exit(0);
         }
     }
-#endif
 	int i;
 	char *mothership = NULL;
 	CRMuralInfo *defaultMural;

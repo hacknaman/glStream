@@ -1,10 +1,6 @@
 include_directories(.)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-if( NOT "$ENV{BUILD_ARCH}" STREQUAL "x86")
-	include_directories(${FLEXERA_INCLUDE_DIR})
-else()	
-	add_definitions(/D$ENV{BUILD_ARCH})
-endif()
+include_directories(${FLEXERA_INCLUDE_DIR})
 set(GENERATED
 	server_dispatch.h
 	server_dispatch.c
@@ -79,6 +75,7 @@ add_custom_command(OUTPUT server_simpleget.c
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	VERBATIM
 	DEPENDS ${GENERATION_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/server_simpleget.py ${CMAKE_CURRENT_SOURCE_DIR}/get_sizes.py)
+	
 #right now we don't have flexera libs for 32 bit 
 if( NOT "$ENV{BUILD_ARCH}" STREQUAL "x86")
 	add_library(crserverlib STATIC ${SOURCES} ${FLEXERA_TARGET_OBJ})
@@ -87,6 +84,7 @@ else()
 	add_library(crserverlib STATIC ${SOURCES})
 endif()
 target_link_libraries(crserverlib ${EXTRA_LIBS})
+
 install(TARGETS crserverlib
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev

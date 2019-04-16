@@ -678,9 +678,11 @@ getConfigurationOptions(CRConnection *conn)
 	}
 }
 
-#ifndef x86
+
 /*License Checker for the GL MODULE*/
 GLboolean checkLicense(){
+
+#ifndef x86
     LM_HANDLE* _lmHandle;
 
     VENDORCODE code;
@@ -693,9 +695,11 @@ GLboolean checkLicense(){
 
     if (lc_checkout(_lmHandle, (LM_CHAR_PTR)featureName1, "1.0", 1, LM_CO_NOWAIT, &code, LM_DUP_NONE))
         return 0;
+
+#endif
     return 1;
 }
-#endif
+
 
 /**
  * Do one-time initializations for the faker.
@@ -711,7 +715,6 @@ stubInit(void)
 	 * 
 	 * HOW can I pass the mothership address to this if I already know it?
 	 */
-#ifndef x86
     // check License
     if (!DEVELOPMENT_MODE){
         if (!checkLicense()){
@@ -720,7 +723,6 @@ stubInit(void)
             exit(0);
         }
     }
-#endif
 	char response[1024];
 	char **spuchain;
 	int num_spus;

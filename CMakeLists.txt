@@ -32,6 +32,7 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include ${PROJECT_BINARY_DIR}/include/
 include_directories(include ${PROJECT_BINARY_DIR}/include)
 
 include(generate.cmake)
+add_definitions(/D$ENV{BUILD_ARCH})
 
 add_subdirectory(util)
 add_subdirectory(unpacker)
