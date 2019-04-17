@@ -142,7 +142,6 @@ static const char *supporting_lib_names[] = {
 	"archsplitspu_crunpacker_copy.dll",
 	"archsplitspu_crpacker_copy.dll",
 	"apihistogramspu.dll"
-
 };
 
 #else /* _WIN32 */

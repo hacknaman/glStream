@@ -15,7 +15,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#ifndef x86 
+#ifdef USE_LICENSE 
 #include <lm_attr.h>
 #include <lmclient.h>
 #endif
@@ -179,7 +179,7 @@ crPrintHelp(void)
 */
 GLboolean checkLicense(){
 
-#ifndef x86 
+#ifdef USE_LICENSE 
     LM_HANDLE* _lmHandle;
 
     VENDORCODE code;
