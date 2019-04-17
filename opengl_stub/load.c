@@ -17,10 +17,12 @@
 #include "stub.h"
 #include <stdlib.h>
 #include <signal.h>
-#ifndef x86
+
+#ifdef USE_LICENSE
 #include <lm_attr.h>
 #include <lmclient.h>
 #endif
+
 #ifndef WINDOWS
 #include <sys/types.h>
 #include <unistd.h>
@@ -682,7 +684,7 @@ getConfigurationOptions(CRConnection *conn)
 /*License Checker for the GL MODULE*/
 GLboolean checkLicense(){
 
-#ifndef x86
+#ifdef USE_LICENSE
     LM_HANDLE* _lmHandle;
 
     VENDORCODE code;

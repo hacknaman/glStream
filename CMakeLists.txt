@@ -32,7 +32,20 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include ${PROJECT_BINARY_DIR}/include/
 include_directories(include ${PROJECT_BINARY_DIR}/include)
 
 include(generate.cmake)
-add_definitions(/D$ENV{BUILD_ARCH})
+
+Set(C_USE_LICENSE "YES")
+add_definitions(/DUSE_LICENSE)
+		
+# not use license for x86 arch
+if( "$ENV{BUILD_ARCH}" STREQUAL "x86" )
+	Set(C_USE_LICENSE "NO")
+	remove_definitions(/DUSE_LICENSE)
+endif()
+
+if( "$ENV{BUILD_PARA}" STREQUAL "UE" )
+	Set(C_USE_LICENSE "NO")
+	remove_definitions(/DUSE_LICENSE)
+endif()
 
 add_subdirectory(util)
 add_subdirectory(unpacker)

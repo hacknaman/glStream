@@ -52,13 +52,13 @@ else()
 	generate_with_python(getprocaddress.py getprocaddress.c ${APIFILES})
 endif()
 
-#we don't have flexera 32-bit.that's why we will not link flexera libs for 32bit
-if( NOT "$ENV{BUILD_ARCH}" STREQUAL "x86")
+if(C_USE_LICENSE STREQUAL "YES")
 	add_library(crfaker SHARED  ${SOURCES} ${FLEXERA_TARGET_OBJ})
 	target_link_libraries(crfaker ${FLEXERA_LIBRARIES})
 else()
 	add_library(crfaker SHARED ${SOURCES})
 endif()
+
 target_link_libraries(crfaker crmothership crutil spuload)
 target_link_libraries(crfaker ${EXTRA_LIBS})
 

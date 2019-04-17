@@ -24,7 +24,6 @@ set LIBJPEG_BIN=%LIBJPEG_DIR%\bin
 set REVIEW_DIR=%OSSROOT%\ReviewApi
 set REVIEW_BIN=%REVIEW_DIR%\bin
 
-
 :: set Catia API libraries
 set CatiaCppApi_DIR=%OSSROOT%\CatiaCppApi
 set CatiaCppApi_BIN=%CatiaCppApi_DIR%\bin
@@ -38,9 +37,6 @@ del "x64\TransViz.sln"
 del "x64\CMakeCache.txt"
 
 mkdir build
-:: set development mode
-:: This is used for licensing
-set Development=false
 
 ::if "%1" EQU "Debug" set DBG=1
 ::set BUILDENV=Release
