@@ -31,6 +31,7 @@ int g_isDisplayList = false;
 std::time_t g_time = std::time(0);
 
 TransVizUtilUE::TransVizPoint g_NormalPoint;
+TransVizUtilUE::TransVizPoint g_ColorPoint;
 TransVizUtilUE::TransVizGeom g_tvgeom;
 
 std::vector<linalg::aliases::double4x4> g_CurrentMatrix;
@@ -126,8 +127,10 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 
         std::vector<TransVizUtilUE::TransVizPoint> vec;
 		std::vector<TransVizUtilUE::TransVizPoint> vecN;
+		std::vector<TransVizUtilUE::TransVizPoint> vecC;
         g_tvgeom.VertexHolder.push_back(std::make_pair(mode,vec));
 		g_tvgeom.NormalHolder.push_back(vecN);
+		g_tvgeom.ColorHolder.push_back(vecC);
 	}
 
 	if (g_isDisplayList)
@@ -231,6 +234,16 @@ static void PRINT_APIENTRY printClipPlane(GLenum plane, const GLdouble * equatio
 {
 }
 
+static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble blue)
+{
+	if (g_isReading)
+	{
+		g_ColorPoint.x = red;
+		g_ColorPoint.y = green;
+		g_ColorPoint.z = blue;
+	}
+}
+
 static void PRINT_APIENTRY printColor3b(GLbyte red, GLbyte green, GLbyte blue)
 {
 }
@@ -239,20 +252,19 @@ static void PRINT_APIENTRY printColor3bv(const GLbyte * v)
 {
 }
 
-static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble blue)
-{
-}
-
 static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 {
+	printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
+	printColor3d(red, green, blue);
 }
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
+	printColor3d(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
@@ -1972,7 +1984,7 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 		g_CurrentMatrix.clear();
 		g_currentMatrixMode = -1;
 		g_CurrentMatrix.push_back(linalg::aliases::double4x4(linalg::identity));
-		g_tvgeom.clearr();
+		g_tvgeom.clearGeom();
 		g_calledreadFromApp = false;
 		g_startReading = true;
 		g_isReading = true;
@@ -2260,6 +2272,8 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
 		MatCurrent[3][0] = MatCurrent[3][1] = MatCurrent[3][2] = 0.0;
 		MatNormal = linalg::mul(MatCurrent, MatNormal);
 		g_tvgeom.NormalHolder.back().push_back(TransVizUtilUE::TransVizPoint(MatNormal[3][0], MatNormal[3][1], MatNormal[3][2]));
+
+		g_tvgeom.ColorHolder.back().push_back(g_ColorPoint);
 	}
 }
 

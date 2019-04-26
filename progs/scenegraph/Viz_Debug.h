@@ -58,9 +58,9 @@ void initdebug() {
     atexit(programExit);
     signal(SIGTERM, programExitSig);
     signal(SIGSEGV, programExitSig);
-    signal(SIGINT, programExitSig);
-    signal(SIGILL, programExitSig);
+    signal(SIGINT,  programExitSig);
+    signal(SIGILL,  programExitSig);
     signal(SIGABRT, programExitSig);
-    signal(SIGFPE, programExitSig);
+    signal(SIGFPE,  programExitSig);
 #endif // _DEBUG
 }

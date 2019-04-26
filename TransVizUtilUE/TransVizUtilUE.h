@@ -46,10 +46,12 @@ namespace TransVizUtilUE {
 
 		std::vector<std::pair<int, std::vector<TransVizPoint>> > VertexHolder;
 		std::vector<std::vector<TransVizPoint> > NormalHolder;
+		std::vector<std::vector<TransVizPoint> > ColorHolder;
 
-		void clearr() {
+		void clearGeom() {
 			VertexHolder.clear();
 			NormalHolder.clear();
+			ColorHolder.clear();
 		}
 
 	} TransVizGeom;
