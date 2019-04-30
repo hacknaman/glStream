@@ -33,6 +33,20 @@ include_directories(include ${PROJECT_BINARY_DIR}/include)
 
 include(generate.cmake)
 
+Set(C_USE_LICENSE "YES")
+add_definitions(/DUSE_LICENSE)
+		
+# not use license for x86 arch
+if( "$ENV{BUILD_ARCH}" STREQUAL "x86" )
+	Set(C_USE_LICENSE "NO")
+	remove_definitions(/DUSE_LICENSE)
+endif()
+
+if( "$ENV{BUILD_PARA}" STREQUAL "UE" )
+	Set(C_USE_LICENSE "NO")
+	remove_definitions(/DUSE_LICENSE)
+endif()
+
 add_subdirectory(util)
 add_subdirectory(unpacker)
 add_subdirectory(packer)
@@ -50,8 +64,9 @@ add_subdirectory(crutclientapi)
 add_subdirectory(crutproxy)
 add_subdirectory(crutserver)
 add_subdirectory(progs)
-add_subdirectory(TransVizUtil)
 
+add_subdirectory(TransVizUtil)
+add_subdirectory(TransVizUtilUE)
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/
 	DESTINATION include

@@ -1,10 +1,6 @@
 include_directories(.)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-if( NOT "$ENV{BUILD_ARCH}" STREQUAL "x86")
-	include_directories(${FLEXERA_INCLUDE_DIR})
-else()	
-	add_definitions(/D$ENV{BUILD_ARCH})
-endif()
+include_directories(${FLEXERA_INCLUDE_DIR})
 set(GENERATED
 	server_dispatch.h
 	server_dispatch.c
@@ -13,7 +9,6 @@ set(GENERATED
 	server_simpleget.c
 )
 # TODO: generate these files!
-
 
 set(SOURCES
 	server_main.c
@@ -49,10 +44,12 @@ set(SOURCES
 	crserverlib.def
 )
 # TODO: generate these files!
+
 set(GENERATION_DEPS
 	${CMAKE_CURRENT_SOURCE_DIR}/server_special
 	${CMAKE_CURRENT_SOURCE_DIR}/../glapi_parser/apiutil.py
 	${CMAKE_CURRENT_SOURCE_DIR}/../glapi_parser/APIspec.txt)
+
 add_custom_command(OUTPUT server_dispatch.h
 	COMMAND ${PYTHON_EXECUTABLE} server_dispatch_header.py > ${CMAKE_CURRENT_BINARY_DIR}/server_dispatch.h
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -73,20 +70,20 @@ add_custom_command(OUTPUT server_get.c
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	DEPENDS ${GENERATION_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/server_get.py ${CMAKE_CURRENT_SOURCE_DIR}/get_components.py)
 
-
 add_custom_command(OUTPUT server_simpleget.c
 	COMMAND ${PYTHON_EXECUTABLE} server_simpleget.py > ${CMAKE_CURRENT_BINARY_DIR}/server_simpleget.c
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	VERBATIM
 	DEPENDS ${GENERATION_DEPS} ${CMAKE_CURRENT_SOURCE_DIR}/server_simpleget.py ${CMAKE_CURRENT_SOURCE_DIR}/get_sizes.py)
-#right now we don't have flexera libs for 32 bit 
-if( NOT "$ENV{BUILD_ARCH}" STREQUAL "x86")
+
+if(C_USE_LICENSE STREQUAL "YES")
 	add_library(crserverlib STATIC ${SOURCES} ${FLEXERA_TARGET_OBJ})
 	target_link_libraries(crserverlib ${FLEXERA_LIBRARIES} ${EXTRA_LIBS})
 else()
 	add_library(crserverlib STATIC ${SOURCES})
+	target_link_libraries(crserverlib ${EXTRA_LIBS})
 endif()
-target_link_libraries(crserverlib ${EXTRA_LIBS})
+
 install(TARGETS crserverlib
 	LIBRARY DESTINATION lib COMPONENT runtime
 	ARCHIVE DESTINATION lib COMPONENT dev

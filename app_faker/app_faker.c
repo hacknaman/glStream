@@ -86,7 +86,7 @@ static const char *libgl_names[] = {
 	"opengl32.dll"
 };
 
-// All of these may not be relavent
+// TODO:- All of these may not be relavent
 static const char *supporting_lib_names[] = {
 	"windowtrackerspu.dll",
 	"TransVizUtil.dll",
@@ -97,7 +97,6 @@ static const char *supporting_lib_names[] = {
 	"spuload.dll",
 	"simplequeryspu.dll",
 	"scenegraphspu.dll",
-	"saveframespu.dll",
 	"replicatespu_crpacker_copy.dll",
 	"renderspu.dll",
 	"readbackspu.dll",
@@ -143,7 +142,6 @@ static const char *supporting_lib_names[] = {
 	"archsplitspu_crunpacker_copy.dll",
 	"archsplitspu_crpacker_copy.dll",
 	"apihistogramspu.dll"
-
 };
 
 #else /* _WIN32 */

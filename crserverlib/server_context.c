@@ -19,7 +19,7 @@
 
 static GLint freeID = 1;
 
-void SERVER_DISPATCH_APIENTRY
+void 
 contextIDreset(void)
 {
 	freeID = 1;

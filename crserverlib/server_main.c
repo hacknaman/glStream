@@ -14,10 +14,12 @@
 #include "cr_hash.h"
 #include <signal.h>
 #include <stdlib.h>
-#ifndef x86
+
+#ifdef USE_LICENSE 
 #include <lm_attr.h>
 #include <lmclient.h>
 #endif
+
 #define DEBUG_FP_EXCEPTIONS 0
 
 #define DEVELOPMENT_MDOE 1
@@ -26,6 +28,8 @@
 #include <fpu_control.h>
 #include <math.h>
 #endif
+
+
 
 /**
  * \mainpage CrServerLib 
@@ -159,8 +163,6 @@ crServerSetPort(int port)
 	cr_server.tcpip_port = port;
 }
 
-
-
 static void
 crPrintHelp(void)
 {
@@ -175,30 +177,32 @@ crPrintHelp(void)
 /**
  check License to execute crserver
 */
-#ifndef x86
 GLboolean checkLicense(){
+
+#ifdef USE_LICENSE 
     LM_HANDLE* _lmHandle;
 
-        VENDORCODE code;
-        lc_new_job(NULL, lc_new_job_arg2, &code, &_lmHandle);
+    VENDORCODE code;
+    lc_new_job(NULL, lc_new_job_arg2, &code, &_lmHandle);
 
-        char* licensePath = "../../../Licenses";
-        lc_set_attr(_lmHandle, LM_A_LICENSE_DEFAULT, (LM_A_VAL_TYPE)licensePath);
+    char* licensePath = "../../../Licenses";
+    lc_set_attr(_lmHandle, LM_A_LICENSE_DEFAULT, (LM_A_VAL_TYPE)licensePath);
 
-        char* featureName1 = "TRANSVIZ_CRSERVER_MODULE";
+    char* featureName1 = "TRANSVIZ_CRSERVER_MODULE";
 
-        if (lc_checkout(_lmHandle, (LM_CHAR_PTR)featureName1, "1.0", 1, LM_CO_NOWAIT, &code, LM_DUP_NONE))
-            return 0;
-        return 1;
-}
+    if (lc_checkout(_lmHandle, (LM_CHAR_PTR)featureName1, "1.0", 1, LM_CO_NOWAIT, &code, LM_DUP_NONE))
+        return 0;
 #endif
+
+    return 1;
+}
+
 /**
 * Do CRServer initializations.  After this, we can begin servicing clients.
 */
 int
 crServerInitNew(const char* hostname, const char *port)
 {
-#ifndef x86
     // check for the license
     if (!DEVELOPMENT_MDOE){
         if (!checkLicense()){
@@ -206,14 +210,12 @@ crServerInitNew(const char* hostname, const char *port)
             exit(0);
         }
     }
-#endif
     int i;
     char *mothership = NULL;
     CRMuralInfo *defaultMural;
-#ifndef x86
+
     windowIDreset();
     contextIDreset();
-#endif
 
     if (hostname != NULL)
     {
@@ -288,21 +290,19 @@ void
 crServerInit(int argc, char *argv[])
 {
     // check for the license
-#ifndef x86
     if (!DEVELOPMENT_MDOE){
         if (!checkLicense()){
             crError("LICENSE FILE IS NOT VALID");
             exit(0);
         }
     }
-#endif
 	int i;
 	char *mothership = NULL;
 	CRMuralInfo *defaultMural;
-#ifndef x86
+
 	windowIDreset();
 	contextIDreset();
-#endif
+
 	for (i = 1 ; i < argc ; i++)
 	{
 		if (!crStrcmp( argv[i], "-mothership" ))
