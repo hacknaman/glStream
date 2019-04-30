@@ -1982,7 +1982,6 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 	if (g_calledreadFromApp)
 	{
 		g_CurrentMatrix.clear();
-		g_currentMatrixMode = -1;
 		g_CurrentMatrix.push_back(linalg::aliases::double4x4(linalg::identity));
 		g_tvgeom.clearGeom();
 		g_calledreadFromApp = false;

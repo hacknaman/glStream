@@ -294,8 +294,6 @@ init(void)
     glEnable(GL_LIGHT0);
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_MODELVIEW);
-
     /* make the gears */
 #if(USE_DISPLAYLIST == 1)
     gear1 = glGenLists(1);
