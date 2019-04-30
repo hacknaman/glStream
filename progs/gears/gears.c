@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <GL/glut.h>
 
+#define USE_DISPLAYLIST 0
+
 #ifndef M_PI
 #define M_PI 3.14159265
 #endif
@@ -151,6 +153,10 @@ static GLfloat angle = 0.0;
 static GLuint limit;
 static GLuint count = 1;
 
+static GLfloat red[4] = { 0.8, 0.1, 0.0, 1.0 };
+static GLfloat green[4] = { 0.0, 0.8, 0.2, 1.0 };
+static GLfloat blue[4] = { 0.2, 0.2, 1.0, 1.0 };
+
 static void
 draw(void)
 {
@@ -164,19 +170,39 @@ draw(void)
   glPushMatrix();
   glTranslatef(-3.0, -2.0, 0.0);
   glRotatef(angle, 0.0, 0.0, 1.0);
+
+#if(USE_DISPLAYLIST == 1)
   glCallList(gear1);
+#else 
+  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, red);
+  gear(1.0, 4.0, 1.0, 20, 0.7);
+#endif
   glPopMatrix();
+
 
   glPushMatrix();
   glTranslatef(3.1, -2.0, 0.0);
   glRotatef(-2.0 * angle - 9.0, 0.0, 0.0, 1.0);
+
+#if(USE_DISPLAYLIST == 1)
   glCallList(gear2);
+#else 
+  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, green);
+  gear(0.5, 2.0, 2.0, 10, 0.7);
+#endif
   glPopMatrix();
+
 
   glPushMatrix();
   glTranslatef(-3.1, 4.2, 0.0);
   glRotatef(-2.0 * angle - 25.0, 0.0, 0.0, 1.0);
+
+#if(USE_DISPLAYLIST == 1)
   glCallList(gear3);
+#else 
+  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, blue);
+  gear(1.3, 2.0, 0.5, 10, 0.7);
+#endif
   glPopMatrix();
 
   glPopMatrix();
@@ -261,13 +287,7 @@ init(void)
 {
   static GLfloat pos[4] =
   {5.0, 5.0, 10.0, 0.0};
-  static GLfloat red[4] =
-  {0.8, 0.1, 0.0, 1.0};
-  static GLfloat green[4] =
-  {0.0, 0.8, 0.2, 1.0};
-  static GLfloat blue[4] =
-  {0.2, 0.2, 1.0, 1.0};
-
+  
   glLightfv(GL_LIGHT0, GL_POSITION, pos);
   glEnable(GL_CULL_FACE);
   glEnable(GL_LIGHTING);
@@ -275,23 +295,30 @@ init(void)
   glEnable(GL_DEPTH_TEST);
 
   /* make the gears */
+#if(USE_DISPLAYLIST == 1)
   gear1 = glGenLists(1);
   glNewList(gear1, GL_COMPILE);
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, red);
   gear(1.0, 4.0, 1.0, 20, 0.7);
   glEndList();
-
+#endif
+  
+ 
+#if(USE_DISPLAYLIST == 1)
   gear2 = glGenLists(1);
   glNewList(gear2, GL_COMPILE);
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, green);
   gear(0.5, 2.0, 2.0, 10, 0.7);
   glEndList();
+#endif
 
+#if(USE_DISPLAYLIST == 1)
   gear3 = glGenLists(1);
   glNewList(gear3, GL_COMPILE);
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, blue);
   gear(1.3, 2.0, 0.5, 10, 0.7);
   glEndList();
+#endif
 
   glEnable(GL_NORMALIZE);
 }
