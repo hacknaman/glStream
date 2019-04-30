@@ -285,42 +285,44 @@ reshape(int width, int height)
 static void
 init(void)
 {
-  static GLfloat pos[4] =
-  {5.0, 5.0, 10.0, 0.0};
-  
-  glLightfv(GL_LIGHT0, GL_POSITION, pos);
-  glEnable(GL_CULL_FACE);
-  glEnable(GL_LIGHTING);
-  glEnable(GL_LIGHT0);
-  glEnable(GL_DEPTH_TEST);
+    static GLfloat pos[4] =
+    { 5.0, 5.0, 10.0, 0.0 };
 
-  /* make the gears */
+    glLightfv(GL_LIGHT0, GL_POSITION, pos);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_DEPTH_TEST);
+
+    glMatrixMode(GL_MODELVIEW);
+
+    /* make the gears */
 #if(USE_DISPLAYLIST == 1)
-  gear1 = glGenLists(1);
-  glNewList(gear1, GL_COMPILE);
-  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, red);
-  gear(1.0, 4.0, 1.0, 20, 0.7);
-  glEndList();
-#endif
-  
- 
-#if(USE_DISPLAYLIST == 1)
-  gear2 = glGenLists(1);
-  glNewList(gear2, GL_COMPILE);
-  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, green);
-  gear(0.5, 2.0, 2.0, 10, 0.7);
-  glEndList();
+    gear1 = glGenLists(1);
+    glNewList(gear1, GL_COMPILE);
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, red);
+    gear(1.0, 4.0, 1.0, 20, 0.7);
+    glEndList();
 #endif
 
+
 #if(USE_DISPLAYLIST == 1)
-  gear3 = glGenLists(1);
-  glNewList(gear3, GL_COMPILE);
-  glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, blue);
-  gear(1.3, 2.0, 0.5, 10, 0.7);
-  glEndList();
+    gear2 = glGenLists(1);
+    glNewList(gear2, GL_COMPILE);
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, green);
+    gear(0.5, 2.0, 2.0, 10, 0.7);
+    glEndList();
 #endif
 
-  glEnable(GL_NORMALIZE);
+#if(USE_DISPLAYLIST == 1)
+    gear3 = glGenLists(1);
+    glNewList(gear3, GL_COMPILE);
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, blue);
+    gear(1.3, 2.0, 0.5, 10, 0.7);
+    glEndList();
+#endif
+
+    glEnable(GL_NORMALIZE);
 }
 
 void 
@@ -335,13 +337,15 @@ visible(int vis)
 main(int argc, char *argv[])
 {
   glutInit(&argc, argv);
+
   if (argc > 1) {
     /* do 'n' frames then exit */
     limit = atoi(argv[1]) + 1;
   } else {
     limit = 0;
   }
-  glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
+
+  glutInitDisplayMode( GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE );
 
   glutCreateWindow("Gears");
   init();
