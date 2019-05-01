@@ -2677,7 +2677,7 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
         osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
         osg::Vec3 normalPoint = NormalmatFinal.getTrans();
-
+        //this is temporarily commented and will be fixed later if we want to transform normals otherwise this code is not needed.
         /*osg::Matrix Normalmat = osg::Matrix::translate(scenegraph_spu_data.g_CurrentNormal);
         osg::Matrix CurrentMatrixNew = scenegraph_spu_data.g_CurrentMatrix;
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
