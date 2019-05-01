@@ -26,32 +26,67 @@ namespace TransVizUtilUE {
 
 		TransVizPoint() {
 			this->x = 0.0;
-			this->y = 1.0;
+			this->y = 0.0;
 			this->z = 0.0;
+            this->w = 1.0;
 		}
 
-		TransVizPoint(double x, double y, double z) {
+		TransVizPoint(double x, double y, double z, double w = 1.0) {
 			this->x = x;
 			this->y = y;
 			this->z = z;
+            this->w = w;
 		}
 
 		double x;
 		double y;
 		double z;
+        double w;
 
 	} TransVizPoint;
+
+    typedef struct MaterialParam{
+
+        MaterialParam() {
+
+            this->glmode = 0;
+            this->ambient = TransVizPoint();
+            this->diffuse = TransVizPoint();
+            this->specular = TransVizPoint();
+            this->emission = TransVizPoint();
+            this->shininess = 0;
+        }
+
+        MaterialParam(int glMode, TransVizPoint ambient, TransVizPoint diffuse, TransVizPoint specular, TransVizPoint emission, double shininess) {
+            this->glmode = glMode;
+            this->ambient = ambient;
+            this->diffuse = diffuse;
+            this->specular = specular;
+            this->emission = emission;
+            this->shininess = shininess;
+        }
+        
+        int glmode;
+        TransVizPoint ambient;
+        TransVizPoint diffuse;
+        TransVizPoint specular;
+        TransVizPoint emission;
+        double shininess;
+
+    } MaterialParam;
 
 	typedef struct TransVizGeom {
 
 		std::vector<std::pair<int, std::vector<TransVizPoint>> > VertexHolder;
 		std::vector<std::vector<TransVizPoint> > NormalHolder;
 		std::vector<std::vector<TransVizPoint> > ColorHolder;
+        std::vector<MaterialParam> MaterialParamHolder;
 
 		void clearGeom() {
 			VertexHolder.clear();
 			NormalHolder.clear();
 			ColorHolder.clear();
+            MaterialParamHolder.clear();
 		}
 
 	} TransVizGeom;

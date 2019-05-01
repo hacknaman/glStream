@@ -12,7 +12,8 @@
 #include <stdlib.h>
 #include <GL/glut.h>
 
-#define USE_DISPLAYLIST 0
+#define USE_DISPLAYLIST 1
+#define USE_SPECULAR 0
 
 #ifndef M_PI
 #define M_PI 3.14159265
@@ -157,6 +158,9 @@ static GLfloat red[4] = { 0.8, 0.1, 0.0, 1.0 };
 static GLfloat green[4] = { 0.0, 0.8, 0.2, 1.0 };
 static GLfloat blue[4] = { 0.2, 0.2, 1.0, 1.0 };
 
+static GLfloat specular[4] = { 0.5, 0.1, 0.1, 1.0 };
+static GLfloat nospecular[4] = { 0.0, 0.0, 0.0, 1.0 };
+
 static void
 draw(void)
 {
@@ -188,6 +192,9 @@ draw(void)
   glCallList(gear2);
 #else 
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, green);
+#if(USE_SPECULAR == 1)
+  glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+#endif
   gear(0.5, 2.0, 2.0, 10, 0.7);
 #endif
   glPopMatrix();
@@ -201,6 +208,9 @@ draw(void)
   glCallList(gear3);
 #else 
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, blue);
+#if(USE_SPECULAR == 1)
+  glMaterialfv(GL_FRONT, GL_SPECULAR, nospecular);
+#endif
   gear(1.3, 2.0, 0.5, 10, 0.7);
 #endif
   glPopMatrix();
