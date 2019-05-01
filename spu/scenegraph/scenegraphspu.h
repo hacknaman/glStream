@@ -61,6 +61,7 @@ typedef struct {
      bool isNormalNormalizationEnabled;
      bool isNormalRescaleEnabled;
      bool isPartSelectionEnabled;
+     bool isColorMaterialEnabled;
      osg::Matrix  g_camera_matrix;
      osg::ref_ptr<osg::Vec3Array> g_vertexArray;
      osg::ref_ptr<osg::Vec3Array> g_normalArray;

@@ -50,6 +50,7 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
     scenegraph_spu_data.g_isDisplayList = false;
     
     scenegraph_spu_data.g_time = std::time(0);
+    scenegraph_spu_data.isColorMaterialEnabled = false;
 }
 
 std::string camerashakeapp;
@@ -473,6 +474,56 @@ static void PRINT_APIENTRY printColorMask(GLboolean red, GLboolean green, GLbool
 
 static void PRINT_APIENTRY printColorMaterial(GLenum face, GLenum mode)
 {
+
+
+    if (!scenegraph_spu_data.g_isReading || !scenegraph_spu_data.isColorMaterialEnabled)
+	{
+		return;
+	}
+
+	osg::Material::Face osgface = osg::Material::Face::FRONT;
+
+	switch (face){
+	case GL_BACK:
+		osgface = osg::Material::Face::BACK;
+	case GL_FRONT_AND_BACK:
+		osgface = osg::Material::Face::FRONT_AND_BACK;
+	}
+
+#ifdef ENABLE_MATERIAL
+
+	if (scenegraph_spu_data.g_material == NULL)
+	{
+		scenegraph_spu_data.g_material = new osg::Material();
+	}
+
+	switch (mode)
+	{
+	case GL_AMBIENT:
+		CreateNewGeode();
+		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
+		break;
+	case GL_DIFFUSE:
+		CreateNewGeode();
+		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::DIFFUSE);
+		break;
+	case GL_SPECULAR:
+		CreateNewGeode();
+		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::SPECULAR);
+		break;
+	case GL_AMBIENT_AND_DIFFUSE:
+		CreateNewGeode();
+		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
+		break;
+	case GL_EMISSION:
+		CreateNewGeode();
+		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::EMISSION);
+		break;
+	}
+
+#endif
+
+
 }
 
 static void PRINT_APIENTRY printColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -616,12 +667,19 @@ static void PRINT_APIENTRY printDisable(GLenum cap)
         scenegraph_spu_data.g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
 	}
 #endif
-    
+#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+    if (cap == GL_NORMALIZE || cap == GL_RESCALE_NORMAL)
+        scenegraph_spu_data.g_state->setMode(cap, osg::StateAttribute::OFF);
+        
+#else
+
     if (cap == GL_NORMALIZE)
         scenegraph_spu_data.isNormalNormalizationEnabled = false;
     if (cap == GL_RESCALE_NORMAL)
         scenegraph_spu_data.isNormalRescaleEnabled = false;
-
+#endif
+    if (cap == GL_COLOR_MATERIAL)
+        scenegraph_spu_data.isColorMaterialEnabled = false;
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -687,12 +745,17 @@ static void PRINT_APIENTRY printEnable(GLenum cap)
         }
     }
 #endif
-
-
-    if (cap == GL_NORMALIZE)
-        scenegraph_spu_data.isNormalNormalizationEnabled = true;
-    if (cap == GL_RESCALE_NORMAL)
-        scenegraph_spu_data.isNormalRescaleEnabled = true;
+#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+        if (cap == GL_NORMALIZE || cap == GL_RESCALE_NORMAL)
+            scenegraph_spu_data.g_state->setMode(cap, osg::StateAttribute::ON);
+#else
+        if (cap == GL_NORMALIZE)
+            scenegraph_spu_data.isNormalNormalizationEnabled = true;
+        if (cap == GL_RESCALE_NORMAL)
+            scenegraph_spu_data.isNormalRescaleEnabled = true;
+#endif
+        if (cap == GL_COLOR_MATERIAL)
+            scenegraph_spu_data.isColorMaterialEnabled = true;
 
 }
 
@@ -1507,7 +1570,8 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
-    if (!scenegraph_spu_data.g_isReading)
+    
+    if (!scenegraph_spu_data.g_isReading || scenegraph_spu_data.isColorMaterialEnabled)
     {
         return;
     }
@@ -1517,8 +1581,10 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
     switch (face){
     case GL_BACK:
         osgface = osg::Material::Face::BACK;
+        break;
     case GL_FRONT_AND_BACK:
         osgface = osg::Material::Face::FRONT_AND_BACK;
+        break;
     }
 
 #ifdef ENABLE_MATERIAL
@@ -2611,35 +2677,47 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
         osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
         osg::Vec3 normalPoint = NormalmatFinal.getTrans();
-#endif
-        if (scenegraph_spu_data.isNormalRescaleEnabled)
+
+        /*osg::Matrix Normalmat = osg::Matrix::translate(scenegraph_spu_data.g_CurrentNormal);
+        osg::Matrix CurrentMatrixNew = scenegraph_spu_data.g_CurrentMatrix;
+        CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
+        osg::Matrix inverse_mat = osg::Matrix::inverse(CurrentMatrixNew);
+        osg::Vec3 normalPoint;
+        if (inverse_mat.invert(inverse_mat))
         {
-            double x = normalPoint.x();
-            double y = normalPoint.y();
-            double z = normalPoint.z();
-            double magn = 1/std::sqrt(x*x + y*y + z*z);
-            if (magn)
-            {
-                x = x / magn;
-                y = y / magn;
-                z = z / magn;
-               normalPoint.set(osg::Vec3(x,y,z));
-            }
+        osg::Matrix NormalmatFinal = Normalmat * inverse_mat;
+        normalPoint = NormalmatFinal.getTrans();
+        }*/
+        /*if (scenegraph_spu_data.isNormalRescaleEnabled)
+        {
+        double x = normalPoint.x();
+        double y = normalPoint.y();
+        double z = normalPoint.z();
+        double magn = 1/std::sqrt(x*x + y*y + z*z);
+        if (magn)
+        {
+        x = x / magn;
+        y = y / magn;
+        z = z / magn;
+        normalPoint.set(osg::Vec3(x,y,z));
+        }
         }
         if (scenegraph_spu_data.isNormalNormalizationEnabled)
         {
-            double x = normalPoint.x();
-            double y = normalPoint.y();
-            double z = normalPoint.z();
-            double magn = 1 / std::sqrt(x*x + y*y + z*z);
-            if (magn)
-            {
-                x = x / magn;
-                y = y / magn;
-                z = z / magn;
-                normalPoint.set(osg::Vec3(x, y, z));
-            }
+        double x = normalPoint.x();
+        double y = normalPoint.y();
+        double z = normalPoint.z();
+        double magn = 1 / std::sqrt(x*x + y*y + z*z);
+        if (magn)
+        {
+        x = x / magn;
+        y = y / magn;
+        z = z / magn;
+        normalPoint.set(osg::Vec3(x, y, z));
         }
+        }*/
+#endif
+		
         scenegraph_spu_data.g_vertexArray->push_back(vertexPoint);
         scenegraph_spu_data.g_normalArray->push_back(normalPoint);
         
@@ -3059,7 +3137,7 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 
-    if (!scenegraph_spu_data.g_isReading)
+    if (!scenegraph_spu_data.g_isReading || scenegraph_spu_data.isColorMaterialEnabled)
     {
         return;
     }
@@ -3069,8 +3147,10 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
     switch (face){
     case GL_BACK:
         osgface = osg::Material::Face::BACK;
+        break;
     case GL_FRONT_AND_BACK:
         osgface = osg::Material::Face::FRONT_AND_BACK;
+        break;
     }
 
 #ifdef ENABLE_MATERIAL
@@ -3094,7 +3174,7 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         CreateNewGeode();
         scenegraph_spu_data.g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
-    case GL_AMBIENT_AND_DIFFUSE:
+   case GL_AMBIENT_AND_DIFFUSE:
         CreateNewGeode();
         scenegraph_spu_data.g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         scenegraph_spu_data.g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
