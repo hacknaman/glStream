@@ -32,6 +32,7 @@ std::time_t g_time = std::time(0);
 
 TransVizUtilUE::TransVizPoint g_NormalPoint;
 TransVizUtilUE::TransVizPoint g_ColorPoint;
+TransVizUtilUE::MaterialParam g_tvMat;
 TransVizUtilUE::TransVizGeom g_tvgeom;
 
 std::vector<linalg::aliases::double4x4> g_CurrentMatrix;
@@ -128,9 +129,11 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
         std::vector<TransVizUtilUE::TransVizPoint> vec;
 		std::vector<TransVizUtilUE::TransVizPoint> vecN;
 		std::vector<TransVizUtilUE::TransVizPoint> vecC;
+
         g_tvgeom.VertexHolder.push_back(std::make_pair(mode,vec));
 		g_tvgeom.NormalHolder.push_back(vecN);
 		g_tvgeom.ColorHolder.push_back(vecC);
+        g_tvgeom.MaterialParamHolder.push_back(g_tvMat);
 	}
 
 	if (g_isDisplayList)
@@ -520,8 +523,10 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
-    if (cap == GL_POLYGON_STIPPLE){
-	}
+    if (g_isReading && cap == GL_POLYGON_STIPPLE)
+    {
+        g_tvMat.glmode = 0;
+    }
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -566,10 +571,10 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
-	if (g_isReading && cap == GL_POLYGON_STIPPLE) {
-
+	if (g_isReading && cap == GL_POLYGON_STIPPLE)
+    {
+        g_tvMat.glmode = cap;
 	}
-    
 }
 
 static void PRINT_APIENTRY printEnableClientState(GLenum array)
@@ -1235,6 +1240,15 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
+    if (g_isReading) {
+
+        switch (pname)
+        {
+        case GL_SHININESS:
+            g_tvMat.shininess = param;
+            break;
+        }
+    }
 }
 
 static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param)
@@ -2664,7 +2678,28 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 // material function copied here for color
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
+    if (g_isReading) {
 
+        switch (mode)
+        {
+        case GL_AMBIENT:
+            g_tvMat.ambient = TransVizUtilUE::TransVizPoint(params[0], params[1], params[2], params[3]);
+            break;
+        case GL_DIFFUSE:
+            g_tvMat.diffuse = TransVizUtilUE::TransVizPoint(params[0], params[1], params[2], params[3]);
+            break;
+        case GL_AMBIENT_AND_DIFFUSE:
+            g_tvMat.ambient = TransVizUtilUE::TransVizPoint(params[0], params[1], params[2], params[3]);
+            g_tvMat.diffuse = TransVizUtilUE::TransVizPoint(params[0], params[1], params[2], params[3]);
+            break;
+        case GL_SPECULAR:
+            g_tvMat.specular = TransVizUtilUE::TransVizPoint(params[0], params[1], params[2], params[3]);
+            break;
+        case GL_EMISSION:
+            g_tvMat.emission = TransVizUtilUE::TransVizPoint(params[0], params[1], params[2], params[3]);
+            break;
+        }
+    }
 }
 
 SPUNamedFunctionTable _cr_print_table[] = {
