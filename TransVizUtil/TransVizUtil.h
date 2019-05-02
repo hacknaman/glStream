@@ -19,7 +19,7 @@
 #include <OpenThreads/Thread>
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
-#include "AppContentApi.h"  
+#include <DataType.h>
 
 class ISpufunc
 {

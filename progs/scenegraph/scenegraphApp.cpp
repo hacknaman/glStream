@@ -100,10 +100,10 @@ public:
             {
                 // *(char *)0 = 0; // for testing this causes seg fault
                 _SceneGraphGenerator->generateScenegraph();
-                /*std::cout << "get server app tree" << std::endl;
+                std::cout << "get server app tree" << std::endl;
                 std::shared_ptr<ServerAppContentApi::CatiaNode> _content_root_node = std::make_shared<ServerAppContentApi::CatiaNode>();
                 _SceneGraphGenerator->getServerAppContentTree( _content_root_node);
-                std::cout << "server app content tree is created" << std::endl;*/
+                std::cout << "server app content tree is created" << std::endl;
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
             {

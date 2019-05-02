@@ -4,7 +4,7 @@
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
-
+#include <AppContentApi.h>
 
 namespace TransVizUtil{
 

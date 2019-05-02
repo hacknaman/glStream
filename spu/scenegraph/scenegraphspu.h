@@ -30,6 +30,7 @@
 #include <osg/LightModel>
 #include <osg/Light>
 #include <TransVizUtil.h>
+#include <AppContentApi.h>
 #include <ctime>
 #define PRINT_UNUSED(x) ((void)x)
 // comment out this code to disable material / lights
