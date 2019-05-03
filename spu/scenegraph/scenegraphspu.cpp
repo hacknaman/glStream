@@ -660,26 +660,21 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
-#ifdef ENABLE_MATERIAL
-    if (cap == GL_POLYGON_STIPPLE){
+    if (!scenegraph_spu_data.g_isReading)
+        return;
+    switch (cap)
+    {
 
+    case GL_POLYGON_STIPPLE:
+
+#ifdef ENABLE_MATERIAL
         CreateNewGeode();
         scenegraph_spu_data.g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
-	}
 #endif
-#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
-    if (cap == GL_NORMALIZE || cap == GL_RESCALE_NORMAL)
-        scenegraph_spu_data.g_state->setMode(cap, osg::StateAttribute::OFF);
-        
-#else
-
-    if (cap == GL_NORMALIZE)
-        scenegraph_spu_data.isNormalNormalizationEnabled = false;
-    if (cap == GL_RESCALE_NORMAL)
-        scenegraph_spu_data.isNormalRescaleEnabled = false;
-#endif
-    if (cap == GL_COLOR_MATERIAL)
+        break;
+    case GL_COLOR_MATERIAL:
         scenegraph_spu_data.isColorMaterialEnabled = false;
+    }
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -727,36 +722,27 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
+    if (!scenegraph_spu_data.g_isReading)
+        return;
+    switch (cap)
+    {
 
-#ifdef ENABLE_MATERIAL
-    if (scenegraph_spu_data.g_isReading && cap == GL_POLYGON_STIPPLE) {
+        case GL_POLYGON_STIPPLE:
+        {
+    #ifdef ENABLE_MATERIAL
         CreateNewGeode();
         osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
         scenegraph_spu_data.g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-    }
-#endif
-
-#ifdef ENABLE_LIGHTS
-    if (cap >= GL_LIGHT0 && cap <= GL_LIGHT7)
-    {
-        if (scenegraph_spu_data.g_light[cap - GL_LIGHT0] == NULL)
-        {
-            scenegraph_spu_data.g_light[cap - GL_LIGHT0] = new osg::LightSource();
+    #endif
+            break;
         }
-    }
-#endif
-#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
-        if (cap == GL_NORMALIZE || cap == GL_RESCALE_NORMAL)
-            scenegraph_spu_data.g_state->setMode(cap, osg::StateAttribute::ON);
-#else
-        if (cap == GL_NORMALIZE)
-            scenegraph_spu_data.isNormalNormalizationEnabled = true;
-        if (cap == GL_RESCALE_NORMAL)
-            scenegraph_spu_data.isNormalRescaleEnabled = true;
-#endif
-        if (cap == GL_COLOR_MATERIAL)
+        case GL_COLOR_MATERIAL:
+        {
             scenegraph_spu_data.isColorMaterialEnabled = true;
+            break;
+        }
 
+    }
 }
 
 static void PRINT_APIENTRY printEnableClientState(GLenum array)
