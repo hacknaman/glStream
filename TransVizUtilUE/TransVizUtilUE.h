@@ -100,14 +100,18 @@ namespace TransVizUtilUE {
 		virtual void preProcessClient() {};
 	};
 
-	//forward declaration
+	//forward declaration - used in TransVizServerThreadUE Class
 	class TransVizUtilUE;
 
+    /** Inherite from this class in the app. The function GeomObj will get the object of TransViz Geometry */
 	class ITransVizCallBack {
 	public:
 		virtual void GeomObj(const TransVizGeom& tvgeom) = 0;
 	};
 
+    // Thread Class
+    // TransViz Client code runs in different thread 
+    // Listens to the server for gl calls            
 	class TransVizServerThreadUE
 	{
 		TransVizUtilUE* _util;
@@ -125,7 +129,7 @@ namespace TransVizUtilUE {
 		TransVizUtilUE();
 		~TransVizUtilUE();
 
-		// set or returns the root Node from the scene
+		// set or returns the geometry from the scene
 		void generateScenegraph();
 		void update(const TransVizGeom& tvgeom);
 		bool isConnected();
@@ -135,6 +139,7 @@ namespace TransVizUtilUE {
 
 		void setPort(const std::string& port);
 		std::string getPort();
+
 		void setCallBackClass(ITransVizCallBack* cb) {
 			_cb = cb;
 		}

@@ -1822,6 +1822,7 @@ static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, 
 {
 	if (g_isReading && g_currentMatrixMode == GL_MODELVIEW)
 	{
+        // This code may not be working. Needs to be fixed
 		/*
 		linalg::aliases::double4x4 Mat(linalg::rotation_matrix(linalg::rotation_quat(linalg::aliases::double3(x, y, z), angle )));
 		linalg::aliases::double4x4 MatCurrent = g_CurrentMatrix.back();
@@ -1973,7 +1974,7 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
-
+    // Test code to send updated model to the application
     if ((GetKeyState('A') & 0x8000) && (GetKeyState(VK_LMENU) & 0x8000))
     {
         g_calledreadFromApp = true;

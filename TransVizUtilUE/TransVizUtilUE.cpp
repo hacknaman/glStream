@@ -43,7 +43,7 @@ namespace TransVizUtilUE{
     }
 
     std::string TransVizUtilUE::getTransvizVersion(){
-        return " This is new";
+        return "v1.0";
     }
 
     bool TransVizUtilUE::isConnected(){ return _isconnected; }
