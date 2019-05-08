@@ -17,6 +17,8 @@ extern void avevaSPUReset()
 //#define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
 
+int PART_SELECTION_AVEVA = 1;
+
 #define DRAW_APPCAM
 //#define DRAW_APPCAM_BEAM
 
@@ -47,7 +49,7 @@ extern void changeSceneASC() {
 }
 
 extern void resetClientASC() {
-    if (((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->IsConnected() && aveva_spu.superSpuState->isPartSelectionEnabled)
+    if (PART_SELECTION_AVEVA && ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->IsConnected() )
         ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->ResetMaterials();
 }
 
@@ -99,7 +101,7 @@ extern void getUpdatedAvevaSceneASC(){
     reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
     g_matcam = reviewcam->getInverseViewMatrix();
 
-    if (aveva_spu.superSpuState->isPartSelectionEnabled)
+    if (PART_SELECTION_AVEVA)
     {
         ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->GetElementList(aveva_spu.RootElement);
         ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->SetMaterialOnNodeNew(aveva_spu.RootElement, aveva_spu.depth_value);
@@ -107,13 +109,21 @@ extern void getUpdatedAvevaSceneASC(){
         aveva_spu.g_spuGroupMap.clear();
         FillSequenceGroupRep(aveva_spu.RootElement); // This fills ElementSequnce and g_spuGroupMap. Both stores element that were colored using the api
         aveva_spu.sequence_index = -1;
-    }
+    } 
 
 #endif
 
     aveva_spu.superSpuState->g_shouldStartReading = true;
 
-    // Camera Shake code
+    // API based camera shake
+    // This can be moved to different thread
+    for (int i = 0; i <=21; i++)
+    {
+        ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->shakeCamera();
+        Sleep(1);
+    }
+
+    // APP based camera shake
     if (camerashakeapp.empty())
     {
         std::ifstream myfile("CameraShakeConfig.txt");
@@ -179,6 +189,12 @@ static void PRINT_APIENTRY printBarrierExecCR(GLuint name)
 
 static void PRINT_APIENTRY printBegin(GLenum mode)
 {
+    if (!PART_SELECTION_AVEVA)
+    {
+        aveva_spu.super.Begin(mode);
+        return;
+    }
+
     aveva_spu.super.Begin(mode);
 
     if (aveva_spu.superSpuState->g_isReading)
@@ -311,6 +327,13 @@ static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
 {
+
+    if (!PART_SELECTION_AVEVA)
+    {
+        aveva_spu.super.Color3f(red, green, blue);
+        return;
+    }
+
     if (!aveva_spu.superSpuState->g_isReading)
     {
         return;
@@ -318,7 +341,7 @@ static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue
 
     aveva_spu.superSpuState->g_CurrentColor = osg::Vec3(red, green, blue);
    
-    if (aveva_spu.superSpuState->isPartSelectionEnabled)
+    if (PART_SELECTION_AVEVA)
     {
         int FakeColor = int(aveva_spu.superSpuState->g_CurrentColor[0] * 1000000) + int(aveva_spu.superSpuState->g_CurrentColor[1] * 10000) + int(aveva_spu.superSpuState->g_CurrentColor[2] * 100);
         if (FakeColor == FirstColor || FakeColor == SecondColor)
@@ -665,6 +688,12 @@ static void PRINT_APIENTRY printEnableVertexAttribArrayARB(GLuint index)
 // 
 static void PRINT_APIENTRY printEnd(void)
 {
+    if (!PART_SELECTION_AVEVA)
+    {
+        aveva_spu.super.End();
+        return;
+    }
+
     if (aveva_spu.superSpuState->g_isReading)
     {
         aveva_spu.superSpuState->g_geom = new osg::Geometry();
@@ -690,7 +719,7 @@ static void PRINT_APIENTRY printEnd(void)
 #endif
         }
 
-        if (aveva_spu.superSpuState->g_geode && aveva_spu.superSpuState->isPartSelectionEnabled){
+        if (PART_SELECTION_AVEVA && aveva_spu.superSpuState->g_geode){
             osg::ref_ptr<osg::Group> currentgroup = aveva_spu.g_spuGroupMap[aveva_spu.sequence_index];
             osg::Vec3Array *colorarr = new osg::Vec3Array();
             osg::Vec3 color(aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[0] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[1] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[2] / 100);
@@ -2219,8 +2248,6 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 #ifdef ENABLE_MATERIAL
         aveva_spu.superSpuState->g_material = new osg::Material();
 #endif
-        osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-
         
         aveva_spu.superSpuState->g_startReading = false;
         
@@ -2450,19 +2477,11 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
     aveva_spu.super.Translated(x,y,z);
-    /* if (g_isReading && g_PatArray.size() > 1)
-    {
-        g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-    }*/
 }
 
 static void PRINT_APIENTRY printTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
     aveva_spu.super.Translated(x, y, z);
-    /* if (g_isReading && g_PatArray.size() > 1)
-    {
-        g_PatArray.back()->setPosition(osg::Vec3(x, y, z));
-    }*/
 }
 
 static GLboolean PRINT_APIENTRY printUnmapBufferARB(GLenum target)
@@ -2512,10 +2531,11 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         osg::Vec3 vertexPoint = matFinal.getTrans();
 
         osg::Matrix Normalmat = osg::Matrix::translate(aveva_spu.superSpuState->g_CurrentNormal);
-        osg::Matrix CurrentMatrixNew = aveva_spu.superSpuState->g_CurrentMatrix;
+        osg::Matrix CurrentMatrixNew = aveva_spu.superSpuState->g_CurrentMatrix * g_matcam;
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
         osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
         osg::Vec3 normalPoint = NormalmatFinal.getTrans();
+        normalPoint.normalize();
 
         aveva_spu.superSpuState->g_vertexArray->push_back(vertexPoint);
         aveva_spu.superSpuState->g_normalArray->push_back(normalPoint);
@@ -2816,7 +2836,7 @@ static void PRINT_APIENTRY printViewport(GLint x, GLint y, GLsizei width, GLsize
 
 static GLint PRINT_APIENTRY printWindowCreate(const char * dpyName, GLint visBits)
 {
-    return aveva_spu.super.WindowCreate(dpyName,visBits);//g_ret_count++;
+    return aveva_spu.super.WindowCreate(dpyName,visBits);
 }
 
 static void PRINT_APIENTRY printWindowDestroy(GLint window)
