@@ -13,6 +13,7 @@ extern void avevaSPUReset()
     aveva_spu.depth_value = 2;
 }
 
+// Lights and material needs to be tested.
 //#define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
 
@@ -46,11 +47,11 @@ extern void changeSceneASC() {
 }
 
 extern void resetClientASC() {
-    
-   
     if (((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->IsConnected() && aveva_spu.superSpuState->isPartSelectionEnabled)
         ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->ResetMaterials();
 }
+
+std::string camerashakeapp;
 
 extern void getUpdatedAvevaSceneASC(){
 
@@ -110,10 +111,10 @@ extern void getUpdatedAvevaSceneASC(){
 
 #endif
 
-    //g_calledreadFromApp = true;
+    aveva_spu.superSpuState->g_shouldStartReading = true;
 
     // Camera Shake code
-   /* if (camerashakeapp.empty())
+    if (camerashakeapp.empty())
     {
         std::ifstream myfile("CameraShakeConfig.txt");
         if (myfile.is_open())
@@ -126,7 +127,8 @@ extern void getUpdatedAvevaSceneASC(){
     if (!camerashakeapp.empty())
     {
         system(camerashakeapp.c_str());
-    }*/
+    }
+
 }
 
 extern OSGEXPORT void funcNodeUpdateASC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
@@ -178,7 +180,7 @@ static void PRINT_APIENTRY printBarrierExecCR(GLuint name)
 static void PRINT_APIENTRY printBegin(GLenum mode)
 {
     aveva_spu.super.Begin(mode);
-    
+
     if (aveva_spu.superSpuState->g_isReading)
     {
         aveva_spu.superSpuState->g_geode = new osg::Geode();
@@ -240,16 +242,8 @@ static void PRINT_APIENTRY printBufferSubDataARB(GLenum target, GLintptrARB offs
 static void PRINT_APIENTRY printCallList(GLuint list)
 {
     aveva_spu.super.CallList(list);
-    /*if (g_isReading) {
-        g_hasTouchedBegin = true;
-        int listIndexInInt = list;
-        int displayListSizeLessOne = g_PatArrayDisplayList.size() - 1;
-        if (listIndexInInt <= displayListSizeLessOne)
-        {
-            g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
-        }
-    }*/
 }
+
 static void PRINT_APIENTRY printCallLists(GLsizei n, GLenum type, const GLvoid * lists)
 {
 
@@ -563,7 +557,7 @@ static void PRINT_APIENTRY printCopyTexSubImage3D(GLenum target, GLint level, GL
 
 static GLint PRINT_APIENTRY printCreateContext(const char * dpyName, GLint visual, GLint shareCtx)
 {
-    return aveva_spu.super.CreateContext(dpyName,visual,shareCtx);//aveva_spu.superSpuState->g_ret_count++;
+    return aveva_spu.super.CreateContext(dpyName,visual,shareCtx);
 }
 
 static void PRINT_APIENTRY printCullFace(GLenum mode)
@@ -612,11 +606,7 @@ static void PRINT_APIENTRY printDestroyContext(GLint ctx)
 
 static void PRINT_APIENTRY printDisable(GLenum cap)
 {
-   
     aveva_spu.super.Disable(cap);
-    /* if (cap == GL_POLYGON_STIPPLE){
-        aveva_spu.superSpuStateg_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
-    }*/
 }
 
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
@@ -661,23 +651,7 @@ static void PRINT_APIENTRY printEdgeFlagv(const GLboolean * flag)
 
 static void PRINT_APIENTRY printEnable(GLenum cap)
 {
-
     aveva_spu.super.Enable(cap);
-//    if (g_isReading && cap == GL_POLYGON_STIPPLE) {
-//        osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
-//        g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-//    }
-//
-//#ifdef ENABLE_LIGHTS
-//    if (cap >= GL_LIGHT0 && cap <= GL_LIGHT7)
-//    {
-//        if (g_light[cap - GL_LIGHT0] == NULL)
-//        {
-//            g_light[cap - GL_LIGHT0] = new osg::LightSource();
-//        }
-//    }
-//#endif
-
 }
 
 static void PRINT_APIENTRY printEnableClientState(GLenum array)
@@ -717,8 +691,6 @@ static void PRINT_APIENTRY printEnd(void)
         }
 
         if (aveva_spu.superSpuState->g_geode && aveva_spu.superSpuState->isPartSelectionEnabled){
-           // g_PatArray.back()->addChild(g_geode);
-           // int Index = int(g_CurrentColor[0]*1000000) + int(g_CurrentColor[1]*10000) + int(g_CurrentColor[2]*100);
             osg::ref_ptr<osg::Group> currentgroup = aveva_spu.g_spuGroupMap[aveva_spu.sequence_index];
             osg::Vec3Array *colorarr = new osg::Vec3Array();
             osg::Vec3 color(aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[0] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[1] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[2] / 100);
@@ -762,7 +734,6 @@ static void PRINT_APIENTRY printEnd(void)
 static void PRINT_APIENTRY printEndList(void)
 {
     aveva_spu.super.EndList();
-    //g_isDisplayList = false;
 }
 
 static void PRINT_APIENTRY printEndQueryARB(GLenum target)
@@ -899,7 +870,7 @@ static void PRINT_APIENTRY printGenFencesNV(GLsizei n, GLuint * fences)
 
 static GLuint PRINT_APIENTRY printGenLists(GLsizei range)
 {
-    return aveva_spu.super.GenLists(range);//g_ret_count++;
+    return aveva_spu.super.GenLists(range);
 }
 
 static void PRINT_APIENTRY printGenProgramsARB(GLsizei n, GLuint * programs)
@@ -1374,34 +1345,7 @@ static void PRINT_APIENTRY printLightModeliv(GLenum pname, const GLint * params)
 
 static void PRINT_APIENTRY printLightf(GLenum light, GLenum pname, GLfloat param)
 {
-   
     aveva_spu.super.Lightf(light,pname,param);
-    /* if (!g_isReading)
-    {
-        return;
-    }
-
-#ifdef ENABLE_LIGHTS
-    if (g_light[light - GL_LIGHT0] == NULL){
-        g_light[light - GL_LIGHT0] = new osg::LightSource();
-    }
-
-    switch (pname)
-    {
-    case GL_SPOT_EXPONENT:
-    {
-        g_light[light - GL_LIGHT0]->getLight()->setSpotExponent(param);
-        break;
-    }
-    case GL_SPOT_CUTOFF:
-    {
-        g_light[light - GL_LIGHT0]->getLight()->setSpotCutoff(param);
-        break;
-    }
-
-    }
-
-#endif*/
 }
 
 static void PRINT_APIENTRY printLighti(GLenum light, GLenum pname, GLint param)
@@ -1423,35 +1367,21 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
     aveva_spu.super.LoadIdentity();
-    //g_CurrentMatrix = osg::Matrix() * g_matcam;
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
     aveva_spu.super.LoadMatrixf(m);
-    /*g_CurrentMatrix.set(m);
-    g_CurrentMatrix *= g_matcam;*/
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
     aveva_spu.super.PushMatrix();
-    //if (g_isReading)
-    //{
-    //    // create a pat node
-    //    osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform;
-    //    g_PatArray.back()->addChild(pat);
-    //    g_PatArray.push_back(pat);
-    //}
-    ////pushing current matrix in stack
-    //g_matrix_stack.push_back(g_CurrentMatrix);
 }
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
     aveva_spu.super.LoadMatrixd(m);
-    /* g_CurrentMatrix.set(m);
-    g_CurrentMatrix *= g_matcam;*/
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1514,32 +1444,37 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
 
-  
-    aveva_spu.super.Materialf(face,pname,param);
-  /* osg::Material::Face osgface = osg::Material::Face::FRONT;
+    if (!aveva_spu.superSpuState->g_isReading || aveva_spu.superSpuState->isColorMaterialEnabled)
+    {
+        return;
+    }
+
+    osg::Material::Face osgface = osg::Material::Face::FRONT;
 
     switch (face){
     case GL_BACK:
         osgface = osg::Material::Face::BACK;
+        break;
     case GL_FRONT_AND_BACK:
         osgface = osg::Material::Face::FRONT_AND_BACK;
+        break;
     }
 
 #ifdef ENABLE_MATERIAL
 
-    if (g_material == NULL)
+    if (aveva_spu.superSpuState->g_material == NULL)
     {
-        g_material = new osg::Material();
+        aveva_spu.superSpuState->g_material = new osg::Material();
     }
 
     switch (pname)
     {
     case GL_SHININESS:
-        g_material->setShininess(osgface, param);
+        aveva_spu.superSpuState->g_material->setShininess(osgface, param);
         break;
     }
 
-#endif*/
+#endif
 
 }
 
@@ -1554,7 +1489,6 @@ static void PRINT_APIENTRY printMaterialiv(GLenum face, GLenum mode, const GLint
 static void PRINT_APIENTRY printMatrixMode(GLenum mode)
 {
     aveva_spu.super.MatrixMode(mode);
-    //g_currentMatrixMode = mode;
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
@@ -1563,19 +1497,11 @@ static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
 {
     aveva_spu.super.MultMatrixf(m);
-    /*osg::Matrix mat = osg::Matrix();
-    mat.set(m);
-    g_CurrentMatrix = mat * g_CurrentMatrix;
-    g_CurrentMatrix *= g_matcam;*/
 }
 
 static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
 {
     aveva_spu.super.MultMatrixd(m);
-    /* osg::Matrix mat = osg::Matrix();
-    mat.set(m);
-    g_CurrentMatrix = mat * g_CurrentMatrix;
-    g_CurrentMatrix *= g_matcam;*/
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixfARB(const GLfloat * m)
@@ -1721,69 +1647,56 @@ static void PRINT_APIENTRY printMultiTexCoord4svARB(GLenum texture, const GLshor
 static void PRINT_APIENTRY printNewList(GLuint list, GLenum mode)
 {
     aveva_spu.super.NewList(list,mode);
-    /*g_isDisplayList = true;
-    osg::PositionAttitudeTransform* pat = new osg::PositionAttitudeTransform();
-    g_PatArrayDisplayList.push_back(pat);*/
 }
 
 static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
 {
     aveva_spu.super.Normal3b(nx, ny, nz);
-    //g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3bv(const GLbyte * v)
 {
     aveva_spu.super.Normal3bv(v);
-    //g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3d(GLdouble nx, GLdouble ny, GLdouble nz)
 {
     aveva_spu.super.Normal3d(nx, ny, nz);
-    //g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3dv(const GLdouble * v)
 {
     aveva_spu.super.Normal3dv(v);
-    //g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
     aveva_spu.super.Normal3f(nx, ny, nz);
-    //g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3fv(const GLfloat * v)
 {
     aveva_spu.super.Normal3fv(v);
-    //g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3i(GLint nx, GLint ny, GLint nz)
 {
     aveva_spu.super.Normal3i(nx, ny, nz);
-    //g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3iv(const GLint * v)
 {
     aveva_spu.super.Normal3iv(v);
-    //g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormal3s(GLshort nx, GLshort ny, GLshort nz)
 {
     aveva_spu.super.Normal3s(nx, ny, nz);
-    //g_CurrentNormal = osg::Vec3(nx, ny, nz);
 }
 
 static void PRINT_APIENTRY printNormal3sv(const GLshort * v)
 {
     aveva_spu.super.Normal3sv(v);
-    //g_CurrentNormal = osg::Vec3(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const GLvoid * pointer)
@@ -1792,7 +1705,6 @@ static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const
 
 static void PRINT_APIENTRY printOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
-    //g_CurrentprojectionMatrix.makeOrtho(left,right,bottom,top,zNear,zFar);
 }
 
 static void PRINT_APIENTRY printPassThrough(GLfloat token)
@@ -1874,14 +1786,6 @@ static void PRINT_APIENTRY printPopClientAttrib(void)
 static void PRINT_APIENTRY printPopMatrix(void)
 {
     aveva_spu.super.PopMatrix();
-    /*if (g_isReading)
-    {
-        g_PatArray.pop_back();
-    }
-
-    osg::Matrix top_mat = g_matrix_stack.back();
-    g_matrix_stack.pop_back();
-    g_CurrentMatrix = top_mat;*/
 }
 
 static void PRINT_APIENTRY printPopName(void)
@@ -1975,8 +1879,6 @@ static void PRINT_APIENTRY printPushAttrib(GLbitfield mask)
 static void PRINT_APIENTRY printPushClientAttrib(GLbitfield mask)
 {
 }
-
-
 
 static void PRINT_APIENTRY printPushName(GLuint name)
 {
@@ -2120,7 +2022,7 @@ static void PRINT_APIENTRY printRectsv(const GLshort * v1, const GLshort * v2)
 
 static GLint PRINT_APIENTRY printRenderMode(GLenum mode)
 {
-    return aveva_spu.super.RenderMode(mode);//g_ret_count++;
+    return aveva_spu.super.RenderMode(mode);
 }
 
 static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuint * ids)
@@ -2130,19 +2032,11 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
     aveva_spu.super.Rotated(angle, x, y, z);
-    //if (g_isReading)
-    //{
-    //    //g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
-    //}
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
     aveva_spu.super.Rotatef(angle, x, y, z);
-    //if (g_isReading)
-    //{
-    //    //g_PatArray.back()->setAttitude(osg::Quat(angle, x, y, z));
-    //}
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -2152,10 +2046,6 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
     aveva_spu.super.Scaled(x, y, z);
-    /*if (g_isReading)
-    {
-        g_PatArray.back()->setScale(osg::Vec3(x, y, z));
-    }*/
 }
 
 static void PRINT_APIENTRY printScalef(GLfloat x, GLfloat y, GLfloat z)
@@ -2295,21 +2185,22 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         for (int i = GL_LIGHT0; i <= GL_LIGHT7; ++i)
         {
             if (g_light[i - GL_LIGHT0] != NULL){
-                g_spuRootGroup->addChild(g_light[i - GL_LIGHT0]);
+                aveva_spu.superSpuState->g_spuRootGroup->addChild(g_light[i - GL_LIGHT0]);
             }
         }
 #endif
 
 #ifdef DRAW_APPCAM_BEAM
-        g_spuRootGroup->addChild(mybeamGeode);
+        if (aveva_spu.superSpuState->g_hasTouchedBegin)
+            aveva_spu.superSpuState->g_spuRootGroup->addChild(mybeamGeode);
 #endif
         for (auto group : aveva_spu.g_spuGroupMap)
         {
             aveva_spu.superSpuState->g_spuRootGroup->addChild(group);
         }
 
-        aveva_spu.superSpuState->g_pt2Func(aveva_spu.superSpuState->g_context, aveva_spu.superSpuState->g_spuRootGroup);
-       // rapi.ResetMaterials();
+        if (aveva_spu.superSpuState->g_hasTouchedBegin)
+            aveva_spu.superSpuState->g_pt2Func(aveva_spu.superSpuState->g_context, aveva_spu.superSpuState->g_spuRootGroup);
     }
 
     if (aveva_spu.superSpuState->g_shouldStartReading)
@@ -2319,19 +2210,6 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         aveva_spu.superSpuState->g_isReading = true;
         aveva_spu.superSpuState->g_hasTouchedBegin = false;
         aveva_spu.superSpuState->g_CurrentMatrix = osg::Matrix();
-
-		// update camera matrix
-		/*
-        double cameraPosition[3];
-		double cameraLookat[3];
-		double cameraRoll;
-		rapi.getCamera(cameraPosition, cameraLookat, cameraRoll);
-		osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
-		osg::Vec3d endPoint_x = osg::Vec3d(cameraLookat[0], cameraLookat[1], cameraLookat[2]);
-		osg::ref_ptr<osg::Camera> reviewcam = new osg::Camera();
-		reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
-		g_matcam = reviewcam->getInverseViewMatrix();
-        */
     }
 
     if (aveva_spu.superSpuState->g_startReading)
@@ -3033,13 +2911,20 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
 
+    if (!aveva_spu.superSpuState->g_isReading || aveva_spu.superSpuState->isColorMaterialEnabled)
+    {
+        return;
+    }
+
     osg::Material::Face osgface = osg::Material::Face::FRONT;
 
     switch (face){
     case GL_BACK:
         osgface = osg::Material::Face::BACK;
+        break;
     case GL_FRONT_AND_BACK:
         osgface = osg::Material::Face::FRONT_AND_BACK;
+        break;
     }
 
 #ifdef ENABLE_MATERIAL
@@ -3061,8 +2946,14 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         aveva_spu.superSpuState->g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_AMBIENT_AND_DIFFUSE:
-        aveva_spu.superSpuState->g_CurrentColor = osg::Vec3(params[0], params[1], params[2]);
-        aveva_spu.superSpuState->g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
+        aveva_spu.superSpuState->g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        aveva_spu.superSpuState->g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_EMISSION:
+        aveva_spu.superSpuState->g_material->setEmission(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        break;
+    case GL_SHININESS:
+        aveva_spu.superSpuState->g_material->setShininess(osgface, params[0]);
         break;
     }
 

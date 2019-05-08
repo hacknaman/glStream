@@ -157,15 +157,21 @@ public:
                 
                 if (!selected_node)
                     return;
-                std::cout << "part meta data is given below-" << std::endl;
-                std::cout << "mass:" << ((ServerAppContentApi::CatiaNode*)selected_node)->mass << std::endl;
-                std::cout << "volume:" << ((ServerAppContentApi::CatiaNode*)selected_node)->volume << std::endl;
-                std::cout << "wetAera:" << ((ServerAppContentApi::CatiaNode*)selected_node)->wetArea << std::endl;
-                std::cout << "gravity center:" << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[0] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[1] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[2] << std::endl;
-                //std::cout << "extents:" << part_info.extents[0] << "," << part_info.extents[1] << "," << part_info.extents[2] << part_info.extents[3] << "," << part_info.extents[4] << "," << part_info.extents[5] << std::endl;
 
-                std::cout << "definition:" << ((ServerAppContentApi::CatiaNode*)selected_node)->definition << std::endl;
-                std::cout << "Descrption:" << ((ServerAppContentApi::CatiaNode*)selected_node)->partDescription << std::endl; 
+                // This is catia specific thing..
+                // use this only if we are using catia spu is loaded
+                if (0)
+                {
+                    std::cout << "part meta data is given below-" << std::endl;
+                    std::cout << "mass:" << ((ServerAppContentApi::CatiaNode*)selected_node)->mass << std::endl;
+                    std::cout << "volume:" << ((ServerAppContentApi::CatiaNode*)selected_node)->volume << std::endl;
+                    std::cout << "wetAera:" << ((ServerAppContentApi::CatiaNode*)selected_node)->wetArea << std::endl;
+                    std::cout << "gravity center:" << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[0] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[1] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[2] << std::endl;
+                    //std::cout << "extents:" << part_info.extents[0] << "," << part_info.extents[1] << "," << part_info.extents[2] << part_info.extents[3] << "," << part_info.extents[4] << "," << part_info.extents[5] << std::endl;
+
+                    std::cout << "definition:" << ((ServerAppContentApi::CatiaNode*)selected_node)->definition << std::endl;
+                    std::cout << "Descrption:" << ((ServerAppContentApi::CatiaNode*)selected_node)->partDescription << std::endl;
+                }
                 
 
 			}

@@ -9,7 +9,15 @@ See the file LICENSE.txt for information on redistributing this software. */
 #include "scenegraphspu.h"
 #include <osgUtil\Optimizer>
 
-#define DISABLE_TRANSFORM_MULT_WITH_VERTICES
+// Transform node is added so that geometry diffentiation could be done
+// Secondly, Transform node help in setting the normals right.
+// *** This has been disabled because the program crashes while useing avevascenegraphSPU
+//     and some initial state seems wrong, which is why city app doesn't work well.
+//     there is a block at the center. ***
+
+// #define DISABLE_TRANSFORM_MULT_WITH_VERTICES
+
+
 // This is enabled for part selection in aveva
 #define GEODE_WITH_LM
 #define ENABLE_MATERIAL
@@ -17,7 +25,7 @@ See the file LICENSE.txt for information on redistributing this software. */
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
-    scenegraph_spu_data.g_ret_count = 2000;
+    scenegraph_spu_data.g_ret_count = 2000; 
 
     scenegraph_spu_data.g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
     scenegraph_spu_data.g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
