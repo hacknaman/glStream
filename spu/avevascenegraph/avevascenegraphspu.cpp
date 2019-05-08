@@ -14,7 +14,7 @@ extern void avevaSPUReset()
 }
 
 // Lights and material needs to be tested.
-//#define ENABLE_MATERIAL
+#define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
 
 int PART_SELECTION_AVEVA = 1;
@@ -1473,7 +1473,7 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
 
-    if (!aveva_spu.superSpuState->g_isReading || aveva_spu.superSpuState->isColorMaterialEnabled)
+    if (!aveva_spu.superSpuState->g_isReading)
     {
         return;
     }
@@ -2196,6 +2196,12 @@ static void PRINT_APIENTRY printStencilOp(GLenum fail, GLenum zfail, GLenum zpas
 
 static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
+
+    if (!PART_SELECTION_AVEVA)
+    {
+        aveva_spu.super.SwapBuffers(window, flags); 
+        return;
+    }
     
     if (aveva_spu.superSpuState->g_isReading)
     {
@@ -2930,8 +2936,13 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 // material function copied here for color
 static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
 {
+    if (!PART_SELECTION_AVEVA)
+    {
+        aveva_spu.super.Materialfv(face, mode, params);
+        return;
+    }
 
-    if (!aveva_spu.superSpuState->g_isReading || aveva_spu.superSpuState->isColorMaterialEnabled)
+    if (!aveva_spu.superSpuState->g_isReading)
     {
         return;
     }
@@ -2954,20 +2965,22 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         aveva_spu.superSpuState->g_material = new osg::Material();
     }
 
+    osg::Vec3 color(aveva_spu.ElementSequence[aveva_spu.sequence_index+1]->realColor[0] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index+1]->realColor[1] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index+1]->realColor[2] / 100);
+
     switch (mode)
     {
     case GL_AMBIENT:
-        aveva_spu.superSpuState->g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        aveva_spu.superSpuState->g_material->setAmbient(osgface, osg::Vec4(color.x(), color.y(), color.z(), params[3]));
         break;
     case GL_DIFFUSE:
-        aveva_spu.superSpuState->g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        aveva_spu.superSpuState->g_material->setDiffuse(osgface, osg::Vec4(color.x(), color.y(), color.z(), params[3]));
         break;
     case GL_SPECULAR:
         aveva_spu.superSpuState->g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_AMBIENT_AND_DIFFUSE:
-        aveva_spu.superSpuState->g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
-        aveva_spu.superSpuState->g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
+        aveva_spu.superSpuState->g_material->setAmbient(osgface, osg::Vec4(color.x(), color.y(), color.z(), params[3]));
+        aveva_spu.superSpuState->g_material->setDiffuse(osgface, osg::Vec4(color.x(), color.y(), color.z(), params[3]));
         break;
     case GL_EMISSION:
         aveva_spu.superSpuState->g_material->setEmission(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
