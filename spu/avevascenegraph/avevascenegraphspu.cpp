@@ -17,7 +17,7 @@ extern void avevaSPUReset()
 #define ENABLE_MATERIAL
 //#define ENABLE_LIGHTS
 
-int PART_SELECTION_AVEVA = 1;
+int PART_SELECTION_AVEVA = 0;
 
 #define DRAW_APPCAM
 //#define DRAW_APPCAM_BEAM
@@ -67,6 +67,7 @@ extern void getUpdatedAvevaSceneASC(){
     double cameraLookat[3];
 	double cameraRoll;
 
+    // XXX replace all this block with a camera pos orientation get function
     ((ServerAppContentApi::AvevaApi*)aveva_spu.superSpuState->current_app_instance)->getCamera(cameraPosition, cameraLookat, cameraRoll);
 
     osg::Vec3d startPoint = osg::Vec3d(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
@@ -97,6 +98,24 @@ extern void getUpdatedAvevaSceneASC(){
     mybeamGeode = beamGeode;
 #endif
 
+    // Get Config 
+    {
+        std::string PartSelectString;
+        std::ifstream myfile("AVEVASPUConfig.txt");
+        if (myfile.is_open())
+        {
+            getline(myfile, PartSelectString);
+            std::string strCheck("YES");
+
+            if (PartSelectString.compare(strCheck) == 0)
+                PART_SELECTION_AVEVA = 1;
+            else
+                PART_SELECTION_AVEVA = 0;
+
+            myfile.close();
+        }
+    }
+
     osg::ref_ptr<osg::Camera> reviewcam = new osg::Camera();
     reviewcam->setViewMatrixAsLookAt(startPoint, endPoint_x, osg::Vec3(0, 0, 1));
     g_matcam = reviewcam->getInverseViewMatrix();
@@ -123,6 +142,7 @@ extern void getUpdatedAvevaSceneASC(){
         Sleep(1);
     }
 
+    
     // APP based camera shake
     if (camerashakeapp.empty())
     {
@@ -2965,7 +2985,12 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         aveva_spu.superSpuState->g_material = new osg::Material();
     }
 
-    osg::Vec3 color(aveva_spu.ElementSequence[aveva_spu.sequence_index+1]->realColor[0] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index+1]->realColor[1] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index+1]->realColor[2] / 100);
+    osg::Vec3 color;
+
+    if (aveva_spu.sequence_index >= 0 && aveva_spu.sequence_index < aveva_spu.ElementSequence.size())
+    {
+        color = osg::Vec3(aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[0] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[1] / 100, aveva_spu.ElementSequence[aveva_spu.sequence_index]->realColor[2] / 100);
+    }
 
     switch (mode)
     {
