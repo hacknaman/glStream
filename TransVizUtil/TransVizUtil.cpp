@@ -4,7 +4,6 @@
 #include <osgDB/Registry>
 #include <osgDB/ReadFile>
 #include <osgDB/Writefile>
-#include <AppContentApi.h>
 
 namespace TransVizUtil{
 
@@ -61,11 +60,7 @@ namespace TransVizUtil{
         _bIsNodeDirty = false;
         iSPU->resetClient();
     }
-    void TransVizUtil::getServerAppContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode> root)
-    {
-       
-        iSPU->getContentTree(root);
-    }
+  
     void TransVizUtil::saveModel()
     {
         // Save the model
@@ -73,10 +68,7 @@ namespace TransVizUtil{
         osgDB::writeNodeFile(*(_oldNode.get()), "tranviz.osgt");
         std::cout << "Model saved as osgt and ive" << std::endl;
     }
-    ServerAppContentApi::ServerContentNode* TransVizUtil::getContentNodeInTree(std::string &name)
-    {
-        return ServerAppContentApi::AppContentApi::getServerContentNodeInTree(name);
-    }
+   
     void TransVizUtil::updateNode(osg::ref_ptr<osg::Group> node)
     {
         _newNode = node;

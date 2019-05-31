@@ -1,6 +1,5 @@
 include_directories(.)
 include_directories(${OSG_INCLUDE_DIR})
-include_directories(${SERVER_CONTENT_API_INCLUDE_DIR})
 
 SET(LIB_HEADERS
 	TransVizUtil.h
@@ -16,8 +15,8 @@ ADD_LIBRARY(TransVizUtil SHARED
 )
 
 target_link_libraries(TransVizUtil
-  debug      ${OSG_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D} debug ${OSGDB_LIBRARY_D} debug ${SERVER_CONTENT_API_LIBRARY_D}
-  optimized  ${OSG_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSG_VIEWER_LIBRARY} optimized ${OSGDB_LIBRARY} optimized ${SERVER_CONTENT_API_LIBRARY}
+  debug      ${OSG_LIBRARY_D} debug ${OPENTHREADS_LIBRARY_D} debug ${OSG_VIEWER_LIBRARY_D} debug ${OSGDB_LIBRARY_D}
+  optimized  ${OSG_LIBRARY} optimized ${OPENTHREADS_LIBRARY} optimized ${OSG_VIEWER_LIBRARY} optimized ${OSGDB_LIBRARY} 
 )
 
 target_link_libraries(TransVizUtil crserverlib spuload crmothership crstate crpacker crutil crserver_crunpacker_copy)

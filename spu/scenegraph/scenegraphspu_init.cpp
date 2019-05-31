@@ -40,17 +40,9 @@ void Scenespufunc::funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<os
 		funcNodeUpdateSC(pt2Func, context);
 }
 
-void Scenespufunc::getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode> root)
-{
-    
-    if (scenegraph_spu_data.current_app_instance)
-        scenegraph_spu_data.current_app_instance->createContentTree(root);
-
-}
 void Scenespufunc::resetClient()
 {
-    if (scenegraph_spu_data.current_app_instance && scenegraph_spu_data.isPartSelectionEnabled)
-        scenegraph_spu_data.current_app_instance->resetOriginalColors();
+
 }
 
 void Scenespufunc::setPartSelectionFlag(bool flag)

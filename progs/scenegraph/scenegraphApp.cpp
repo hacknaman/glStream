@@ -100,15 +100,7 @@ public:
             {
                 // *(char *)0 = 0; // for testing call tracer this causes seg fault
                 _SceneGraphGenerator->generateScenegraph();
-                std::cout << "get server app tree" << std::endl;
-
-                // catia specific code
-                if (0)
-                {
-                    std::shared_ptr<ServerAppContentApi::CatiaNode> _content_root_node = std::make_shared<ServerAppContentApi::CatiaNode>();
-                    _SceneGraphGenerator->getServerAppContentTree(_content_root_node);
-                }
-                std::cout << "server app content tree is created" << std::endl;
+               
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
             {
@@ -158,27 +150,7 @@ public:
 				std::string intersectedGeodeName = intersectedNode->asGeode()->getName();
 
 				std::cout << "This is the node we have pressed - " << intersectedGeodeName << std::endl;
-                ServerAppContentApi::ServerContentNode *selected_node = _SceneGraphGenerator->getContentNodeInTree(intersectedGeodeName);
                 
-                if (!selected_node)
-                    return;
-
-                // This is catia specific thing..
-                // use this only if we are using catia spu is loaded
-                if (0)
-                {
-                    std::cout << "part meta data is given below-" << std::endl;
-                    std::cout << "mass:" << ((ServerAppContentApi::CatiaNode*)selected_node)->mass << std::endl;
-                    std::cout << "volume:" << ((ServerAppContentApi::CatiaNode*)selected_node)->volume << std::endl;
-                    std::cout << "wetAera:" << ((ServerAppContentApi::CatiaNode*)selected_node)->wetArea << std::endl;
-                    std::cout << "gravity center:" << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[0] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[1] << "," << ((ServerAppContentApi::CatiaNode*)selected_node)->gravityCenter[2] << std::endl;
-                    //std::cout << "extents:" << part_info.extents[0] << "," << part_info.extents[1] << "," << part_info.extents[2] << part_info.extents[3] << "," << part_info.extents[4] << "," << part_info.extents[5] << std::endl;
-
-                    std::cout << "definition:" << ((ServerAppContentApi::CatiaNode*)selected_node)->definition << std::endl;
-                    std::cout << "Descrption:" << ((ServerAppContentApi::CatiaNode*)selected_node)->partDescription << std::endl;
-                }
-                
-
 			}
 		}
 	}

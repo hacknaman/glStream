@@ -30,7 +30,6 @@
 #include <osg/LightModel>
 #include <osg/Light>
 #include <TransVizUtil.h>
-#include <AppContentApi.h>
 #include <ctime>
 #define PRINT_UNUSED(x) ((void)x)
 // comment out this code to disable material / lights
@@ -56,8 +55,6 @@ typedef struct {
 	
      int g_ret_count;
    
-     ServerAppContentApi::AppContentApi* current_app_instance;
-     ServerAppContentApi::NameAndColorInfo* curr_node_color_info;
      std::string curr_geode_name;
      bool isNormalNormalizationEnabled;
      bool isNormalRescaleEnabled;
@@ -116,8 +113,7 @@ public:
     OSGEXPORT void changeScene();
     OSGEXPORT void funcNodeUpdate(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void *context);
     OSGEXPORT void setPartSelectionFlag(bool flag);
-    OSGEXPORT void getContentTree(std::shared_ptr<ServerAppContentApi::ServerContentNode>);
-    OSGEXPORT  void resetClient();
+    OSGEXPORT void resetClient();
 };
 extern ScenegraphSpuData scenegraph_spu_data;
 extern OSGEXPORT ScenegraphSpuData* getScenegraphSpuData();
