@@ -100,7 +100,6 @@ public:
             {
                 // *(char *)0 = 0; // for testing call tracer this causes seg fault
                 _SceneGraphGenerator->generateScenegraph();
-               
             }
             else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_V)
             {
@@ -149,8 +148,11 @@ public:
 				osg::Node* intersectedNode = nodepath[nodepath.size() - 1];
 				std::string intersectedGeodeName = intersectedNode->asGeode()->getName();
 
-				std::cout << "This is the node we have pressed - " << intersectedGeodeName << std::endl;
-                
+                if(1)
+                {
+                    osg::Group *parent = intersectedNode->getParent(0);
+                    parent->removeChild(intersectedNode);
+                }
 			}
 		}
 	}

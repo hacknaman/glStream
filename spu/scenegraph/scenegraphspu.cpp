@@ -25,10 +25,10 @@ See the file LICENSE.txt for information on redistributing this software. */
 
 extern void PRINT_APIENTRY scenegraphSPUReset()
 {
-    scenegraph_spu_data.g_ret_count = 2000; 
+    scenegraph_spu_data.g_ret_count = 2000;
 
     scenegraph_spu_data.g_CurrentNormal = osg::Vec3(0.0, 1.0, 0.0);
-    scenegraph_spu_data.g_CurrentColor = osg::Vec3(1.0, 1.0, 1.0);
+    scenegraph_spu_data.g_CurrentColor = osg::Vec4(1.0, 1.0, 1.0, 1.0);
 
 #ifdef ENABLE_LIGHTS
     for (auto light : scenegraph_spu_data.g_light)
@@ -49,14 +49,12 @@ extern void PRINT_APIENTRY scenegraphSPUReset()
     scenegraph_spu_data.g_CurrentMatrix = osg::Matrix();
     scenegraph_spu_data.g_startReading = false;
     scenegraph_spu_data.g_isReading = false;
-    scenegraph_spu_data.g_hasDrawnSomething = false;
     scenegraph_spu_data.g_shouldStartReading = false;
     scenegraph_spu_data.g_hasTouchedBegin = false;
 
     scenegraph_spu_data.g_isDisplayList = false;
-    
+
     scenegraph_spu_data.g_time = std::time(0);
-    scenegraph_spu_data.isColorMaterialEnabled = false;
 }
 
 std::string camerashakeapp;
@@ -65,6 +63,26 @@ extern void getUpdatedSceneSC(){
     scenegraph_spu_data.g_shouldStartReading = true;
 }
 
+void CreateNewGeode()
+{
+    if (scenegraph_spu_data.g_needToCreateNewGeode)
+    {
+        scenegraph_spu_data.g_geode = new osg::Geode();
+#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
+        scenegraph_spu_data.g_current_transform = new osg::MatrixTransform;
+        scenegraph_spu_data.g_current_transform->setMatrix(scenegraph_spu_data.g_CurrentMatrix * scenegraph_spu_data.g_camera_matrix);
+        scenegraph_spu_data.g_current_transform->addChild(scenegraph_spu_data.g_geode);
+        scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_current_transform);
+#else
+
+        scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
+
+#endif
+
+
+        scenegraph_spu_data.g_needToCreateNewGeode = false;
+    }
+}
 extern void funcNodeUpdateSC(void(*pt2Func)(void * context, osg::ref_ptr<osg::Group>), void * context){
 
     scenegraph_spu_data.g_pt2Func = pt2Func;
@@ -74,9 +92,10 @@ extern OSGEXPORT ScenegraphSpuData* getScenegraphSpuData()
 {
     return &scenegraph_spu_data;
 }
-static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
-{
 
+extern OSGEXPORT void readConfigFile()
+{
+  
 }
 
 static void PRINT_APIENTRY printActiveTextureARB(GLenum texture)
@@ -118,12 +137,12 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
 {
     if (scenegraph_spu_data.g_isReading)
     {
+        CreateNewGeode();
         scenegraph_spu_data.g_hasTouchedBegin = true;
-        scenegraph_spu_data.g_hasDrawnSomething = true;
         scenegraph_spu_data.g_geometryMode = mode;
         scenegraph_spu_data.g_vertexArray = new osg::Vec3Array();
         scenegraph_spu_data.g_normalArray = new osg::Vec3Array();
-        scenegraph_spu_data.g_colorArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_colorArray = new osg::Vec4Array();
 
     }
 
@@ -133,7 +152,7 @@ static void PRINT_APIENTRY printBegin(GLenum mode)
         scenegraph_spu_data.g_geode = new osg::Geode();
         scenegraph_spu_data.g_vertexArray = new osg::Vec3Array();
         scenegraph_spu_data.g_normalArray = new osg::Vec3Array();
-        scenegraph_spu_data.g_colorArray = new osg::Vec3Array();
+        scenegraph_spu_data.g_colorArray = new osg::Vec4Array();
     }
 }
 
@@ -169,6 +188,7 @@ static void PRINT_APIENTRY printBlendEquationEXT(GLenum mode)
 {
 }
 
+// XXX:- need to handle blend function if gl_blend mode is on
 static void PRINT_APIENTRY printBlendFunc(GLenum sfactor, GLenum dfactor)
 {
 }
@@ -200,7 +220,7 @@ static void PRINT_APIENTRY printCallList(GLuint list)
             //g_PatArray.back()->addChild(g_PatArrayDisplayList[list - 1].get());
 
         }
-	}
+    }
 }
 
 static void PRINT_APIENTRY printChromiumParameterfCR(GLenum target, GLfloat value)
@@ -239,59 +259,43 @@ static void PRINT_APIENTRY printClipPlane(GLenum plane, const GLdouble * equatio
 {
 }
 
-void CreateNewGeode() 
-{
-    if (scenegraph_spu_data.g_hasDrawnSomething)
-    {
-        #ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
-            scenegraph_spu_data.g_current_transform->addChild(scenegraph_spu_data.g_geode);
-            scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_current_transform);
-            scenegraph_spu_data.g_current_transform = new osg::MatrixTransform;
-        #else
-        
-        scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
-        
-        #endif
-        scenegraph_spu_data.g_geode = new osg::Geode();
-        
-        scenegraph_spu_data.g_hasDrawnSomething = false;
-    }
-}
+double last_color[4];
 
-double last_color[3];
-
-static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble blue)
+static void PRINT_APIENTRY printColor4d(GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha)
 {
     if (scenegraph_spu_data.g_isReading)
     {
-        if (!(last_color[0] == red && last_color[1] == green && last_color[2] == blue))
+        if (!(last_color[0] == red && last_color[1] == green && last_color[2] == blue && last_color[3] == alpha))
         {
             last_color[0] = red;
             last_color[1] = green;
             last_color[2] = blue;
-
-
-            CreateNewGeode();
+            last_color[3] = alpha;
+            scenegraph_spu_data.g_needToCreateNewGeode = true;
         }
-        scenegraph_spu_data.g_CurrentColor = osg::Vec3(red, green, blue);
+        scenegraph_spu_data.g_CurrentColor = osg::Vec4(red, green, blue, alpha);
     }
 }
 
-static void PRINT_APIENTRY printColor3b(GLbyte red, GLbyte green, GLbyte blue)
+
+static void PRINT_APIENTRY printColor3d(GLdouble red, GLdouble green, GLdouble blue)
 {
-
-    printColor3d(red, green, blue);
-
-}
-
-static void PRINT_APIENTRY printColor3bv(const GLbyte * v)
-{
-    printColor3d(v[0], v[1], v[2]);
+    printColor4d(red, green, blue, 1.0);
 }
 
 static void PRINT_APIENTRY printColor3dv(const GLdouble * v)
 {
     printColor3d(v[0], v[1], v[2]);
+}
+
+static void PRINT_APIENTRY printColor3b(GLbyte red, GLbyte green, GLbyte blue)
+{
+    printColor3d(red, green, blue);
+}
+
+static void PRINT_APIENTRY printColor3bv(const GLbyte * v)
+{
+    printColor3b(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue)
@@ -301,7 +305,7 @@ static void PRINT_APIENTRY printColor3f(GLfloat red, GLfloat green, GLfloat blue
 
 static void PRINT_APIENTRY printColor3fv(const GLfloat * v)
 {
-    printColor3d(v[0], v[1], v[2]);
+    printColor3f(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
@@ -311,7 +315,7 @@ static void PRINT_APIENTRY printColor3i(GLint red, GLint green, GLint blue)
 
 static void PRINT_APIENTRY printColor3iv(const GLint * v)
 {
-    printColor3d(v[0], v[1], v[2]);
+    printColor3i(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue)
@@ -321,7 +325,7 @@ static void PRINT_APIENTRY printColor3s(GLshort red, GLshort green, GLshort blue
 
 static void PRINT_APIENTRY printColor3sv(const GLshort * v)
 {
-    printColor3d(v[0], v[1], v[2]);
+    printColor3s(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blue)
@@ -331,7 +335,7 @@ static void PRINT_APIENTRY printColor3ub(GLubyte red, GLubyte green, GLubyte blu
 
 static void PRINT_APIENTRY printColor3ubv(const GLubyte * v)
 {
-    printColor3d(v[0], v[1], v[2]);
+    printColor3ub(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3ui(GLuint red, GLuint green, GLuint blue)
@@ -341,7 +345,7 @@ static void PRINT_APIENTRY printColor3ui(GLuint red, GLuint green, GLuint blue)
 
 static void PRINT_APIENTRY printColor3uiv(const GLuint * v)
 {
-    printColor3d(v[0], v[1], v[2]);
+    printColor3ui(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor3us(GLushort red, GLushort green, GLushort blue)
@@ -351,37 +355,32 @@ static void PRINT_APIENTRY printColor3us(GLushort red, GLushort green, GLushort 
 
 static void PRINT_APIENTRY printColor3usv(const GLushort * v)
 {
-    printColor3d(v[0], v[1], v[2]);
+    printColor3us(v[0], v[1], v[2]);
 }
 
 static void PRINT_APIENTRY printColor4b(GLbyte red, GLbyte green, GLbyte blue, GLbyte alpha)
 {
-	printColor3d(red, green, blue);
+    printColor4d(red, green, blue, alpha);
 }
 
 static void PRINT_APIENTRY printColor4bv(const GLbyte * v)
 {
-	printColor3d(v[0], v[1], v[2]);
-}
-
-static void PRINT_APIENTRY printColor4d(GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha)
-{
-    printColor3d(red, green, blue);
+    printColor4b(v[0], v[1], v[2], v[3]);
 }
 
 static void PRINT_APIENTRY printColor4dv(const GLdouble * v)
 {
-	printColor3d(v[0], v[1], v[2]);
+    printColor4d(v[0], v[1], v[2], v[3]);
 }
 
 static void PRINT_APIENTRY printColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-	printColor3d(red, green, blue);
+    printColor4d(red, green, blue, alpha);
 }
 
 static void PRINT_APIENTRY printColor4fv(const GLfloat * v)
 {
-	printColor3d(v[0], v[1], v[2]);
+    printColor4f(v[0], v[1], v[2], v[3]);
 }
 
 static void PRINT_APIENTRY printColor4i(GLint red, GLint green, GLint blue, GLint alpha)
@@ -390,12 +389,12 @@ static void PRINT_APIENTRY printColor4i(GLint red, GLint green, GLint blue, GLin
     double g = GLdouble(2 * green + 1) / GLdouble(INTMAXMINDIFF);
     double b = GLdouble(2 * blue + 1) / GLdouble(INTMAXMINDIFF);
     double a = GLdouble(2 * alpha + 1) / GLdouble(INTMAXMINDIFF);
-    printColor3d(r, g, b);
+    printColor4d(r, g, b, a);
 }
 
 static void PRINT_APIENTRY printColor4iv(const GLint * v)
 {
-	printColor3d(v[0], v[1], v[2]);
+    printColor4i(v[0], v[1], v[2], v[3]);
 }
 
 static void PRINT_APIENTRY printColor4s(GLshort red, GLshort green, GLshort blue, GLshort alpha)
@@ -404,17 +403,17 @@ static void PRINT_APIENTRY printColor4s(GLshort red, GLshort green, GLshort blue
     double g = GLdouble(2 * green + 1) / GLdouble(SHORTMAXMINDIFF);
     double b = GLdouble(2 * blue + 1) / GLdouble(SHORTMAXMINDIFF);
     double a = GLdouble(2 * alpha + 1) / GLdouble(SHORTMAXMINDIFF);
-    printColor3d(r, g, b);
+    printColor4d(r, g, b, a);
 }
 
 static void PRINT_APIENTRY printColor4sv(const GLshort * v)
 {
-	printColor3d(v[0], v[1], v[2]);
+    printColor4d(v[0], v[1], v[2], v[3]);
 }
 
 static void PRINT_APIENTRY printColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
 {
-    printColor3d((GLdouble)red / GLdouble(BYTEMINMAXDIFF), (GLdouble)green / GLdouble(BYTEMINMAXDIFF), (GLdouble)blue / GLdouble(BYTEMINMAXDIFF));
+    printColor4d((GLdouble)red / GLdouble(BYTEMINMAXDIFF), (GLdouble)green / GLdouble(BYTEMINMAXDIFF), (GLdouble)blue / GLdouble(BYTEMINMAXDIFF), (GLdouble)alpha / GLdouble(BYTEMINMAXDIFF));
 }
 
 static void PRINT_APIENTRY printColor4ubv(const GLubyte * v)
@@ -428,19 +427,22 @@ static void PRINT_APIENTRY printColor4ui(GLuint red, GLuint green, GLuint blue, 
     double g = GLdouble(green) / GLdouble(INTMAXMINDIFF);
     double b = GLdouble(blue) / GLdouble(INTMAXMINDIFF);
     double a = GLdouble(alpha) / GLdouble(INTMAXMINDIFF);
-    printColor3d(r, g, b);
+    printColor4d(r, g, b, a);
 }
 
 static void PRINT_APIENTRY printColor4uiv(const GLuint * v)
 {
+    printColor4ui(v[0], v[1], v[2], v[3]);
 }
 
 static void PRINT_APIENTRY printColor4us(GLushort red, GLushort green, GLushort blue, GLushort alpha)
 {
+    printColor4d(red, green, blue, alpha);
 }
 
 static void PRINT_APIENTRY printColor4usv(const GLushort * v)
 {
+    printColor4us(v[0], v[1], v[2], v[3]);
 }
 
 static void PRINT_APIENTRY printColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
@@ -451,50 +453,36 @@ static void PRINT_APIENTRY printColorMaterial(GLenum face, GLenum mode)
 {
 
 
-    if (!scenegraph_spu_data.g_isReading || !scenegraph_spu_data.isColorMaterialEnabled)
-	{
-		return;
-	}
-
-	osg::Material::Face osgface = osg::Material::Face::FRONT;
-
-	switch (face){
-	case GL_BACK:
-		osgface = osg::Material::Face::BACK;
-	case GL_FRONT_AND_BACK:
-		osgface = osg::Material::Face::FRONT_AND_BACK;
-	}
+    if (!scenegraph_spu_data.g_isReading)
+    {
+        return;
+    }
 
 #ifdef ENABLE_MATERIAL
 
-	if (scenegraph_spu_data.g_material == NULL)
-	{
-		scenegraph_spu_data.g_material = new osg::Material();
-	}
+    if (scenegraph_spu_data.g_material == NULL)
+    {
+        scenegraph_spu_data.g_material = new osg::Material();
+    }
 
-	switch (mode)
-	{
-	case GL_AMBIENT:
-		CreateNewGeode();
-		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
-		break;
-	case GL_DIFFUSE:
-		CreateNewGeode();
-		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::DIFFUSE);
-		break;
-	case GL_SPECULAR:
-		CreateNewGeode();
-		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::SPECULAR);
-		break;
-	case GL_AMBIENT_AND_DIFFUSE:
-		CreateNewGeode();
-		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
-		break;
-	case GL_EMISSION:
-		CreateNewGeode();
-		scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::EMISSION);
-		break;
-	}
+    switch (mode)
+    {
+    case GL_AMBIENT:
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT);
+        break;
+    case GL_DIFFUSE:
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::DIFFUSE);
+        break;
+    case GL_SPECULAR:
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::SPECULAR);
+        break;
+    case GL_AMBIENT_AND_DIFFUSE:
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::AMBIENT_AND_DIFFUSE);
+        break;
+    case GL_EMISSION:
+        scenegraph_spu_data.g_material->setColorMode(osg::Material::ColorMode::EMISSION);
+        break;
+    }
 
 #endif
 
@@ -637,21 +625,28 @@ static void PRINT_APIENTRY printDisable(GLenum cap)
 {
     if (!scenegraph_spu_data.g_isReading)
         return;
+
     switch (cap)
     {
 
     case GL_POLYGON_STIPPLE:
-
+    {
 #ifdef ENABLE_MATERIAL
-        CreateNewGeode();
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_state->removeAttribute(osg::StateAttribute::Type::POLYGONSTIPPLE, 0);
 #endif
         break;
-    case GL_COLOR_MATERIAL:
-        scenegraph_spu_data.isColorMaterialEnabled = false;
+    }
+    case GL_BLEND:
+    {
+#ifdef ENABLE_MATERIAL
+        scenegraph_spu_data.g_state->setMode(GL_BLEND, osg::StateAttribute::OFF);
+        break;
+#endif
+    }
+
     }
 }
-
 static void PRINT_APIENTRY printDisableClientState(GLenum array)
 {
 }
@@ -702,20 +697,24 @@ static void PRINT_APIENTRY printEnable(GLenum cap)
     switch (cap)
     {
 
-        case GL_POLYGON_STIPPLE:
-        {
-    #ifdef ENABLE_MATERIAL
-        CreateNewGeode();
+    case GL_POLYGON_STIPPLE:
+    {
+#ifdef ENABLE_MATERIAL
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         osg::PolygonStipple* polygonStipple = new osg::PolygonStipple(); // Memory leak
         scenegraph_spu_data.g_state->setAttributeAndModes(polygonStipple, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-    #endif
-            break;
-        }
-        case GL_COLOR_MATERIAL:
-        {
-            scenegraph_spu_data.isColorMaterialEnabled = true;
-            break;
-        }
+#endif
+        break;
+    }
+
+    // XXX: - need to handle blend function
+    case GL_BLEND:
+    {
+#ifdef ENABLE_MATERIAL
+        scenegraph_spu_data.g_state->setMode(GL_BLEND, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+        break;
+#endif
+    }
 
     }
 }
@@ -746,7 +745,6 @@ static void PRINT_APIENTRY printEnd(void)
 
 #ifdef ENABLE_MATERIAL
 
-
             if (scenegraph_spu_data.g_state != NULL)
             {
                 scenegraph_spu_data.g_geode->setStateSet(new osg::StateSet(*scenegraph_spu_data.g_state, osg::CopyOp::DEEP_COPY_ALL));
@@ -759,9 +757,6 @@ static void PRINT_APIENTRY printEnd(void)
 
 #endif
             scenegraph_spu_data.g_geode->addDrawable(scenegraph_spu_data.g_geom);
-#ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
-            scenegraph_spu_data.g_current_transform->setMatrix(scenegraph_spu_data.g_CurrentMatrix);
-#endif
         }
 
     }
@@ -796,7 +791,7 @@ static void PRINT_APIENTRY printEnd(void)
 
     }
 
-    if (scenegraph_spu_data.g_geode) 
+    if (scenegraph_spu_data.g_geode)
     {
         if (!scenegraph_spu_data.curr_geode_name.empty())
         {
@@ -881,10 +876,6 @@ static void PRINT_APIENTRY printFinish(void)
 }
 
 static void PRINT_APIENTRY printFinishFenceNV(GLuint fence)
-{
-}
-
-static void PRINT_APIENTRY printFlush(void)
 {
 }
 
@@ -1432,7 +1423,7 @@ static void PRINT_APIENTRY printListBase(GLuint base)
 
 static void PRINT_APIENTRY printLoadIdentity(void)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
 
     scenegraph_spu_data.g_CurrentMatrix.makeIdentity();
@@ -1440,36 +1431,35 @@ static void PRINT_APIENTRY printLoadIdentity(void)
 
 static void PRINT_APIENTRY printLoadMatrixd(const GLdouble * m)
 {
-	if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
+
 #ifdef GEODE_WITH_LM
-    CreateNewGeode();
-#endif 
-   scenegraph_spu_data.g_CurrentMatrix.set(m);
+    scenegraph_spu_data.g_needToCreateNewGeode = true;
+#endif
+    scenegraph_spu_data.g_CurrentMatrix.set(m);
 
 }
 
 static void PRINT_APIENTRY printLoadMatrixf(const GLfloat * m)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
 #ifdef GEODE_WITH_LM
-    CreateNewGeode();
-#endif 
-
+    scenegraph_spu_data.g_needToCreateNewGeode = true;
+#endif
     scenegraph_spu_data.g_CurrentMatrix.set(m);
 }
 
 static void PRINT_APIENTRY printPushMatrix(void)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
     //pushing current matrix in stack
+    scenegraph_spu_data.g_matrix_stack.push_back(scenegraph_spu_data.g_CurrentMatrix);
 #ifdef GEODE_WITH_LM
-    CreateNewGeode();
+    scenegraph_spu_data.g_needToCreateNewGeode = true;
 #endif
-   scenegraph_spu_data.g_matrix_stack.push_back(scenegraph_spu_data.g_CurrentMatrix);
-
 }
 
 static void PRINT_APIENTRY printLoadName(GLuint name)
@@ -1531,8 +1521,8 @@ static void PRINT_APIENTRY printMapGrid2f(GLint un, GLfloat u1, GLfloat u2, GLin
 
 static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
-    
-    if (!scenegraph_spu_data.g_isReading || scenegraph_spu_data.isColorMaterialEnabled)
+
+    if (!scenegraph_spu_data.g_isReading)
     {
         return;
     }
@@ -1558,7 +1548,8 @@ static void PRINT_APIENTRY printMaterialf(GLenum face, GLenum pname, GLfloat par
     switch (pname)
     {
     case GL_SHININESS:
-        CreateNewGeode();
+
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_material->setShininess(osgface, param);
         break;
     }
@@ -1573,7 +1564,7 @@ static void PRINT_APIENTRY printMateriali(GLenum face, GLenum pname, GLint param
 
 static void PRINT_APIENTRY printMatrixMode(GLenum mode)
 {
-     scenegraph_spu_data.g_currentMatrixMode = mode;
+    scenegraph_spu_data.g_currentMatrixMode = mode;
 }
 
 static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
@@ -1582,7 +1573,7 @@ static void PRINT_APIENTRY printMultTransposeMatrixdARB(const GLdouble * m)
 
 static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
 
     osg::Matrix mat = osg::Matrix();
@@ -1592,7 +1583,7 @@ static void PRINT_APIENTRY printMultMatrixf(const GLfloat * m)
 
 static void PRINT_APIENTRY printMultMatrixd(const GLdouble * m)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
 
     osg::Matrix mat = osg::Matrix();
@@ -1757,7 +1748,7 @@ static void PRINT_APIENTRY printNormal3b(GLbyte nx, GLbyte ny, GLbyte nz)
     GLdouble ndx = ((2 * (GLdouble)nx + 1) / GLdouble(BYTEMINMAXDIFF));
     GLdouble ndy = ((2 * (GLdouble)ny + 1) / GLdouble(BYTEMINMAXDIFF));
     GLdouble ndz = ((2 * (GLdouble)nz + 1) / GLdouble(BYTEMINMAXDIFF));
-    
+
     printNormal3d(ndx, ndy, ndz);
 }
 
@@ -1815,7 +1806,7 @@ static void PRINT_APIENTRY printNormalPointer(GLenum type, GLsizei stride, const
 
 static void PRINT_APIENTRY printOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
 {
-    
+
 }
 
 static void PRINT_APIENTRY printPassThrough(GLfloat token)
@@ -2147,16 +2138,17 @@ static void PRINT_APIENTRY printRequestResidentProgramsNV(GLsizei n, const GLuin
 
 static void PRINT_APIENTRY printRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-      osg::Matrix mat = osg::Matrix();
-     mat.setRotate(osg::Quat(angle, x, y, z));
-      scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
+    osg::Matrix mat;
+    double angle_in_radian = (osg::PI * angle) / 180.0;
+    mat.makeRotate(angle_in_radian, x, y, z);
+    scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
 }
 
 static void PRINT_APIENTRY printRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-    printRotated(angle,x,y,z);
+    printRotated(angle, x, y, z);
 }
 
 static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean invert)
@@ -2165,11 +2157,11 @@ static void PRINT_APIENTRY printSampleCoverageARB(GLclampf value, GLboolean inve
 
 static void PRINT_APIENTRY printScaled(GLdouble x, GLdouble y, GLdouble z)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
     osg::Matrix mat = osg::Matrix();
     mat.makeScale(osg::Vec3(x, y, z));
-     scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
+    scenegraph_spu_data.g_CurrentMatrix = mat *  scenegraph_spu_data.g_CurrentMatrix;
 }
 
 static void PRINT_APIENTRY printScalef(GLfloat x, GLfloat y, GLfloat z)
@@ -2293,14 +2285,8 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
 {
 
     if (scenegraph_spu_data.g_isReading)
-	{
+    {
         scenegraph_spu_data.g_startReading = false;
-
-        if (scenegraph_spu_data.g_hasDrawnSomething)
-        {
-            scenegraph_spu_data.g_spuRootGroup->addChild(scenegraph_spu_data.g_geode);
-            scenegraph_spu_data.g_hasDrawnSomething = false;
-        }
 
         if (scenegraph_spu_data.g_hasTouchedBegin == false)
         {
@@ -2339,10 +2325,6 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
     if (scenegraph_spu_data.g_startReading)
     {
         scenegraph_spu_data.g_spuRootGroup = new osg::Group;
-        scenegraph_spu_data.g_geode = new osg::Geode;
-        #ifdef DISABLE_TRANSFORM_MULT_WITH_VERTICES
-            scenegraph_spu_data.g_current_transform = new osg::MatrixTransform;
-        #endif
 
 #ifdef ENABLE_MATERIAL
         scenegraph_spu_data.g_material = new osg::Material();
@@ -2350,14 +2332,21 @@ static void PRINT_APIENTRY printSwapBuffers(GLint window, GLint flags)
         last_color[0] = -1;
         last_color[1] = -1;
         last_color[2] = -1;
-        scenegraph_spu_data.g_hasDrawnSomething = false;
+        last_color[3] = -1;
+        scenegraph_spu_data.g_needToCreateNewGeode = false;
         scenegraph_spu_data.g_startReading = false;
     }
 }
 
+/*glFlush command is called as replacement of WglSwapBuffers in single Buffered rendering.since solid works draws directly to Front Buffer while software opengl option is enabled in solid works's
+performance setting that is single buffered rendering.hence we handle here printFlush.*/
+static void PRINT_APIENTRY printFlush(void)
+{
+    //need to be handled in separate spu for solid works
+}
 static void PRINT_APIENTRY printMakeCurrent(GLint window, GLint nativeWindow, GLint ctx)
 {
-  
+
 }
 
 static GLboolean PRINT_APIENTRY printTestFenceNV(GLuint fence)
@@ -2571,11 +2560,11 @@ static void PRINT_APIENTRY printTrackMatrixNV(GLenum target, GLuint address, GLe
 
 static void PRINT_APIENTRY printTranslated(GLdouble x, GLdouble y, GLdouble z)
 {
-    if ( scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
+    if (scenegraph_spu_data.g_currentMatrixMode != GL_MODELVIEW)
         return;
-     osg::Matrix mat = osg::Matrix();
-     mat.setTrans(osg::Vec3(x, y, z));
-     scenegraph_spu_data.g_CurrentMatrix = mat * scenegraph_spu_data.g_CurrentMatrix;
+    osg::Matrix mat;
+    mat.makeTranslate(x, y, z);
+    scenegraph_spu_data.g_CurrentMatrix = mat * scenegraph_spu_data.g_CurrentMatrix;
 
 }
 
@@ -2628,16 +2617,16 @@ static void PRINT_APIENTRY printVertex3d(GLdouble x, GLdouble y, GLdouble z)
         osg::Vec3 vertexPoint = osg::Vec3(x, y, z);
         osg::Vec3 normalPoint = scenegraph_spu_data.g_CurrentNormal;
 #else
-// Math to transfrom vertex and normal to matrix mode
+        // Math to transfrom vertex and normal to matrix mode
         osg::Matrix mat = osg::Matrix::translate(osg::Vec3(x, y, z));
         osg::Matrix matFinal = mat *  scenegraph_spu_data.g_CurrentMatrix * scenegraph_spu_data.g_camera_matrix;
         osg::Vec3 vertexPoint = matFinal.getTrans();
-         
         osg::Matrix Normalmat = osg::Matrix::translate(scenegraph_spu_data.g_CurrentNormal);
-        osg::Matrix CurrentMatrixNew =  scenegraph_spu_data.g_CurrentMatrix;
+        osg::Matrix CurrentMatrixNew = scenegraph_spu_data.g_CurrentMatrix * scenegraph_spu_data.g_camera_matrix;
         CurrentMatrixNew.setTrans(osg::Vec3(0, 0, 0));
         osg::Matrix NormalmatFinal = Normalmat * CurrentMatrixNew;
         osg::Vec3 normalPoint = NormalmatFinal.getTrans();
+
 #endif
         scenegraph_spu_data.g_vertexArray->push_back(vertexPoint);
         scenegraph_spu_data.g_normalArray->push_back(normalPoint);
@@ -3031,14 +3020,20 @@ static void PRINT_APIENTRY printZPixCR(GLsizei width, GLsizei height, GLenum for
 }
 
 // material function copied here for color
-static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *params)
+static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLfloat *paramstemp)
 {
 
-    if (!scenegraph_spu_data.g_isReading || scenegraph_spu_data.isColorMaterialEnabled)
+    if (!scenegraph_spu_data.g_isReading)
     {
         return;
     }
 
+#ifdef ENABLE_MATERIAL
+
+    if (scenegraph_spu_data.g_material == NULL)
+    {
+        scenegraph_spu_data.g_material = new osg::Material();
+    }
     osg::Material::Face osgface = osg::Material::Face::FRONT;
 
     switch (face){
@@ -3050,44 +3045,56 @@ static void PRINT_APIENTRY printMaterialfv(GLenum face, GLenum mode, const GLflo
         break;
     }
 
-#ifdef ENABLE_MATERIAL
-
-    if (scenegraph_spu_data.g_material == NULL)
-    {
-        scenegraph_spu_data.g_material = new osg::Material();
-    }
+    GLfloat params[4];
+    params[0] = paramstemp[0];
+    params[1] = paramstemp[1];
+    params[2] = paramstemp[2];
+    params[3] = paramstemp[3];
 
     switch (mode)
     {
     case GL_AMBIENT:
-        CreateNewGeode();
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_DIFFUSE:
-        CreateNewGeode();
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_SPECULAR:
-        CreateNewGeode();
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_material->setSpecular(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
-   case GL_AMBIENT_AND_DIFFUSE:
-        CreateNewGeode();
+    case GL_AMBIENT_AND_DIFFUSE:
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_material->setAmbient(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         scenegraph_spu_data.g_material->setDiffuse(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_EMISSION:
-        CreateNewGeode();
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_material->setEmission(osgface, osg::Vec4(params[0], params[1], params[2], params[3]));
         break;
     case GL_SHININESS:
-        CreateNewGeode();
+        scenegraph_spu_data.g_needToCreateNewGeode = true;
         scenegraph_spu_data.g_material->setShininess(osgface, params[0]);
         break;
     }
 
 #endif
 
+}
+
+// XXX: To make this SPU work for JT2GO
+// TransViz gl library is calling glaccum for post processing effects.
+// after rendering the frame. This causes applicaiton to re-render 
+// the frame 3 more times and thus we get 4 geometries
+// this avoid this we call swapbuffer in accum. 
+static void PRINT_APIENTRY printAccum(GLenum op, GLfloat value)
+{
+    if (scenegraph_spu_data.g_isReading)
+    {
+        printSwapBuffers(0, 0);
+    }
 }
 
 SPUNamedFunctionTable _cr_print_table[] = {
