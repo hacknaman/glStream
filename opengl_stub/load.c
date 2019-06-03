@@ -783,9 +783,11 @@ stubInit(void)
 	}
 
 	if (stub.mothershipConn) {
+        // XXXX- configfile
 		getConfigurationOptions(stub.mothershipConn);
 	}
 
+    // XXXX- configfile
 	stub.spu = crSPULoadChain( num_spus, spu_ids, spu_names, stub.spu_dir, NULL, &glim.ImpThreadID );
 
 	crFree( spuchain );

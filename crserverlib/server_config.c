@@ -83,6 +83,8 @@ crServerGatherConfiguration(char *mothership)
 		crSetenv("CRMOTHERSHIP", mothership);
 	}
 
+
+    // XXXX- configfile 
 	conn = crMothershipConnect();
 	if (!conn)
 	{
@@ -330,6 +332,7 @@ crServerGatherConfiguration(char *mothership)
 	/*
 	 * Load the SPUs
 	 */
+    // XXXX- configfile
 	cr_server.head_spu =
 		crSPULoadChain(num_spus, spu_ids, spu_names, spu_dir, &cr_server, NULL);
 

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <GL/glut.h>
 
-#define USE_DISPLAYLIST 1
+#define USE_DISPLAYLIST 0
 #define USE_SPECULAR 0
 
 #ifndef M_PI
