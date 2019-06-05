@@ -175,7 +175,7 @@ void crSPUGetMothershipParams( CRConnection *conn,
 	{
 		SPUOptions *opt = &options[i];
 
-		if (crMothershipGetSPUParam( conn, response, opt->option ))
+		if (0)
 		{
 			if (!validate_option( opt, response ))
 			{

@@ -509,7 +509,7 @@ crTCPIPAccept( CRConnection *conn, const char *hostname, unsigned short port )
 		char response[8096];
 		char my_hostname[256];
 
-		mother = __copy_of_crMothershipConnect( );
+		//mother = __copy_of_crMothershipConnect( );
 		
 		if (!hostname) {
 			if ( crGetHostname( my_hostname, sizeof( my_hostname ) ) ) {
@@ -522,17 +522,19 @@ crTCPIPAccept( CRConnection *conn, const char *hostname, unsigned short port )
 		/* We'll block on this call until the corresponding client-side
 		 * connectrequest is received by the mothership.
 		 */
-		if (!__copy_of_crMothershipSendString( mother, response, "acceptrequest tcpip %s %d %d", my_hostname, conn->port, conn->endianness ) )
+        // need to put sleep
+		/*if (!__copy_of_crMothershipSendString( mother, response, "acceptrequest tcpip %s %d %d", my_hostname, conn->port, conn->endianness ) )
 		{
 			crError( "Mothership didn't like my accept request" );
 		}
 		
-		__copy_of_crMothershipDisconnect( mother );
+		__copy_of_crMothershipDisconnect( mother );*/
 		
-		sscanf( response, "%u", &(conn->id) );
+		sscanf( "1", "%u", &(conn->id) );
 	}
 	
 	addr_length =	sizeof( addr );
+    // need to make client side (gl side) to connect with the display app
 	conn->tcp_socket = accept( cr_tcpip.server_sock, (struct sockaddr *) &addr, &addr_length );
 	if (conn->tcp_socket == -1)
 	{

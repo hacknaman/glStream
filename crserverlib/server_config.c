@@ -89,7 +89,7 @@ crServerGatherConfiguration(char *mothership)
 	if (!conn)
 	{
 		crWarning("Couldn't connect to the mothership, I have no idea what to do!");
-		return 0;
+		//return 0;
 	}
 
 	/*
@@ -108,6 +108,7 @@ crServerGatherConfiguration(char *mothership)
 	}
 	else {
 		crMothershipIdentifyServer(conn, response);
+        crStrcpy(response, "1 0 scenegraph");
 	}
 
 	crDebug("CRServer: my SPU chain: %s", response);
@@ -135,43 +136,47 @@ crServerGatherConfiguration(char *mothership)
 	 * config options.
 	 * XXX Use the SPU option parser code here someday.
 	 */
-	if (crMothershipGetServerParam( conn, response, "spu_dir" ) && crStrlen(response) > 0)
+	//if (crMothershipGetServerParam( conn, response, "spu_dir" ) && crStrlen(response) > 0)
 	{
-		spu_dir = crStrdup(response);
+		//spu_dir = crStrdup(response);
 	}
 
 	/* Quadrics networking stuff */
-	if (crMothershipGetRank(conn, response))
+	//if (crMothershipGetRank(conn, response))
 	{
-		my_rank = crStrToInt(response);
+		my_rank = 0;
 	}
 	crNetSetRank(my_rank);
 
-	if (crMothershipGetParam(conn, "low_context", response))
+	//if (crMothershipGetParam(conn, "low_context", response))
 	{
-		low_context = crStrToInt(response);
+		low_context = 32;
 	}
-	if (crMothershipGetParam(conn, "high_context", response))
+	//if (crMothershipGetParam(conn, "high_context", response))
 	{
-		high_context = crStrToInt(response);
+		high_context = 35;
 	}
 	crNetSetContextRange(low_context, high_context);
 
-	if (crMothershipGetParam(conn, "low_node", response))
+	//if (crMothershipGetParam(conn, "low_node", response))
 	{
-		low_node = crStrdup(response);
+        low_node = crStrdup("iam0");
+       // crStrcpy(low_node, "iam0");
 	}
-	if (crMothershipGetParam(conn, "high_node", response))
+	//if (crMothershipGetParam(conn, "high_node", response))
 	{
-		high_node = crStrdup(response);
+        high_node = crStrdup("iamvis20");
+        //crStrcpy(high_node, "iamvis20");
 	}
 	crNetSetNodeRange(low_node, high_node);
 	if (low_node)
 		crFree(low_node);
 	if (high_node)
 		crFree(high_node);
-	if (crMothershipGetParam(conn, "comm_key", response))
+
+	//if (crMothershipGetParam(conn, "comm_key", response))
 	{
+      crStrcpy(response, "[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]");
 	  unsigned int a;
 	  char **words, *found;
 	  
@@ -193,34 +198,34 @@ crServerGatherConfiguration(char *mothership)
 	}
 	crNetSetKey(key,sizeof(key));
 
-	if (crMothershipGetServerParam(conn, response, "port"))
+	if (1)
 	{
-		cr_server.tcpip_port = crStrToInt(response);
+		cr_server.tcpip_port = crStrToInt("7000");
 	}
-	if (crMothershipGetServerParam(conn, response, "optimize_bucket"))
+	if (0)
 	{
 		cr_server.optimizeBucket = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "local_tile_spec"))
+	if (0)
 	{
 		cr_server.localTileSpec = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "lightning2"))
+	if (0)
 	{
 		cr_server.useL2 = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "ignore_papi"))
+	if (0)
 	{
 		cr_server.ignore_papi = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "overlap_blending"))
+	if (0)
 	{
 		if (!crStrcmp(response, "blend"))
 			cr_server.overlapBlending = 1;
 		else if (!crStrcmp(response, "knockout"))
 			cr_server.overlapBlending = 2;
 	}
-	if (crMothershipGetServerParam(conn, response, "overlap_levels"))
+	if (0)
 	{
 		int a;
 		char **levels, *found;
@@ -247,39 +252,39 @@ crServerGatherConfiguration(char *mothership)
 
 		crFreeStrings(levels);
 	}
-	if (crMothershipGetServerParam(conn, response, "only_swap_once"))
+	if (0)
 	{
 		cr_server.only_swap_once = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "debug_barriers"))
+	if (0)
 	{
 		cr_server.debug_barriers = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "shared_display_lists"))
+	if (0)
 	{
 		cr_server.sharedDisplayLists = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "shared_texture_objects"))
+	if (0)
 	{
 		cr_server.sharedTextureObjects = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "shared_programs"))
+	if (0)
 	{
 		cr_server.sharedPrograms = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "shared_windows"))
+	if (0)
 	{
 		cr_server.sharedWindows = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "unique_window_ids"))
+	if (0)
 	{
 		cr_server.uniqueWindows = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "use_dmx"))
+	if (0)
 	{
 		cr_server.useDMX = crStrToInt(response);
 	}
-	if (crMothershipGetServerParam(conn, response, "vertprog_projection_param"))
+	if (0)
 	{
 		if (crIsDigit(response[0])) {
 			cr_server.vpProjectionMatrixParameter = crStrToInt(response);
@@ -288,7 +293,7 @@ crServerGatherConfiguration(char *mothership)
 			cr_server.vpProjectionMatrixVariable = crStrdup(response);
 		}
 	}
-	if (crMothershipGetServerParam(conn, response, "stereo_view"))
+	if (0)
 	{
 		if (crStrcmp(response, "left") == 0)
 			cr_server.stereoView = 0x1;
@@ -299,29 +304,29 @@ crServerGatherConfiguration(char *mothership)
 		else
 			cr_server.stereoView = 0x3;
 	}
-	if (crMothershipGetServerParam(conn, response, "view_matrix"))
+	if (0)
 	{
 		crMatrixInitFromString(&cr_server.viewMatrix[0], response);
 		cr_server.viewOverride = GL_TRUE;
 	}
-	if (crMothershipGetServerParam(conn, response, "right_view_matrix"))
+	if (0)
 	{
 		crMatrixInitFromString(&cr_server.viewMatrix[1], response);
 		cr_server.viewOverride = GL_TRUE;
 	}
 
-	if (crMothershipGetServerParam(conn, response, "projection_matrix"))
+	if (0)
 	{
 		crMatrixInitFromString(&cr_server.projectionMatrix[0], response);
 		cr_server.projectionOverride = GL_TRUE;
 	}
-	if (crMothershipGetServerParam(conn, response, "right_projection_matrix"))
+	if (0)
 	{
 		crMatrixInitFromString(&cr_server.projectionMatrix[1], response);
 		cr_server.projectionOverride = GL_TRUE;
 	}
 
-	if (crMothershipGetServerParam(conn, response, "exit_if_no_clients"))
+	if (0)
 	{
 		cr_server.exitIfNoClients = crStrToInt(response);
 	}
@@ -348,7 +353,7 @@ crServerGatherConfiguration(char *mothership)
 	if (spu_dir)
 		crFree(spu_dir);
 
-	cr_server.mtu = crMothershipGetMTU( conn );
+	cr_server.mtu = 1048576;
 
 	/*
 	 * Get a list of all the clients talking to me.
@@ -359,7 +364,8 @@ crServerGatherConfiguration(char *mothership)
 			crError( "Bad Mothership response: %s", response );
 	}
 	else {
-		crMothershipGetClients(conn, response);
+		//crMothershipGetClients(conn, response);
+        crStrcpy(response, "1 tcpip 1");
 	}
 
 	crDebug("CRServer: my clients: %s", response);

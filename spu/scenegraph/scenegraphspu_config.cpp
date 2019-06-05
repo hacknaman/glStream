@@ -51,21 +51,21 @@ SPUOptions printSPUOptions[] = {
 
 void printspuGatherConfiguration( const SPU *child_spu )
 {
-	CRConnection *conn;
+	CRConnection *conn = NULL;
 
 	__setDefaults();
 
 	/* Connect to the mothership and identify ourselves. */
 	
-	conn = crMothershipConnect( );
+	//conn = crMothershipConnect( );
 	if (!conn)
 	{
 		/* defaults are fine. */
-		return;
+		//return;
 	}
-	crMothershipIdentifySPU( conn,  scenegraph_spu_data.id );
+	//crMothershipIdentifySPU( conn,  scenegraph_spu_data.id );
 
 	crSPUGetMothershipParams( conn, & scenegraph_spu_data, printSPUOptions );
 
-	crMothershipDisconnect( conn );
+	//crMothershipDisconnect( conn );
 }

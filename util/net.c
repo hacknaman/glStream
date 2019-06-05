@@ -1342,13 +1342,17 @@ int __copy_of_crMothershipSendString( CRConnection *conn, char *response_buf, ch
 
 	if (response_buf)
 	{
-		return __copy_of_crMothershipReadResponse( conn, response_buf );
+        // This maybe used to connect with mothership to check if scenegraph side
+        // done connecting
+		//return __copy_of_crMothershipReadResponse( conn, response_buf );
 	}
 	else
 	{
 		char devnull[1024];
-		return __copy_of_crMothershipReadResponse( conn, devnull );
+		//return __copy_of_crMothershipReadResponse( conn, devnull );
 	}
+
+    return 1;
 }
 
 void __copy_of_crMothershipDisconnect( CRConnection *conn )
