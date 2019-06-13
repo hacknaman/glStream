@@ -84,6 +84,7 @@ GLint PACKSPU_APIENTRY packspu_WindowCreate( const char *dpyName, GLint visBits 
 	{
 		crPackWindowCreate( dpyName, visBits, &return_val, &writeback );
 	}
+	// XXXX: Need to see what's wrong here
 	packspuFlush( &pack_spu.thread[0] );
 	if (!(pack_spu.thread[0].netServer.conn->actual_network))
 	{
