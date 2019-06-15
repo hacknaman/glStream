@@ -413,7 +413,7 @@ crServerGatherConfiguration(char *mothership)
 	crFreeStrings(clientlist);
 
 	/* Ask the mothership for the tile info */
-	crServerGetTileInfoFromMothership(conn, defaultMural);
+	//crServerGetTileInfoFromMothership(conn, defaultMural);
 
 	if (cr_server.vncMode) {
 		/* In vnc mode, we reset the mothership configuration so that it can be
@@ -424,7 +424,7 @@ crServerGatherConfiguration(char *mothership)
 		crMothershipReset(conn);
 	}
 
-	crMothershipDisconnect(conn);
+	//crMothershipDisconnect(conn);
 
 	return 1;
 }

@@ -219,8 +219,8 @@ int crMothershipGetMTU( CRConnection *conn )
 {
 	char response[4096];
 	int mtu;
-	INSIST( crMothershipGetParam( conn, "MTU", response ) );
-	sscanf( response, "%d", &mtu );
+	//INSIST( crMothershipGetParam( conn, "MTU", response ) );
+	sscanf( "1048576", "%d", &mtu );
 	return mtu;
 }
 

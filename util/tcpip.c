@@ -509,7 +509,7 @@ crTCPIPAccept( CRConnection *conn, const char *hostname, unsigned short port )
 		char response[8096];
 		char my_hostname[256];
 
-		//mother = __copy_of_crMothershipConnect( );
+		mother = __copy_of_crMothershipConnect( );
 		
 		if (!hostname) {
 			if ( crGetHostname( my_hostname, sizeof( my_hostname ) ) ) {
@@ -523,12 +523,12 @@ crTCPIPAccept( CRConnection *conn, const char *hostname, unsigned short port )
 		 * connectrequest is received by the mothership.
 		 */
         // need to put sleep
-		/*if (!__copy_of_crMothershipSendString( mother, response, "acceptrequest tcpip %s %d %d", my_hostname, conn->port, conn->endianness ) )
+		if (!__copy_of_crMothershipSendString( mother, response, "acceptrequest tcpip %s %d %d", my_hostname, conn->port, conn->endianness ) )
 		{
 			crError( "Mothership didn't like my accept request" );
 		}
 		
-		__copy_of_crMothershipDisconnect( mother );*/
+		__copy_of_crMothershipDisconnect( mother );
 		
 		sscanf( "1", "%u", &(conn->id) );
 	}
