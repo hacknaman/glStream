@@ -55,10 +55,10 @@ void packspuGatherConfiguration( const SPU *child_spu )
 	char servername[8096];
 	int num_servers;
 
-	conn = crMothershipConnect();
+	//conn = crMothershipConnect();
 	if (!conn)
 	{
-		crError( "Couldn't connect to the mothership -- I have no idea what to do!" );
+		//crError( "Couldn't connect to the mothership -- I have no idea what to do!" );
 	}
 	//crMothershipIdentifySPU( conn, pack_spu.id );
 

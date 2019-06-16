@@ -509,7 +509,7 @@ crTCPIPAccept( CRConnection *conn, const char *hostname, unsigned short port )
 		char response[8096];
 		char my_hostname[256];
 
-		mother = __copy_of_crMothershipConnect( );
+		//mother = __copy_of_crMothershipConnect( );
 		
 		if (!hostname) {
 			if ( crGetHostname( my_hostname, sizeof( my_hostname ) ) ) {
@@ -523,12 +523,13 @@ crTCPIPAccept( CRConnection *conn, const char *hostname, unsigned short port )
 		 * connectrequest is received by the mothership.
 		 */
         // need to put sleep
-		if (!__copy_of_crMothershipSendString( mother, response, "acceptrequest tcpip %s %d %d", my_hostname, conn->port, conn->endianness ) )
+		//if (!__copy_of_crMothershipSendString( mother, response, "acceptrequest tcpip %s %d %d", my_hostname, conn->port, conn->endianness ) )
+		if (0)
 		{
 			crError( "Mothership didn't like my accept request" );
 		}
 		
-		__copy_of_crMothershipDisconnect( mother );
+		//__copy_of_crMothershipDisconnect( mother );
 		
 		sscanf( "1", "%u", &(conn->id) );
 	}
@@ -1220,13 +1221,14 @@ crTCPIPDoConnect( CRConnection *conn )
 		CRConnection *mother;
 		char response[8096];
 		int remote_endianness;
-		mother = __copy_of_crMothershipConnect( );
+		//mother = __copy_of_crMothershipConnect( );
 
 		/* We'll block on this call until the corresponding server-side
 		 * acceptrequest is received by the mothership.
 		 */
-		if (!__copy_of_crMothershipSendString( mother, response, "connectrequest tcpip %s %d %d", 
-						       conn->hostname, conn->port, conn->endianness) )
+		//if (!__copy_of_crMothershipSendString( mother, response, "connectrequest tcpip %s %d %d", 
+		//				       conn->hostname, conn->port, conn->endianness) )
+		if (0)
 		{
 #ifdef ADDRINFO
 			freeaddrinfo(res);
@@ -1234,9 +1236,9 @@ crTCPIPDoConnect( CRConnection *conn )
 			crError( "Mothership didn't like my connect request" );
 		}
 
-		__copy_of_crMothershipDisconnect( mother );
+		//__copy_of_crMothershipDisconnect( mother );
 
-		sscanf( response, "%u %d", &(conn->id), &(remote_endianness) );
+		sscanf( "1 0", "%u %d", &(conn->id), &(remote_endianness) );
 
 		if (conn->endianness != remote_endianness) {
 			conn->swap = 1;
