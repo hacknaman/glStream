@@ -712,7 +712,7 @@ stubInit(void)
 	static int stub_initialized = 0;
 	if (stub_initialized)
 		return;
-	system("pause");
+	//system("pause");
 	stubInitNativeDispatch();
 	stub_initialized = 1;
 	
@@ -765,9 +765,9 @@ stubInit(void)
 
 
 
-	if (stub.mothershipConn) {
+	if (1) {
 		/* Identify myself to mothership - response will be client's SPU chain */
-		crMothershipIdentifyOpenGL( stub.mothershipConn, response, app_id );
+		//crMothershipIdentifyOpenGL( stub.mothershipConn, response, app_id );
 		crStrcpy(response, "2 1 passpack 2 clientrender");
 	}
 

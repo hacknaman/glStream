@@ -90,7 +90,7 @@ namespace TransVizUtil{
 
     void TransVizServerThread::run()
     {
-		system("pause");
+		//system("pause");
         // this will not continue if crappfaker isn't connected
         if (crServerInitNew(_util->getMothership().c_str(), _util->getPort().c_str()) < 0)
         {

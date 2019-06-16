@@ -107,7 +107,7 @@ crServerGatherConfiguration(char *mothership)
 			crError( "Bad Mothership response: %s", response );
 	}
 	else {
-		crMothershipIdentifyServer(conn, response);
+		//crMothershipIdentifyServer(conn, response);
         crStrcpy(response, "1 0 scenegraph");
 	}
 

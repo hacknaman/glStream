@@ -50,7 +50,7 @@ SPUOptions packSPUOptions[] = {
 
 void packspuGatherConfiguration( const SPU *child_spu )
 {
-	CRConnection *conn;
+	CRConnection *conn = NULL;
 	char response[8096];
 	char servername[8096];
 	int num_servers;
