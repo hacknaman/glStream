@@ -515,12 +515,11 @@ getConfigurationOptions(CRConnection *conn)
 	char *high_node = "none";
 	unsigned char key[16]= {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-	if (crMothershipGetFakerParam( conn, response, "show_cursor" ) ) {
+	if (0 ) {
 		sscanf( response, "%d", &stub.appDrawCursor );
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "minimum_window_size" )
-		&& response[0]) {
+	if (0) {
 		int w, h;
 		sscanf( response, "[%d, %d]", &w, &h );
 		crDebug( "minimum_window_size: %d x %d", w, h );
@@ -528,8 +527,7 @@ getConfigurationOptions(CRConnection *conn)
 		stub.minChromiumWindowHeight = h;
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "maximum_window_size" )
-		&& response[0]) {
+	if (0) {
 		int w, h;
 		sscanf( response, "[%d, %d]", &w, &h );
 		crDebug( "maximum_window_size: %d x %d", w, h );
@@ -537,8 +535,7 @@ getConfigurationOptions(CRConnection *conn)
 		stub.maxChromiumWindowHeight = h;
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "ignore_window_list" )
-		&& response[0]) {
+	if (0) {
 		unsigned int n;
 		int count = 0;
 		char *ns;
@@ -572,38 +569,36 @@ getConfigurationOptions(CRConnection *conn)
 		crFree(ns);
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "match_window_title" )
-		&& response[0]) {
+	if (0) {
 		crDebug("GL faker: match_window_title: %s", response );
 		stub.matchWindowTitle = crStrdup( response );
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "ignore_freeglut_menus" )) {
+	if (0) {
 		sscanf( response, "%d", &stub.ignoreFreeglutMenus );
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "track_window_size" ) ) {
+	if (0) {
 		sscanf( response, "%d", &stub.trackWindowSize );
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "track_window_position" ) ) {
+	if (0 ) {
 		sscanf( response, "%d", &stub.trackWindowPos );
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "track_window_visibility" ) ) {
+	if (0 ) {
 		sscanf( response, "%d", &stub.trackWindowVisibility );
 	}
 
 
-	if (crMothershipGetFakerParam( conn, response, "match_window_count" )
-		&& response[0]) {
+	if (0) {
 		int c;
 		sscanf( response, "%d", &c );
 		crDebug( "GL faker: match_window_count: %d", c);
 		stub.matchChromiumWindowCount = c;
 	}
 
-	if (crMothershipGetFakerParam( conn, response, "spu_dir" ) && crStrlen(response) > 0)
+	if (0)
 	{
 		stub.spu_dir = crStrdup(response);
 	}
@@ -612,36 +607,37 @@ getConfigurationOptions(CRConnection *conn)
 		stub.spu_dir = NULL;
 	}
 
-	if (crMothershipGetRank( conn, response ))
+	if (0)
 	{
 		my_rank = crStrToInt( response );
 	}
 	crNetSetRank( my_rank );
 
-	if (crMothershipGetParam( conn, "low_context", response ))
+	if (1)
 	{
-		low_context = crStrToInt( response );
+		low_context = 32;
 	}
 
-	if (crMothershipGetParam( conn, "high_context", response ))
+	if (1)
 	{
-		high_context = crStrToInt( response );
+		high_context = 35;
 	}
 	crNetSetContextRange( low_context, high_context );
 
-	if (crMothershipGetParam( conn, "low_node", response ))
+	if (1)
 	{
-		low_node = crStrdup( response );
+		low_node = crStrdup( "iam0" );
 	}
 
-	if (crMothershipGetParam( conn, "high_node", response ))
+	if (1)
 	{
-		high_node = crStrdup( response );
+		high_node = crStrdup( "iamvis20" );
 	}
 	crNetSetNodeRange( low_node, high_node );
 
-	if (crMothershipGetParam(conn, "comm_key", response))
+	if (1)
 	{
+	  crStrcpy(response, "[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]");
 	  unsigned int a;
 	  char **words, *found;
 	  
@@ -664,12 +660,12 @@ getConfigurationOptions(CRConnection *conn)
 	}
 	crNetSetKey(key,sizeof(key));
 
-	if (conn && crMothershipGetFakerParam( conn, response, "system_gl_path" ))
+	if (0)
 	{
 		crSetenv( "CR_SYSTEM_GL_PATH", response );
 	}
 
-	if (conn && crMothershipGetFakerParam( conn, response, "force_pbuffers" ))
+	if (0)
 	{
 		stub.force_pbuffers = crStrToInt(response);
 	}
@@ -697,6 +693,7 @@ stubInit(void)
 	 * HOW can I pass the mothership address to this if I already know it?
 	 */
     // check License
+	
     if (!DEVELOPMENT_MODE){
         if (!checkLicense()){
             crError("LICENSE FILE IS NOT VALID");
@@ -715,6 +712,7 @@ stubInit(void)
 	static int stub_initialized = 0;
 	if (stub_initialized)
 		return;
+	//system("pause");
 	stubInitNativeDispatch();
 	stub_initialized = 1;
 	
@@ -765,9 +763,12 @@ stubInit(void)
 		}
 	}
 
-	if (stub.mothershipConn) {
+
+
+	if (1) {
 		/* Identify myself to mothership - response will be client's SPU chain */
-		crMothershipIdentifyOpenGL( stub.mothershipConn, response, app_id );
+		//crMothershipIdentifyOpenGL( stub.mothershipConn, response, app_id );
+		crStrcpy(response, "2 1 passpack 2 clientrender");
 	}
 
    

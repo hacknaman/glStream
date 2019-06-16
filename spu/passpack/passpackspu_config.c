@@ -50,25 +50,25 @@ SPUOptions packSPUOptions[] = {
 
 void packspuGatherConfiguration( const SPU *child_spu )
 {
-	CRConnection *conn;
+	CRConnection *conn = NULL;
 	char response[8096];
 	char servername[8096];
 	int num_servers;
 
-	conn = crMothershipConnect();
+	//conn = crMothershipConnect();
 	if (!conn)
 	{
-		crError( "Couldn't connect to the mothership -- I have no idea what to do!" );
+		//crError( "Couldn't connect to the mothership -- I have no idea what to do!" );
 	}
-	crMothershipIdentifySPU( conn, pack_spu.id );
+	//crMothershipIdentifySPU( conn, pack_spu.id );
 
 	__setDefaults();
 
 	crSPUGetMothershipParams( conn, &pack_spu, packSPUOptions );
 
-	crMothershipGetServers( conn, response );
+	//crMothershipGetServers( conn, response );
 
-	sscanf( response, "%d %s", &num_servers, servername );
+	sscanf("1 tcpip://Naman-PC:7000", "%d %s", &num_servers, servername);
 
 	if (num_servers == 1)
 	{
@@ -81,5 +81,5 @@ void packspuGatherConfiguration( const SPU *child_spu )
 
 	pack_spu.buffer_size = crMothershipGetMTU( conn );
 
-	crMothershipDisconnect( conn );
+	//crMothershipDisconnect( conn );
 }

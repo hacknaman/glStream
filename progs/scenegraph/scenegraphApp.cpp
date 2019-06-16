@@ -483,7 +483,7 @@ int main(int argc, char* argv[])
     SceneGraphGenerator->setMothership(mothership);
     SceneGraphGenerator->run();
 
-    unsigned int numOfFrame = 0;
+     unsigned int numOfFrame = 0;
     unsigned int TotalNumOfFrame = 0;
 
     double lowestfps = DBL_MAX;

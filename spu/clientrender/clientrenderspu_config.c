@@ -335,10 +335,10 @@ void renderspuGatherConfiguration( RenderSPU *render_spu )
 
 	conn = crMothershipConnect( );
 	if (conn) {
-		crMothershipIdentifySPU( conn, render_spu->id );
+		//crMothershipIdentifySPU( conn, render_spu->id );
 		crSPUGetMothershipParams( conn, (void *)render_spu, renderSPUOptions );
 		render_spu->swap_mtu = crMothershipGetMTU( conn );
-		crMothershipDisconnect( conn );
+		//crMothershipDisconnect( conn );
 	}
 	else {
 		crSPUSetDefaultParams( (void *)render_spu, renderSPUOptions );
