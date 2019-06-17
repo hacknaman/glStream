@@ -31,7 +31,7 @@ static void display( void )
 	glClear( GL_COLOR_BUFFER_BIT );
 
 	glRasterPos2i( 100, 100 );
-	printstring( GLUT_BITMAP_TIMES_ROMAN_24, "Welcome to Chromium!" );
+	printstring( GLUT_BITMAP_TIMES_ROMAN_24, "Welcome to Naman's TransViz!" );
 	glutSwapBuffers();
 }
 

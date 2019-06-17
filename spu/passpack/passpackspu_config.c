@@ -68,7 +68,7 @@ void packspuGatherConfiguration( const SPU *child_spu )
 
 	//crMothershipGetServers( conn, response );
 
-	sscanf("1 tcpip://Naman-PC:7000", "%d %s", &num_servers, servername);
+	sscanf("1 tcpip://localhost:7000", "%d %s", &num_servers, servername); 
 
 	if (num_servers == 1)
 	{
