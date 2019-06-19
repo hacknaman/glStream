@@ -70,9 +70,3 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ ${PROJECT_BINARY_DIR}/include/
 	DESTINATION include
 	COMPONENT dev
 	PATTERN .gitignore EXCLUDE)
-	
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/LaunchScript)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/LaunchScript/ ${PROJECT_BINARY_DIR}/LaunchScript/
-	DESTINATION LaunchScript
-	COMPONENT dev
-	PATTERN .gitignore EXCLUDE)
