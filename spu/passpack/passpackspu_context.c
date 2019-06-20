@@ -40,8 +40,8 @@ ThreadInfo *packspuNewThread( CRthread id )
 	thread->netServer.name = crStrdup( pack_spu.name );
 	thread->netServer.buffer_size = pack_spu.buffer_size;
 	if (pack_spu.numThreads == 0) {
-		packspuConnectToServer( &(thread->netServer) );
-		CRASSERT(thread->netServer.conn);
+		while(!thread->netServer.conn)
+            packspuConnectToServer(&(thread->netServer));
 		pack_spu.swap = thread->netServer.conn->swap;
 	}
 	else {

@@ -322,7 +322,7 @@ SPUOptions renderSPUOptions[] = {
 
 void renderspuGatherConfiguration( RenderSPU *render_spu )
 {
-	CRConnection *conn;
+    CRConnection *conn = NULL;
 	int a;
 
 	for (a=0; a<256; a++)
@@ -332,8 +332,7 @@ void renderspuGatherConfiguration( RenderSPU *render_spu )
 		render_spu->lut8[2][a] = a;
 	}
 	render_spu->use_lut8 = 0;
-
-	conn = crMothershipConnect( );
+	
 	if (conn) {
 		//crMothershipIdentifySPU( conn, render_spu->id );
 		crSPUGetMothershipParams( conn, (void *)render_spu, renderSPUOptions );
