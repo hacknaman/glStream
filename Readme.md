@@ -2,6 +2,7 @@
 
 This project is forked from [Github](https://github.com/rpavlik/chromium)
 and the original project can be found here [Sourceforge](http://chromium.sourceforge.net/)
+This project takes any GL 2.0 application and creates an OpenScreenGraph or a model in Unreal Engine in realtime.
 
 ## Screenshot
 
