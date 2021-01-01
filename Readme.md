@@ -3,6 +3,10 @@
 This project is forked from [Github](https://github.com/rpavlik/chromium)
 and the original project can be found here [Sourceforge](http://chromium.sourceforge.net/)
 
+##Screenshot
+
+![](Demo.jpg)
+
 ## Getting Started
 
 The project supports Windows x64 and x86 architecture.
