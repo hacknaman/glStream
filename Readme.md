@@ -15,6 +15,7 @@ Run
 ```
 FetchExternalDeps.bat
 ```
+or download windows dependencies from [here](https://icedrive.net/1/50TNdyuKTn) and put them in ExternalLibrary folder
 then edit "initTransViz.bat" and set OSGRoot variable with path till sub directory "ExternalLibrary" 
 ```
 then run initTransViz.bat" which will generate  microsoft visual studio solution file "TransViz"
