@@ -1,4 +1,4 @@
-# TransViz
+# GLStream
 
 This project is forked from [Github](https://github.com/rpavlik/chromium)
 and the original project can be found here [Sourceforge](http://chromium.sourceforge.net/)
@@ -11,7 +11,7 @@ Run
 ```
 FetchExternalDeps.bat
 ```
-then open "initTransViz.bat" and set OSGRoot variable with path till sub directory "ExternalLibrary" 
+then edit "initTransViz.bat" and set OSGRoot variable with path till sub directory "ExternalLibrary" 
 ```
 then run initTransViz.bat" which will generate  microsoft visual studio solution file "TransViz"
 ```
@@ -71,9 +71,9 @@ Add additional notes about how to deploy this on a live system
 
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+* [Visual Studio](https://visualstudio.microsoft.com/) - Core
+* [Python](https://www.python.org/) - Dependency Management
+* [GLUT](https://www.opengl.org/resources/libraries/glut/) - Open GL Library
 
 ## Contributing
 
@@ -85,7 +85,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **Lokesh Sharma** - *Initial work*
+* **Naman Gupta** - *Initial work*
 
 See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
 
