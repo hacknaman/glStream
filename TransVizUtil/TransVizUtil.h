@@ -5,12 +5,9 @@
  *
  * File             : TransVizUtil.h
  * Module           : TransVizUtil
- * Author           : Lokesh Sharma
+ * Author           : Naman Gupta
  * Description      : Generates the default viewer and Root Node for the Scene
  *
- *****************************************************************************
- * Copyright 2018, VizExperts India Private Limited (unpublished)
- *****************************************************************************
  *
  *****************************************************************************/
 
